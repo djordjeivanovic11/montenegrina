@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     event_batch_size: int = 25
     event_flush_seconds: float = 0.25
     event_queue_capacity: int = 1_000
+    voice_agent_service_secret: str = Field(default='')
 
 
 settings = Settings()  # type: ignore[call-arg]

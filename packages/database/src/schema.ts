@@ -220,6 +220,8 @@ export const phoneNumbers = pgTable(
     label: text('label').notNull().default(''),
     inboundAgentId: uuid('inbound_agent_id'),
     enabled: boolean('enabled').notNull().default(false),
+    livekitDispatchRuleId: text('livekit_dispatch_rule_id'),
+    callerIdE164: text('caller_id_e164'),
     ...timestamps,
   },
   (table) => [
@@ -254,6 +256,7 @@ export const webhookEndpoints = pgTable(
     url: text('url').notNull(),
     events: text('events').array().notNull(),
     secretHash: text('secret_hash').notNull(),
+    secretCiphertext: text('secret_ciphertext'),
     enabled: boolean('enabled').notNull().default(true),
     lastDeliveryAt: timestamp('last_delivery_at', { withTimezone: true }),
     ...timestamps,
@@ -552,6 +555,10 @@ export interface AgentConfigurationSnapshot {
     allowedRegions: string[];
   };
   retention: { transcriptDays: number; recordAudio: boolean; audioDays: number };
+  telephony?: {
+    recordingNotice?: string;
+    outboundCallerId?: string;
+  };
   toolIds: string[];
   /** @deprecated use knowledgeBaseIds */
   knowledgeSourceIds?: string[];
@@ -951,6 +958,9 @@ export const conversations = pgTable(
     language: text('language').notNull().default('cnr'),
     livekitRoomName: text('livekit_room_name'),
     externalCallId: text('external_call_id'),
+    callerE164: text('caller_e164'),
+    calledE164: text('called_e164'),
+    recordingObjectKey: text('recording_object_key'),
     traceId: text('trace_id').notNull(),
     lastSequence: integer('last_sequence').notNull().default(0),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),

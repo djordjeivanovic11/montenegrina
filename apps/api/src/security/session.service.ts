@@ -9,6 +9,7 @@ import type { FastifyReply } from 'fastify';
 import type { Redis } from 'ioredis';
 import { v7 as uuidv7 } from 'uuid';
 
+import { EmailServiceWrapper } from '../email/email.service.js';
 import { ApiException } from '../core/api-exception.js';
 import { ENVIRONMENT, REDIS } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -27,6 +28,7 @@ export class SessionService {
   constructor(
     private readonly database: DatabaseService,
     private readonly workspaceBootstrap: WorkspaceBootstrapService,
+    private readonly email: EmailServiceWrapper,
     @Inject(REDIS) private readonly redis: Redis,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
@@ -149,10 +151,12 @@ export class SessionService {
       tokenHash: createHash('sha256').update(token).digest('hex'),
       expiresAt: new Date(Date.now() + 3_600_000),
     });
-    if (this.environment.NODE_ENV === 'development') {
-      process.stdout.write(`Password reset token for ${email}: ${token}\n`);
-    }
-    return { accepted: true, ...(this.environment.NODE_ENV === 'development' ? { devToken: token } : {}) };
+    const resetUrl = `${this.environment.PUBLIC_WEB_URL}/reset-password?token=${token}`;
+    await this.email.sendPasswordReset(email, resetUrl);
+    return {
+      accepted: true,
+      ...(this.environment.NODE_ENV === 'development' ? { devToken: token, devResetLink: resetUrl } : {}),
+    };
   }
 
   async resetPassword(token: string, password: string) {

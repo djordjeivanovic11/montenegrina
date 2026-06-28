@@ -5,11 +5,13 @@ import type { Redis } from 'ioredis';
 import { DatabaseService } from '../database/database.service.js';
 import { ENVIRONMENT, REDIS } from '../core/tokens.js';
 import { Public } from '../security/public.decorator.js';
+import { ObjectStorageService } from '../storage/object-storage.service.js';
 
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly database: DatabaseService,
+    private readonly storage: ObjectStorageService,
     @Inject(REDIS) private readonly redis: Redis,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
@@ -23,20 +25,20 @@ export class HealthController {
   @Public()
   @Get('ready')
   async ready() {
-    const checks: Record<string, string> = {};
-    const database = await this.database.pool.query('select 1').then(
-      () => 'ok',
-      () => 'failed',
+    const postgres = await this.database.pool.query('select 1').then(
+      () => 'ok' as const,
+      () => 'failed' as const,
     );
     const redis = await this.redis.ping().then(
-      () => 'ok',
-      () => 'failed',
+      () => 'ok' as const,
+      () => 'failed' as const,
     );
-    checks.database = database;
-    checks.redis = redis;
-    checks.providerMode = 'production';
+    const storage = await this.storage.ping();
+    const checks = { postgres, redis, storage };
+    const ok = postgres === 'ok' && redis === 'ok' && storage === 'ok';
     return {
-      status: database === 'ok' && redis === 'ok' ? 'ok' : 'degraded',
+      ok,
+      status: ok ? 'ok' : postgres === 'failed' ? 'failed' : 'degraded',
       timestamp: new Date().toISOString(),
       checks,
     };

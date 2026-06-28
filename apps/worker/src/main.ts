@@ -11,6 +11,7 @@ import { EvaluationProcessor } from './evaluation-processor.js';
 import { providersFromEnvironment } from './providers.js';
 import { RetentionProcessor } from './retention-processor.js';
 import { ObjectStorage } from './storage.js';
+import { WebhookDeliveryProcessor } from './webhook-delivery.js';
 
 const environment = loadEnvironment();
 const { db, pool } = createDatabase(environment.DATABASE_URL);
@@ -20,6 +21,11 @@ const documentProcessor = new DocumentProcessor(db, storage, providers);
 const evaluationProcessor = new EvaluationProcessor(db, storage, providers, environment);
 const deletionProcessor = new DeletionProcessor(db, storage);
 const retentionProcessor = new RetentionProcessor(db, environment);
+const webhookProcessor = new WebhookDeliveryProcessor(
+  db,
+  environment.INTERNAL_TOKEN_SECRET,
+  environment.WEBHOOKS_ENABLED,
+);
 const connection = { url: environment.REDIS_URL, maxRetriesPerRequest: null };
 const queue = new Queue('montenegrina-platform', { connection });
 const deadLetter = new Queue('montenegrina-dead-letter', { connection });
@@ -35,6 +41,14 @@ async function processJob(job: Job<Record<string, unknown>>): Promise<void> {
     case 'conversation.delete':
     case 'tenant.delete':
       return deletionProcessor.process(job.data);
+    case 'document.ready':
+      return webhookProcessor.process({
+        organizationId: job.data.organizationId,
+        eventType: 'document.ready',
+        payload: job.data,
+      });
+    case 'webhook.deliver':
+      return webhookProcessor.process(job.data);
     case 'retention.run':
       return retentionProcessor.process();
     default:

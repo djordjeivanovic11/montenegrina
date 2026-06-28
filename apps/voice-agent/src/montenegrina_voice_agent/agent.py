@@ -7,6 +7,7 @@ from livekit import agents
 from livekit.agents import Agent, AgentSession, ChatContext, ChatMessage, function_tool
 from livekit.plugins import deepgram, elevenlabs, openai
 
+from .inbound import provision_inbound, wait_for_sip_numbers
 from .models import RuntimeBootstrap, RuntimeTool
 from .runtime_api import EventBatcher, RuntimeApi
 from .settings import Settings
@@ -155,14 +156,42 @@ def wire_events(session: AgentSession, events: RuntimeEvents, closed: asyncio.Ev
         closed.set()
 
 
+DEFAULT_RECORDING_NOTICE = (
+    "Ovaj poziv se snima u svrhu kvaliteta usluge."
+)
+
+
+def greeting_instructions(config: RuntimeBootstrap) -> str:
+    base = "Pozdravi korisnika kratko na crnogorskom i pitaj kako možeš pomoći."
+    if config.channel != "SIP" or not config.config.retention.recordAudio:
+        return base
+    notice = (
+        config.config.telephony.recordingNotice
+        if config.config.telephony and config.config.telephony.recordingNotice
+        else DEFAULT_RECORDING_NOTICE
+    )
+    return f"Prvo izgovori tačno sljedeće na crnogorskom: \"{notice}\" Zatim {base}"
+
+
 async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
     metadata = json.loads(ctx.job.metadata or "{}")
-    token = metadata.get("runtimeToken")
-    if not isinstance(token, str) or not token:
-        raise ValueError("Agent dispatch is missing a runtime token")
+    await ctx.connect()
+    if metadata.get("mode") == "inbound":
+        called, caller = await wait_for_sip_numbers(ctx.room)
+        phone_number_id = metadata.get("phoneNumberId")
+        token = await provision_inbound(
+            settings,
+            room_name=ctx.room.name,
+            called_number=called,
+            caller_number=caller,
+            phone_number_id=str(phone_number_id) if phone_number_id else None,
+        )
+    else:
+        token = metadata.get("runtimeToken")
+        if not isinstance(token, str) or not token:
+            raise ValueError("Agent dispatch is missing a runtime token")
     runtime = RuntimeApi(settings.internal_api_url, token, settings.provider_operation_timeout_seconds)
     config = await runtime.bootstrap()
-    await ctx.connect()
     batcher = EventBatcher(
         runtime.send_events,
         settings.event_batch_size,
@@ -183,9 +212,7 @@ async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
     try:
         await events.emit("session.started", {"pipelineMode": config.config.routingPolicy.pipelineMode}, state="LISTENING")
         await session.start(room=ctx.room, agent=agent)
-        session.generate_reply(
-            instructions="Pozdravi korisnika kratko na crnogorskom i pitaj kako možeš pomoći."
-        )
+        session.generate_reply(instructions=greeting_instructions(config))
         try:
             await asyncio.wait_for(
                 closed.wait(), timeout=config.maximumDurationMinutes * 60

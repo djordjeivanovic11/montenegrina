@@ -38,7 +38,9 @@
     "pricingSubtitle": "Start free, scale as you grow.",
     "faqTitle": "FAQ",
     "ctaTitle": "Ready to deploy Montenegrina?",
-    "ctaSubtitle": "Create your workspace and launch your first agent today."
+    "ctaSubtitle": "Create your workspace and launch your first agent today.",
+    "terms": "Terms",
+    "privacy": "Privacy"
   },
   "auth": {
     "loginTitle": "Log in",
@@ -52,11 +54,44 @@
     "googleNotConfigured": "Google sign-in is not configured. Set PUBLIC_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_ID in .env.",
     "googleLoadFailed": "Could not load Google sign-in. Check your connection and try again.",
     "googleNotReady": "Google sign-in is still loading. Please try again.",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset password",
+    "forgotPasswordDesc": "Enter your email and we'll send you a reset link.",
+    "forgotPasswordSubmit": "Send reset link",
+    "forgotPasswordSent": "If an account exists with that email, you'll receive a reset link shortly.",
+    "forgotPasswordGoogle": "This account uses Google sign-in. Please continue with Google instead.",
+    "resetPasswordTitle": "Choose a new password",
+    "resetPasswordSubmit": "Reset password",
+    "resetPasswordSuccess": "Password updated. You can log in now.",
+    "resetPasswordInvalid": "This reset link is invalid or expired.",
+    "inviteAcceptTitle": "Accept invitation",
+    "inviteAcceptDesc": "Join the workspace you've been invited to.",
+    "inviteAcceptSubmit": "Accept invitation",
+    "inviteAcceptSuccess": "Invitation accepted. Redirecting…",
+    "inviteAcceptInvalid": "This invitation is invalid or expired.",
+    "inviteAcceptMismatch": "Sign in with the email address that received the invitation.",
     "or": "or",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "signupLink": "Sign up",
-    "loginLink": "Log in"
+    "loginLink": "Log in",
+    "termsConsent": "By signing up you agree to our",
+    "termsLink": "Terms of Service",
+    "privacyLink": "Privacy Policy",
+    "and": "and"
+  },
+  "legal": {
+    "termsTitle": "Terms of Service",
+    "privacyTitle": "Privacy Policy",
+    "lastUpdated": "Last updated: June 2026",
+    "contactEmail": "privacy@montenegrina.me"
+  },
+  "quota": {
+    "exceeded": "Plan limit reached for {metric} ({current}/{limit}). Upgrade your plan to continue.",
+    "agents": "agents",
+    "documents": "documents",
+    "team_members": "team members",
+    "voice_minutes": "voice minutes"
   },
   "app": {
     "welcome": "Welcome back",
@@ -95,16 +130,49 @@
   },
   "integrations": {
     "title": "Integrations",
+    "pageDesc": "Connect Montenegrina to your channels.",
     "browserTitle": "Browser widget",
     "browserDesc": "Embed Montenegrina in your website with a lightweight script.",
     "phoneTitle": "Phone / SIP",
-    "phoneDesc": "Connect telephony for inbound and outbound voice."
+    "phoneDesc": "Connect telephony for inbound and outbound voice via LiveKit Cloud SIP.",
+    "phoneNumber": "Number",
+    "phoneLabel": "Label",
+    "phoneEnabled": "Enabled",
+    "phoneE164Placeholder": "+38267123456",
+    "phoneLabelPlaceholder": "Main line",
+    "addPhoneNumber": "Add phone number",
+    "phoneSetupHint": "Configure LiveKit SIP trunks in docs/product/saas-platform.md, then assign an inbound agent.",
+    "phoneDisabledHint": "Set PHONE_INTEGRATIONS_ENABLED=true and configure LiveKit Cloud SIP trunks to manage numbers.",
+    "phoneSaveFailed": "Could not save phone number.",
+    "sipOutboundReady": "Outbound SIP trunk configured",
+    "sipOutboundMissing": "Outbound SIP trunk not configured (LIVEKIT_SIP_OUTBOUND_TRUNK_ID)",
+    "sipInboundReady": "Inbound SIP trunk configured",
+    "sipInboundMissing": "Inbound SIP trunk not configured (LIVEKIT_SIP_INBOUND_TRUNK_ID)",
+    "inboundAgent": "Inbound agent",
+    "noAgent": "No agent",
+    "actions": "Actions",
+    "deletePhone": "Delete",
+    "deletePhoneConfirm": "Remove this phone number from your workspace?"
+  },
+  "conversations": {
+    "pageDesc": "Review past voice and phone conversations.",
+    "newConversation": "New conversation",
+    "emptyTitle": "No conversations",
+    "emptyDesc": "Start a conversation in the playground.",
+    "sipCall": "Phone call",
+    "voice": "Voice",
+    "from": "From",
+    "downloadRecording": "Download recording",
+    "loadingRecording": "Loading…"
   },
   "billing": {
     "title": "Billing",
     "currentPlan": "Current plan",
     "usage": "Usage this period",
     "upgrade": "Request upgrade",
+    "upgradeNow": "Upgrade plan",
+    "checkoutRedirect": "Redirecting to checkout…",
+    "portalRedirect": "Opening billing portal…",
     "noPlan": "Free tier"
   },
   "team": {
@@ -113,7 +181,9 @@
     "invite": "Invite member",
     "email": "Email",
     "role": "Role",
-    "sendInvite": "Send invitation"
+    "sendInvite": "Send invitation",
+    "inviteSent": "Invitation sent",
+    "quotaExceeded": "Team member limit reached for your plan."
   },
   "settings": {
     "title": "Settings",

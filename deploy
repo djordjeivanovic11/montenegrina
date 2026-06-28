@@ -108,11 +108,14 @@ REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 aws ecr get-login-password | docker login --username AWS --password-stdin "$REGISTRY"
 
 build_and_push() {
-  local service="$1" dockerfile="$2" extra_arg="${3:-}"
+  local service="$1" dockerfile="$2"
+  shift 2
   local repository
   repository="$(jq -r --arg service "$service" '.[$service]' <<<"$REPOSITORIES")"
   args=(docker buildx build --platform linux/amd64 --file "$dockerfile" --tag "${repository}:${IMAGE_TAG}" --push)
-  [[ -z "$extra_arg" ]] || args+=(--build-arg "$extra_arg")
+  for build_arg in "$@"; do
+    args+=(--build-arg "$build_arg")
+  done
   args+=(.)
   "${args[@]}"
 }
@@ -120,7 +123,11 @@ build_and_push() {
 build_and_push api apps/api/Dockerfile
 build_and_push worker apps/worker/Dockerfile
 build_and_push voice-agent apps/voice-agent/Dockerfile
-build_and_push web apps/web/Dockerfile "NEXT_PUBLIC_API_URL=$APPLICATION_URL"
+build_and_push knowledge-parser apps/knowledge-parser/Dockerfile
+build_and_push web apps/web/Dockerfile \
+  "NEXT_PUBLIC_API_URL=${APPLICATION_URL}" \
+  "NEXT_PUBLIC_LIVEKIT_URL=${LIVEKIT_URL}" \
+  "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${PUBLIC_GOOGLE_CLIENT_ID:-}"
 
 CLUSTER="$(tf output -raw ecs_cluster_name)"
 TASK_DEFINITION="$(tf output -raw api_task_definition_arn)"

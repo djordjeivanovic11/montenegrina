@@ -22,6 +22,7 @@
     "@montenegrina/config": "workspace:*",
     "@montenegrina/contracts": "workspace:*",
     "@montenegrina/database": "workspace:*",
+    "@montenegrina/email": "workspace:*",
     "@montenegrina/knowledge-core": "workspace:*",
     "@montenegrina/language-cnr": "workspace:*",
     "@montenegrina/provider-core": "workspace:*",
@@ -45,6 +46,8 @@
     "pino": "^10.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "stripe": "^18.4.0",
+    "@sentry/node": "^9.46.0",
     "uuid": "^13.0.0",
     "yaml": "^2.8.0"
   },

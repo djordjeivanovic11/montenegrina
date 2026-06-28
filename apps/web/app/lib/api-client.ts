@@ -46,3 +46,36 @@ export function errorMessage(error: unknown): string {
   }
   return error instanceof Error ? error.message : 'Request failed';
 }
+
+export type QuotaErrorDetails = {
+  metric: string;
+  limit: number;
+  current: number;
+};
+
+export function parseApiError(error: unknown): {
+  code?: string;
+  message: string;
+  details?: QuotaErrorDetails;
+} {
+  if (error && typeof error === 'object' && 'error' in error) {
+    const envelope = error as {
+      error?: { code?: string; message?: string; details?: QuotaErrorDetails };
+    };
+    return {
+      ...(envelope.error?.code ? { code: envelope.error.code } : {}),
+      message: envelope.error?.message ?? 'Request failed',
+      ...(envelope.error?.details ? { details: envelope.error.details } : {}),
+    };
+  }
+  return { message: error instanceof Error ? error.message : 'Request failed' };
+}
+
+export function quotaErrorKey(metric: string): string {
+  const normalized = metric.toLowerCase();
+  if (normalized === 'agents') return 'quota.agents';
+  if (normalized === 'documents') return 'quota.documents';
+  if (normalized === 'team_members') return 'quota.team_members';
+  if (normalized === 'voice_minutes') return 'quota.voice_minutes';
+  return 'quota.exceeded';
+}

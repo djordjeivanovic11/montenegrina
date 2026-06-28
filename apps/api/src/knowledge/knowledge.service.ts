@@ -8,6 +8,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { v7 as uuidv7 } from 'uuid';
 
 import { AuditService } from '../audit/audit.service.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { ApiException } from '../core/api-exception.js';
 import { ENVIRONMENT } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -47,6 +48,7 @@ export class KnowledgeService {
     private readonly storage: ObjectStorageService,
     private readonly fetcher: SafeWebFetcher,
     private readonly audit: AuditService,
+    private readonly entitlements: EntitlementsService,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
@@ -169,6 +171,8 @@ export class KnowledgeService {
         status: 422,
       });
     }
+    const organizationId = this.organization(options.actor);
+    await this.entitlements.assertWithinLimit(organizationId, 'DOCUMENTS', options.files.length);
     const items = [];
     for (const file of options.files) {
       items.push(
@@ -394,6 +398,8 @@ export class KnowledgeService {
     if (duplicate) {
       return { ...this.format(duplicate), duplicate: true };
     }
+
+    await this.entitlements.assertWithinLimit(organizationId, 'DOCUMENTS', 1);
 
     const documentId = uuidv7();
     const versionId = uuidv7();

@@ -72,6 +72,8 @@ export function MarketingFooter({ locale }: { locale: Locale }) {
           <span className="text-sm text-ink-2">© {new Date().getFullYear()} Montenegrina</span>
         </div>
         <div className="flex items-center gap-4 text-sm text-ink-2">
+          <Link href="/terms">{t('marketing.terms')}</Link>
+          <Link href="/privacy">{t('marketing.privacy')}</Link>
           <Link href="/login">{t('nav.login')}</Link>
           <Link href="/signup">{t('nav.signup')}</Link>
         </div>

@@ -36,7 +36,10 @@ export function PlaygroundView() {
   const [isDevOpen, setIsDevOpen] = useState(false);
   const [events, setEvents] = useState<string[]>([]);
   const [activeSection, setActiveSection] = useState<'chat' | 'knowledge'>('chat');
-  const [, setConversations] = useState<Array<{ id: string; startedAt: string; preview?: string }>>([]);
+  const [phoneTo, setPhoneTo] = useState('');
+  const [phoneCallState, setPhoneCallState] = useState<'idle' | 'dialing' | 'done' | 'error'>('idle');
+  const [sipConfigured, setSipConfigured] = useState(false);
+  const [conversations, setConversations] = useState<Array<{ id: string; startedAt: string; preview?: string }>>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
 
   const roomRef = useRef<Room | null>(null);
@@ -61,6 +64,14 @@ export function PlaygroundView() {
       if (convResponse.ok) {
         const convData = (await convResponse.json()) as { items: Array<{ id: string; startedAt: string; preview?: string }> };
         setConversations(convData.items ?? []);
+      }
+      const channelsRes = await fetch(`${API_URL}/v1/integrations/channels`, {
+        headers: headers(),
+        credentials: 'include',
+      });
+      if (channelsRes.ok) {
+        const channels = (await channelsRes.json()) as { items: Array<{ sipConfigured?: boolean }> };
+        setSipConfigured(Boolean(channels.items[0]?.sipConfigured));
       }
     })();
   }, [csrfToken, organizationId, api]);
@@ -141,6 +152,42 @@ export function PlaygroundView() {
     setVoiceState('listening');
   }
 
+  async function startPhoneCall(): Promise<void> {
+    if (!agentId || !phoneTo.trim()) return;
+    setPhoneCallState('dialing');
+    setError('');
+    const response = await api.POST('/v1/agents/{agentId}/calls', {
+      params: { path: { agentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+      headers: { ...headers(), 'Idempotency-Key': crypto.randomUUID() },
+      body: { to: phoneTo.trim() },
+    });
+    if (!response.response.ok || !response.data) {
+      setError(errorMessage(response.error));
+      setPhoneCallState('error');
+      return;
+    }
+    const conversationId = response.data.id;
+    setActiveConversationId(conversationId);
+    for (let attempt = 0; attempt < 45; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      const status = await api.GET('/v1/conversations/{conversationId}', {
+        params: { path: { conversationId } },
+        headers: headers(),
+      });
+      if (!status.response.ok || !status.data) continue;
+      if (status.data.state === 'COMPLETED') {
+        setPhoneCallState('done');
+        return;
+      }
+      if (status.data.state === 'FAILED') {
+        setError('Phone call failed.');
+        setPhoneCallState('error');
+        return;
+      }
+    }
+    setPhoneCallState('done');
+  }
+
   async function stopVoice(): Promise<void> {
     await roomRef.current?.disconnect();
     roomRef.current = null;
@@ -174,6 +221,27 @@ export function PlaygroundView() {
             onStartVoice={() => void startVoice()}
             onStopVoice={() => void stopVoice()}
           />
+          <div className="px-4 pb-4 border-t border-border pt-3">
+            <p className="text-xs font-medium text-ink-2 mb-2">Test phone call</p>
+            <div className="flex gap-2 items-center">
+              <input
+                className="input flex-1"
+                placeholder="+38267123456"
+                value={phoneTo}
+                disabled={!sipConfigured}
+                title={sipConfigured ? undefined : 'Configure LIVEKIT_SIP_OUTBOUND_TRUNK_ID for outbound calls'}
+                onChange={(event) => setPhoneTo(event.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary text-sm"
+                disabled={!sipConfigured || !agentId || phoneCallState === 'dialing'}
+                onClick={() => void startPhoneCall()}
+              >
+                {phoneCallState === 'dialing' ? 'Dialing…' : phoneCallState === 'done' ? 'Call started' : phoneCallState === 'error' ? 'Call failed' : 'Call'}
+              </button>
+            </div>
+          </div>
         </>
       )}
       {isDevOpen && <DevPanel events={events} onClose={() => setIsDevOpen(false)} />}

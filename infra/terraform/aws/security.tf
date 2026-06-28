@@ -27,6 +27,12 @@ resource "aws_security_group" "tasks" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
+  ingress {
+    from_port = 8090
+    to_port   = 8090
+    protocol  = "tcp"
+    self      = true
+  }
   egress {
     from_port   = 0
     to_port     = 0

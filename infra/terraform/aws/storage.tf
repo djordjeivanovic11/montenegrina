@@ -51,7 +51,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "data" {
 }
 
 resource "aws_ecr_repository" "app" {
-  for_each             = toset(["api", "web", "worker", "voice-agent"])
+  for_each             = toset(["api", "web", "worker", "voice-agent", "knowledge-parser"])
   name                 = "${local.name}/${each.key}"
   image_tag_mutability = "IMMUTABLE"
   image_scanning_configuration { scan_on_push = true }

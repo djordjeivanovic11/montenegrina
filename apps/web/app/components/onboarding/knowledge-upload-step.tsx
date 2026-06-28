@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { API_URL, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders, parseApiError, quotaErrorKey } from '../../lib/api-client';
 import { useI18n, type Locale } from '../../lib/i18n/index';
 
 type UploadedDoc = {
@@ -94,7 +94,19 @@ export function KnowledgeUploadStep({ locale = 'cnr', agentId }: KnowledgeUpload
         credentials: 'include',
       });
       if (!response.ok) {
-        setUploadError(t('onboarding.uploadFailed'));
+        const body = await response.json().catch(() => null);
+        const parsed = parseApiError(body);
+        if (parsed.code === 'QUOTA_EXCEEDED' && parsed.details) {
+          setUploadError(
+            t('quota.exceeded', {
+              metric: t(quotaErrorKey(parsed.details.metric)),
+              current: String(parsed.details.current),
+              limit: String(parsed.details.limit),
+            }),
+          );
+        } else {
+          setUploadError(parsed.message || t('onboarding.uploadFailed'));
+        }
         return;
       }
       await assignToAgent(knowledgeBaseId);

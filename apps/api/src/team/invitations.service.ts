@@ -1,13 +1,17 @@
 import { createHash, randomBytes } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import { AuditService } from '../audit/audit.service.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { ApiException } from '../core/api-exception.js';
+import { ENVIRONMENT } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
+import { EmailServiceWrapper } from '../email/email.service.js';
 import type { RequestActor } from '../security/actor.js';
 
 @Injectable()
@@ -15,6 +19,9 @@ export class InvitationsService {
   constructor(
     private readonly database: DatabaseService,
     private readonly audit: AuditService,
+    private readonly entitlements: EntitlementsService,
+    private readonly email: EmailServiceWrapper,
+    @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
   async list(actor: RequestActor) {
@@ -41,6 +48,10 @@ export class InvitationsService {
     requestId: string,
   ) {
     const organizationId = this.organization(actor);
+    await this.entitlements.assertWithinLimit(organizationId, 'TEAM_MEMBERS', 1);
+    const org = await this.database.db.query.organizations.findFirst({
+      where: eq(schema.organizations.id, organizationId),
+    });
     const token = randomBytes(32).toString('base64url');
     const id = uuidv7();
     await this.database.db.insert(schema.invitations).values({
@@ -60,7 +71,13 @@ export class InvitationsService {
       requestId,
       after: { email: body.email, role: body.role ?? 'DEVELOPER' },
     });
-    return { id, email: body.email, inviteToken: token };
+    const inviteUrl = `${this.environment.PUBLIC_WEB_URL}/invite/accept?token=${token}`;
+    await this.email.sendTeamInvitation(body.email, inviteUrl, org?.name ?? 'your workspace');
+    return {
+      id,
+      email: body.email,
+      ...(this.environment.NODE_ENV === 'development' ? { devInviteLink: inviteUrl } : {}),
+    };
   }
 
   async accept(token: string, userId: string) {

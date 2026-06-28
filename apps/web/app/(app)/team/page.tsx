@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Badge, Card, PageHeader } from '../../components/ui/page-shell';
-import { API_URL, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders, parseApiError, quotaErrorKey } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
 type Member = { userId: string; email?: string; displayName?: string; role: string; joinedAt: string };
@@ -47,11 +47,23 @@ export default function TeamPage() {
       body: JSON.stringify({ email, role }),
     });
     if (!res.ok) {
-      setError('Failed to send invitation');
+      const body = await res.json().catch(() => null);
+      const parsed = parseApiError(body);
+      if (parsed.code === 'QUOTA_EXCEEDED' && parsed.details) {
+        setError(
+          t('quota.exceeded', {
+            metric: t(quotaErrorKey(parsed.details.metric)),
+            current: String(parsed.details.current),
+            limit: String(parsed.details.limit),
+          }),
+        );
+      } else {
+        setError(parsed.message || t('team.quotaExceeded'));
+      }
       return;
     }
     setEmail('');
-    setSuccess('Invitation sent');
+    setSuccess(t('team.inviteSent'));
     await load();
   }
 

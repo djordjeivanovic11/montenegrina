@@ -36,12 +36,16 @@ export default function BillingPage() {
   }, []);
 
   async function requestUpgrade(planSlug: string) {
-    await fetch(`${API_URL}/v1/billing/upgrade-request`, {
+    if (!billingEnabled) return;
+    const response = await fetch(`${API_URL}/v1/billing/checkout`, {
       method: 'POST',
       credentials: 'include',
       headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ planSlug }),
     });
+    if (!response.ok) return;
+    const data = (await response.json()) as { url: string };
+    window.location.href = data.url;
   }
 
   return (
@@ -75,7 +79,7 @@ export default function BillingPage() {
               ))}
             </ul>
             <button type="button" onClick={() => void requestUpgrade(plan.slug)} className="btn-secondary w-full mt-4 text-sm">
-              {billingEnabled ? t('billing.upgrade') : 'Contact sales'}
+              {billingEnabled ? t('billing.upgradeNow') : 'Contact sales'}
             </button>
           </Card>
         ))}

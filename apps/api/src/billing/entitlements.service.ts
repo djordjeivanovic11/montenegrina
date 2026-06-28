@@ -37,11 +37,20 @@ export class EntitlementsService {
         return result[0]?.count ?? 0;
       }
       case 'TEAM_MEMBERS': {
-        const result = await this.database.db
+        const memberships = await this.database.db
           .select({ count: sql<number>`count(*)::int` })
           .from(schema.memberships)
           .where(eq(schema.memberships.organizationId, organizationId));
-        return result[0]?.count ?? 0;
+        const pending = await this.database.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(schema.invitations)
+          .where(
+            and(
+              eq(schema.invitations.organizationId, organizationId),
+              eq(schema.invitations.status, 'PENDING'),
+            ),
+          );
+        return (memberships[0]?.count ?? 0) + (pending[0]?.count ?? 0);
       }
       case 'DOCUMENTS': {
         const result = await this.database.db

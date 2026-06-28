@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
-    "test:integration": "vitest run --passWithNoTests"
+    "test:integration": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@montenegrina/sdk-typescript": "workspace:*",
@@ -20,9 +21,11 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "@sentry/nextjs": "^9.46.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

@@ -174,6 +174,18 @@ export class DocumentProcessor {
           })
           .where(eq(schema.documents.id, documentId));
       });
+      await this.database.insert(schema.outboxEvents).values({
+        id: uuidv7(),
+        organizationId: document.organizationId,
+        type: 'document.ready',
+        aggregateId: documentId,
+        payload: {
+          organizationId: document.organizationId,
+          documentId,
+          knowledgeBaseId: document.knowledgeBaseId,
+          status: 'READY',
+        },
+      });
       await updateJob('COMPLETED', 100, 'COMPLETED');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'DOCUMENT_PROCESSING_FAILED';

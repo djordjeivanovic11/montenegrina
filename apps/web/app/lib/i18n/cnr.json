@@ -38,7 +38,9 @@
     "pricingSubtitle": "Počnite besplatno, skalirajte kako rastete.",
     "faqTitle": "Česta pitanja",
     "ctaTitle": "Spremni za Montenegrinu?",
-    "ctaSubtitle": "Kreirajte radni prostor i pokrenite prvog agenta danas."
+    "ctaSubtitle": "Kreirajte radni prostor i pokrenite prvog agenta danas.",
+    "terms": "Uslovi",
+    "privacy": "Privatnost"
   },
   "auth": {
     "loginTitle": "Prijavite se",
@@ -52,11 +54,44 @@
     "googleNotConfigured": "Google prijava nije podešena. Postavite PUBLIC_GOOGLE_CLIENT_ID i GOOGLE_CLIENT_ID u .env.",
     "googleLoadFailed": "Google prijava se nije učitala. Provjerite konekciju i pokušajte ponovo.",
     "googleNotReady": "Google prijava se još učitava. Pokušajte ponovo.",
+    "forgotPassword": "Zaboravili ste lozinku?",
+    "forgotPasswordTitle": "Resetujte lozinku",
+    "forgotPasswordDesc": "Unesite e-poštu i poslaćemo vam link za reset.",
+    "forgotPasswordSubmit": "Pošalji link",
+    "forgotPasswordSent": "Ako postoji nalog sa tom e-poštom, dobićete link za reset.",
+    "forgotPasswordGoogle": "Ovaj nalog koristi Google prijavu. Nastavite sa Googleom.",
+    "resetPasswordTitle": "Nova lozinka",
+    "resetPasswordSubmit": "Resetuj lozinku",
+    "resetPasswordSuccess": "Lozinka ažurirana. Možete se prijaviti.",
+    "resetPasswordInvalid": "Link za reset je nevažeći ili istekao.",
+    "inviteAcceptTitle": "Prihvatite pozivnicu",
+    "inviteAcceptDesc": "Pridružite se radnom prostoru na koji ste pozvani.",
+    "inviteAcceptSubmit": "Prihvati pozivnicu",
+    "inviteAcceptSuccess": "Pozivnica prihvaćena. Preusmjeravanje…",
+    "inviteAcceptInvalid": "Pozivnica je nevažeća ili istekla.",
+    "inviteAcceptMismatch": "Prijavite se e-poštom na koju ste pozvani.",
     "or": "ili",
     "noAccount": "Nemate nalog?",
     "hasAccount": "Već imate nalog?",
     "signupLink": "Registrujte se",
-    "loginLink": "Prijavite se"
+    "loginLink": "Prijavite se",
+    "termsConsent": "Registracijom prihvatate",
+    "termsLink": "Uslove korišćenja",
+    "privacyLink": "Politiku privatnosti",
+    "and": "i"
+  },
+  "legal": {
+    "termsTitle": "Uslovi korišćenja",
+    "privacyTitle": "Politika privatnosti",
+    "lastUpdated": "Posljednje ažuriranje: jun 2026.",
+    "contactEmail": "privacy@montenegrina.me"
+  },
+  "quota": {
+    "exceeded": "Dostignut limit plana za {metric} ({current}/{limit}). Nadogradite plan.",
+    "agents": "agente",
+    "documents": "dokumente",
+    "team_members": "članove tima",
+    "voice_minutes": "glasovne minute"
   },
   "app": {
     "welcome": "Dobrodošli nazad",
@@ -95,16 +130,49 @@
   },
   "integrations": {
     "title": "Integracije",
+    "pageDesc": "Povežite Montenegrinu sa kanalima komunikacije.",
     "browserTitle": "Browser widget",
     "browserDesc": "Ugradite Montenegrinu na sajt sa laganim skriptom.",
     "phoneTitle": "Telefon / SIP",
-    "phoneDesc": "Povežite telefoniju za dolazne i odlazne pozive."
+    "phoneDesc": "Povežite telefoniju za dolazne i odlazne pozive preko LiveKit Cloud SIP-a.",
+    "phoneNumber": "Broj",
+    "phoneLabel": "Oznaka",
+    "phoneEnabled": "Aktivno",
+    "phoneE164Placeholder": "+38267123456",
+    "phoneLabelPlaceholder": "Glavna linija",
+    "addPhoneNumber": "Dodaj broj",
+    "phoneSetupHint": "Podesite LiveKit SIP trunkove (vidi docs/product/saas-platform.md), zatim dodijelite dolaznog agenta.",
+    "phoneDisabledHint": "Postavite PHONE_INTEGRATIONS_ENABLED=true i LiveKit Cloud SIP trunkove da upravljate brojevima.",
+    "phoneSaveFailed": "Broj nije sačuvan.",
+    "sipOutboundReady": "Odlazni SIP trunk je podešen",
+    "sipOutboundMissing": "Odlazni SIP trunk nije podešen (LIVEKIT_SIP_OUTBOUND_TRUNK_ID)",
+    "sipInboundReady": "Dolazni SIP trunk je podešen",
+    "sipInboundMissing": "Dolazni SIP trunk nije podešen (LIVEKIT_SIP_INBOUND_TRUNK_ID)",
+    "inboundAgent": "Dolazni agent",
+    "noAgent": "Bez agenta",
+    "actions": "Akcije",
+    "deletePhone": "Obriši",
+    "deletePhoneConfirm": "Ukloniti ovaj broj iz radnog prostora?"
+  },
+  "conversations": {
+    "pageDesc": "Pregledajte prošle glasovne i telefonske razgovore.",
+    "newConversation": "Novi razgovor",
+    "emptyTitle": "Nema razgovora",
+    "emptyDesc": "Započnite razgovor u igraonici.",
+    "sipCall": "Telefonski poziv",
+    "voice": "Glas",
+    "from": "Od",
+    "downloadRecording": "Preuzmi snimak",
+    "loadingRecording": "Učitavanje…"
   },
   "billing": {
     "title": "Naplata",
     "currentPlan": "Trenutni plan",
     "usage": "Potrošnja u periodu",
     "upgrade": "Zatraži nadogradnju",
+    "upgradeNow": "Nadogradi plan",
+    "checkoutRedirect": "Preusmjeravanje na plaćanje…",
+    "portalRedirect": "Otvaranje portala za naplatu…",
     "noPlan": "Besplatni nivo"
   },
   "team": {
@@ -113,7 +181,9 @@
     "invite": "Pozovi člana",
     "email": "E-pošta",
     "role": "Uloga",
-    "sendInvite": "Pošalji pozivnicu"
+    "sendInvite": "Pošalji pozivnicu",
+    "inviteSent": "Pozivnica poslata",
+    "quotaExceeded": "Dostignut limit članova tima za vaš plan."
   },
   "settings": {
     "title": "Podešavanja",

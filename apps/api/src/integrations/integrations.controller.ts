@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Req } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
 import { randomBytes } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
@@ -8,12 +8,14 @@ import { and, eq } from 'drizzle-orm';
 import { schema } from '@montenegrina/database';
 
 import { AuditService } from '../audit/audit.service.js';
+import { encryptWebhookSecret } from '../core/webhook-crypto.js';
 import { ApiException } from '../core/api-exception.js';
 import { ENVIRONMENT } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { RequestActor } from '../security/actor.js';
 import { CurrentActor } from '../security/current-actor.decorator.js';
 import { RequirePermissions } from '../security/permissions.decorator.js';
+import { PhoneNumbersService } from './phone-numbers.service.js';
 
 function requestId(request: FastifyRequest): string {
   return (request.headers['x-request-id'] as string | undefined) ?? uuidv7();
@@ -24,6 +26,7 @@ export class IntegrationsController {
   constructor(
     private readonly database: DatabaseService,
     private readonly audit: AuditService,
+    private readonly phoneNumbers: PhoneNumbersService,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
@@ -41,8 +44,43 @@ export class IntegrationsController {
         name: item.name,
         status: item.status,
         phoneIntegrationsEnabled: this.environment.PHONE_INTEGRATIONS_ENABLED,
+        sipConfigured: Boolean(this.environment.LIVEKIT_SIP_OUTBOUND_TRUNK_ID),
+        inboundConfigured: Boolean(this.environment.LIVEKIT_SIP_INBOUND_TRUNK_ID),
       })),
     };
+  }
+
+  @Get('phone-numbers')
+  @RequirePermissions('agents:read')
+  listPhoneNumbers(@CurrentActor() actor: RequestActor) {
+    return this.phoneNumbers.list(actor);
+  }
+
+  @Post('phone-numbers')
+  @RequirePermissions('agents:update')
+  createPhoneNumber(
+    @CurrentActor() actor: RequestActor,
+    @Body()
+    body: { e164: string; label?: string; inboundAgentId?: string; enabled?: boolean; callerIdE164?: string },
+  ) {
+    return this.phoneNumbers.create(actor, body);
+  }
+
+  @Patch('phone-numbers/:phoneNumberId')
+  @RequirePermissions('agents:update')
+  updatePhoneNumber(
+    @CurrentActor() actor: RequestActor,
+    @Param('phoneNumberId') phoneNumberId: string,
+    @Body()
+    body: { label?: string; inboundAgentId?: string | null; enabled?: boolean; callerIdE164?: string | null },
+  ) {
+    return this.phoneNumbers.update(actor, phoneNumberId, body);
+  }
+
+  @Delete('phone-numbers/:phoneNumberId')
+  @RequirePermissions('agents:update')
+  deletePhoneNumber(@CurrentActor() actor: RequestActor, @Param('phoneNumberId') phoneNumberId: string) {
+    return this.phoneNumbers.remove(actor, phoneNumberId);
   }
 
   @Get('webhooks')
@@ -84,6 +122,7 @@ export class IntegrationsController {
       url: body.url,
       events: body.events,
       secretHash: await argon2.hash(secret, { type: argon2.argon2id }),
+      secretCiphertext: encryptWebhookSecret(secret, this.environment.INTERNAL_TOKEN_SECRET),
     });
     await this.audit.record({
       actor,

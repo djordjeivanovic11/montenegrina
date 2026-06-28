@@ -15,6 +15,12 @@ import { ErrorFilter } from './core/error.filter.js';
 import { registerRequestIdHook } from './core/request-id.hook.js';
 
 const environment = loadEnvironment();
+
+if (environment.SENTRY_ENABLED && environment.SENTRY_DSN) {
+  const { init } = await import('@sentry/node');
+  init({ dsn: environment.SENTRY_DSN, environment: environment.NODE_ENV, tracesSampleRate: 0.1 });
+}
+
 const adapter = new FastifyAdapter({
   bodyLimit: 1_048_576,
   trustProxy: environment.NODE_ENV === 'production',
@@ -59,6 +65,34 @@ application.enableCors({
   ],
 });
 registerRequestIdHook(application.getHttpAdapter().getInstance());
+const fastify = application.getHttpAdapter().getInstance();
+fastify.addHook('preParsing', async (request, _reply, payload) => {
+  if (
+    request.url?.startsWith('/v1/billing/stripe/webhook') ||
+    request.url?.startsWith('/webhooks/livekit')
+  ) {
+    const chunks: Buffer[] = [];
+    for await (const chunk of payload) {
+      if (typeof chunk === 'string') {
+        chunks.push(Buffer.from(chunk));
+      } else if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk);
+      } else {
+        chunks.push(Buffer.from(chunk as Uint8Array));
+      }
+    }
+    const rawBody = Buffer.concat(chunks);
+    request.rawBody = rawBody;
+    return rawBody;
+  }
+  return payload;
+});
+fastify.addHook('onResponse', async (request, reply) => {
+  const actor = request.actor;
+  if (actor?.organizationId) {
+    reply.header('X-Organization-Id', actor.organizationId);
+  }
+});
 application.useGlobalFilters(new ErrorFilter());
 application.enableShutdownHooks();
 await application.listen(environment.API_PORT, '0.0.0.0');

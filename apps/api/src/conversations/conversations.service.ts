@@ -2,9 +2,8 @@ import { Inject, Injectable, type MessageEvent as NestMessageEvent } from '@nest
 import { canTransition, type RealtimeEvent } from '@montenegrina/contracts';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
-import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
-import { AccessToken, RoomAgentDispatch, RoomServiceClient, SipClient } from 'livekit-server-sdk';
 import { Observable, type Subscriber } from 'rxjs';
 import { v7 as uuidv7 } from 'uuid';
 import { randomBytes } from 'node:crypto';
@@ -13,8 +12,10 @@ import { AgentsService } from '../agents/agents.service.js';
 import { ApiException } from '../core/api-exception.js';
 import { ENVIRONMENT, REDIS } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
-import { InternalTokenService } from '../internal/internal-token.service.js';
 import type { RequestActor } from '../security/actor.js';
+import { parseE164 } from '../livekit/e164.js';
+import { LiveKitVoiceService } from '../livekit/livekit-voice.service.js';
+import { ObjectStorageService } from '../storage/object-storage.service.js';
 
 const durableEvents = new Set([
   'session.started',
@@ -35,20 +36,14 @@ const durableEvents = new Set([
 
 @Injectable()
 export class ConversationsService {
-  readonly #rooms: RoomServiceClient;
-  readonly #sip: SipClient;
-
   constructor(
     private readonly database: DatabaseService,
     private readonly agents: AgentsService,
-    private readonly internalTokens: InternalTokenService,
+    private readonly livekitVoice: LiveKitVoiceService,
+    private readonly storage: ObjectStorageService,
     @Inject(REDIS) private readonly redis: Redis,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
-  ) {
-    const httpUrl = environment.LIVEKIT_URL.replace(/^ws/u, 'http');
-    this.#rooms = new RoomServiceClient(httpUrl, environment.LIVEKIT_API_KEY, environment.LIVEKIT_API_SECRET);
-    this.#sip = new SipClient(httpUrl, environment.LIVEKIT_API_KEY, environment.LIVEKIT_API_SECRET);
-  }
+  ) {}
 
   async create(actor: RequestActor, agentId: string, channel: 'TEXT' | 'BROWSER' | 'SIP' | 'BATCH') {
     const organizationId = this.organization(actor);
@@ -104,101 +99,48 @@ export class ConversationsService {
   }
 
   async realtimeSession(actor: RequestActor, agentId: string, participantName?: string) {
-    const organizationId = this.organization(actor);
-    const active = await this.database.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(schema.conversations)
-      .where(
-        and(
-          eq(schema.conversations.organizationId, organizationId),
-          inArray(schema.conversations.state, [
-            'INITIALIZING',
-            'LISTENING',
-            'TRANSCRIBING',
-            'THINKING',
-            'TOOL_PENDING',
-            'SPEAKING',
-            'INTERRUPTED',
-            'HANDOFF_PENDING',
-          ]),
-          isNull(schema.conversations.deletedAt),
-        ),
-      );
-    if ((active[0]?.count ?? 0) >= this.environment.MAX_CONCURRENT_SESSIONS) {
-      throw new ApiException({ code: 'CONCURRENT_SESSION_QUOTA_EXCEEDED', message: 'The organization session quota is exhausted.', status: 429, retryable: true });
-    }
-    const conversation = await this.create(actor, agentId, 'BROWSER');
-    const item = await this.find(actor, conversation.id);
-    const roomName = `cnr-${organizationId.slice(0, 8)}-${item.id}`;
-    const runtimeToken = await this.internalTokens.issue({
-      organizationId,
-      agentId,
-      agentVersionId: item.agentVersionId,
-      conversationId: item.id,
-    });
-    await this.#rooms.createRoom({
-      name: roomName,
-      emptyTimeout: 300,
-      departureTimeout: 20,
-      maxParticipants: 3,
-      metadata: JSON.stringify({ organizationId, agentId, conversationId: item.id }),
-      agents: [
-        new RoomAgentDispatch({
-          agentName: 'montenegrina-voice',
-          metadata: JSON.stringify({ runtimeToken, conversationId: item.id }),
-        }),
-      ],
-    });
-    await this.database.db
-      .update(schema.conversations)
-      .set({ livekitRoomName: roomName, updatedAt: new Date() })
-      .where(eq(schema.conversations.id, item.id));
-    const expiresAt = new Date(Date.now() + 5 * 60_000);
-    const token = new AccessToken(this.environment.LIVEKIT_API_KEY, this.environment.LIVEKIT_API_SECRET, {
-      identity: `user-${actor.actorId}-${uuidv7()}`,
-      name: participantName ?? 'Korisnik',
-      ttl: 300,
-      metadata: JSON.stringify({ conversationId: item.id, language: 'cnr' }),
-    });
-    token.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true, canPublishData: true });
+    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'BROWSER');
+    const token = await this.livekitVoice.createBrowserParticipantToken(
+      session.roomName,
+      session.conversationId,
+      actor,
+      participantName,
+    );
     return {
-      conversationId: item.id,
-      roomName,
-      participantToken: await token.toJwt(),
+      conversationId: session.conversationId,
+      roomName: session.roomName,
+      participantToken: token.participantToken,
       livekitUrl: this.environment.PUBLIC_LIVEKIT_URL,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt: token.expiresAt,
       language: 'cnr' as const,
     };
   }
 
   async call(actor: RequestActor, agentId: string, to: string) {
-    if (!this.environment.LIVEKIT_SIP_OUTBOUND_TRUNK_ID) {
+    this.livekitVoice.assertOutboundConfigured();
+    const toE164 = parseE164(to);
+    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'SIP', { calledE164: toE164 });
+    const fromNumber = session.config.telephony?.outboundCallerId;
+    await this.livekitVoice.dialOutbound(session.roomName, session.conversationId, toE164, fromNumber);
+    return this.get(actor, session.conversationId);
+  }
+
+  async recordingUrl(actor: RequestActor, id: string) {
+    const item = await this.find(actor, id);
+    if (!item.recordingObjectKey) {
       throw new ApiException({
-        code: 'SIP_NOT_CONFIGURED',
-        message: 'An outbound LiveKit SIP trunk is required.',
-        status: 503,
-        retryable: false,
+        code: 'RECORDING_NOT_AVAILABLE',
+        message: 'This conversation has no recording.',
+        status: 404,
       });
     }
-    const conversation = await this.create(actor, agentId, 'SIP');
-    const item = await this.find(actor, conversation.id);
-    const roomName = `call-${item.id}`;
-    const participant = await this.#sip.createSipParticipant(
-      this.environment.LIVEKIT_SIP_OUTBOUND_TRUNK_ID,
-      to,
-      roomName,
-      {
-        participantIdentity: `sip-${item.id}`,
-        participantName: to,
-        participantMetadata: JSON.stringify({ conversationId: item.id, agentId }),
-        waitUntilAnswered: false,
-      },
-    );
-    await this.database.db
-      .update(schema.conversations)
-      .set({ livekitRoomName: roomName, externalCallId: participant.sipCallId, updatedAt: new Date() })
-      .where(eq(schema.conversations.id, item.id));
-    return this.get(actor, item.id);
+    const expiresInSeconds = 900;
+    const url = await this.storage.presignedGetUrl(item.recordingObjectKey, expiresInSeconds);
+    return {
+      url,
+      expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
+      objectKey: item.recordingObjectKey,
+    };
   }
 
   async handoff(actor: RequestActor, conversationId: string, reason: string) {
@@ -242,7 +184,7 @@ export class ConversationsService {
         organizationId: conversation.organizationId,
         resourceType: 'conversation',
         resourceId: conversationId,
-        objectKeys: [],
+        objectKeys: conversation.recordingObjectKey ? [conversation.recordingObjectKey] : [],
       });
       await transaction.insert(schema.outboxEvents).values({
         id: uuidv7(),
@@ -393,6 +335,7 @@ export class ConversationsService {
       agentId: claims.agentId,
       agentVersionId: claims.agentVersionId,
       conversationId: claims.conversationId,
+      channel: conversation.channel,
       language: 'cnr' as const,
       traceId: conversation.traceId,
       config: version.config,
@@ -426,6 +369,10 @@ export class ConversationsService {
       channel: item.channel,
       state: item.state,
       language: 'cnr' as const,
+      calledE164: item.calledE164,
+      callerE164: item.callerE164,
+      recordingObjectKey: item.recordingObjectKey,
+      hasRecording: Boolean(item.recordingObjectKey),
       startedAt: item.startedAt.toISOString(),
       completedAt: item.completedAt?.toISOString() ?? null,
     };

@@ -196,8 +196,12 @@ export class ProviderService {
       items: items.map(c => ({
         id: c.id,
         agentId: c.agentId,
+        channel: c.channel,
         startedAt: c.startedAt.toISOString(),
         state: c.state,
+        calledE164: c.calledE164,
+        callerE164: c.callerE164,
+        hasRecording: Boolean(c.recordingObjectKey),
       })),
     };
   }

@@ -44,13 +44,23 @@ locals {
     { name = "EVALUATION_RETENTION_DAYS", value = "90" },
     { name = "MAX_CONVERSATION_MINUTES", value = "30" },
     { name = "MAX_CONCURRENT_SESSIONS", value = "25" },
+    { name = "KNOWLEDGE_PARSER_URL", value = "http://knowledge-parser.${local.name}.local:8090" },
+    { name = "PUBLIC_WEB_URL", value = "https://${aws_cloudfront_distribution.app.domain_name}" },
+    { name = "EMAIL_PROVIDER", value = "resend" },
+    { name = "EMAIL_FROM", value = "Montenegrina <noreply@montenegrina.me>" },
+    { name = "BILLING_ENABLED", value = "false" },
+    { name = "WEBHOOKS_ENABLED", value = "true" },
+    { name = "SENTRY_ENABLED", value = "false" },
     { name = "LIVEKIT_SIP_OUTBOUND_TRUNK_ID", value = var.livekit_sip_outbound_trunk_id },
+    { name = "LIVEKIT_SIP_INBOUND_TRUNK_ID", value = var.livekit_sip_inbound_trunk_id },
+    { name = "PHONE_INTEGRATIONS_ENABLED", value = var.phone_integrations_enabled ? "true" : "false" },
   ]
   platform_secrets = [
     { name = "DATABASE_URL", valueFrom = "${aws_secretsmanager_secret.platform.arn}:DATABASE_URL::" },
     { name = "REDIS_URL", valueFrom = "${aws_secretsmanager_secret.platform.arn}:REDIS_URL::" },
     { name = "SESSION_SECRET", valueFrom = "${aws_secretsmanager_secret.platform.arn}:SESSION_SECRET::" },
     { name = "INTERNAL_TOKEN_SECRET", valueFrom = "${aws_secretsmanager_secret.platform.arn}:INTERNAL_TOKEN_SECRET::" },
+    { name = "VOICE_AGENT_SERVICE_SECRET", valueFrom = "${aws_secretsmanager_secret.platform.arn}:VOICE_AGENT_SERVICE_SECRET::" },
   ]
   provider_secrets = [
     { name = "OPENAI_API_KEY", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:OPENAI_API_KEY::" },

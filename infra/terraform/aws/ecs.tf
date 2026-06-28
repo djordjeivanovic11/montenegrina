@@ -7,7 +7,7 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  for_each          = toset(["api", "web", "worker", "voice-agent"])
+  for_each          = toset(["api", "web", "worker", "voice-agent", "knowledge-parser"])
   name              = "/ecs/${local.name}/${each.key}"
   retention_in_days = var.environment == "production" ? 30 : 14
 }
@@ -76,18 +76,41 @@ locals {
     api = {
       cpu = 512, memory = 1024, port = 3001, desired = 2
       secrets = concat(local.platform_secrets, local.provider_secrets)
+      environment = local.common_environment
+      service_registry = aws_service_discovery_service.api.arn
     }
     web = {
       cpu = 256, memory = 512, port = 3000, desired = 2
       secrets = []
+      environment = [
+        { name = "PORT", value = "3000" },
+        { name = "HOSTNAME", value = "0.0.0.0" },
+      ]
+      service_registry = null
     }
     worker = {
       cpu = 512, memory = 1024, port = 0, desired = 1
       secrets = concat(local.platform_secrets, local.provider_secrets)
+      environment = local.common_environment
+      service_registry = null
     }
     voice-agent = {
       cpu = 1024, memory = 2048, port = 0, desired = 1
-      secrets = local.provider_secrets
+      secrets = concat(local.provider_secrets, [{
+        name      = "VOICE_AGENT_SERVICE_SECRET"
+        valueFrom = "${aws_secretsmanager_secret.platform.arn}:VOICE_AGENT_SERVICE_SECRET::"
+      }])
+      environment = concat(
+        [for item in local.common_environment : item if item.name != "INTERNAL_API_URL"],
+        [{ name = "INTERNAL_API_URL", value = "http://api.${local.name}.local:3001" }],
+      )
+      service_registry = null
+    }
+    knowledge-parser = {
+      cpu = 1024, memory = 2048, port = 8090, desired = 1
+      secrets = []
+      environment = local.common_environment
+      service_registry = aws_service_discovery_service.knowledge_parser.arn
     }
   }
 }
@@ -110,10 +133,7 @@ resource "aws_ecs_task_definition" "app" {
     image     = "${aws_ecr_repository.app[each.key].repository_url}:${var.image_tag}"
     essential = true
     portMappings = each.value.port == 0 ? [] : [{ containerPort = each.value.port, hostPort = each.value.port, protocol = "tcp" }]
-    environment = each.key == "web" ? [
-      { name = "PORT", value = "3000" },
-      { name = "HOSTNAME", value = "0.0.0.0" },
-    ] : local.common_environment
+    environment = each.value.environment
     secrets = each.value.secrets
     readonlyRootFilesystem = true
     linuxParameters = { initProcessEnabled = true }
@@ -131,6 +151,12 @@ resource "aws_ecs_task_definition" "app" {
       timeout = 5
       retries = 3
       startPeriod = 30
+    } : each.key == "knowledge-parser" ? {
+      command = ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/health')\""]
+      interval = 30
+      timeout = 5
+      retries = 3
+      startPeriod = 60
     } : null
   }])
 }
@@ -144,13 +170,19 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
   platform_version = "LATEST"
   enable_execute_command = true
-  deployment_minimum_healthy_percent = each.key == "worker" || each.key == "voice-agent" ? 0 : 50
+  deployment_minimum_healthy_percent = each.key == "worker" || each.key == "voice-agent" || each.key == "knowledge-parser" ? 0 : 50
   deployment_maximum_percent         = 200
   health_check_grace_period_seconds  = each.value.port == 0 ? null : 60
   network_configuration {
     subnets          = values(aws_subnet.private)[*].id
     security_groups  = [aws_security_group.tasks.id]
     assign_public_ip = false
+  }
+  dynamic "service_registries" {
+    for_each = each.value.service_registry == null ? [] : [each.value.service_registry]
+    content {
+      registry_arn = service_registries.value
+    }
   }
   dynamic "load_balancer" {
     for_each = each.key == "api" || each.key == "web" ? [each.key] : []

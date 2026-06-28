@@ -8,6 +8,7 @@ import { AgentsController } from './agents/agents.controller.js';
 import { AgentsService } from './agents/agents.service.js';
 import { AuditService } from './audit/audit.service.js';
 import { BillingController } from './billing/billing.controller.js';
+import { StripeBillingService } from './billing/stripe.service.js';
 import { EntitlementsService } from './billing/entitlements.service.js';
 import { ConversationsController } from './conversations/conversations.controller.js';
 import { ConversationsService } from './conversations/conversations.service.js';
@@ -16,6 +17,12 @@ import { DatabaseService } from './database/database.service.js';
 import { HealthController } from './health/health.controller.js';
 import { IntegrationsController } from './integrations/integrations.controller.js';
 import { IntegrationsService } from './integrations/integrations.service.js';
+import { PhoneNumbersService } from './integrations/phone-numbers.service.js';
+import { LiveKitSipSyncService } from './livekit/livekit-sip-sync.service.js';
+import { LiveKitVoiceService } from './livekit/livekit-voice.service.js';
+import { LiveKitWebhookController } from './livekit/livekit-webhook.controller.js';
+import { LiveKitWebhookService } from './livekit/livekit-webhook.service.js';
+import { VoiceAgentServiceGuard } from './livekit/voice-agent-service.guard.js';
 import { OpenApiController } from './openapi/openapi.controller.js';
 import { InternalController } from './internal/internal.controller.js';
 import { InternalGuard } from './internal/internal.guard.js';
@@ -38,6 +45,7 @@ import { AuthGuard } from './security/auth.guard.js';
 import { RateLimitGuard } from './security/rate-limit.guard.js';
 import { SessionService } from './security/session.service.js';
 import { ObjectStorageService } from './storage/object-storage.service.js';
+import { EmailServiceWrapper } from './email/email.service.js';
 import { EvaluationsController } from './evaluations/evaluations.controller.js';
 import { EvaluationsService } from './evaluations/evaluations.service.js';
 import { TeamController } from './team/team.controller.js';
@@ -66,6 +74,7 @@ const environment = loadEnvironment();
     BillingController,
     TeamController,
     IntegrationsController,
+    LiveKitWebhookController,
   ],
   providers: [
     { provide: ENVIRONMENT, useValue: environment },
@@ -115,9 +124,11 @@ const environment = loadEnvironment();
         }),
     },
     SessionService,
+    EmailServiceWrapper,
     WorkspaceBootstrapService,
     AuditService,
     EntitlementsService,
+    StripeBillingService,
     OnboardingService,
     InvitationsService,
     AgentsService,
@@ -133,6 +144,11 @@ const environment = loadEnvironment();
     RetrievalService,
     KnowledgeParserClient,
     IntegrationsService,
+    PhoneNumbersService,
+    LiveKitVoiceService,
+    LiveKitSipSyncService,
+    LiveKitWebhookService,
+    VoiceAgentServiceGuard,
     ToolsService,
     EvaluationsService,
     { provide: APP_GUARD, useClass: RateLimitGuard },

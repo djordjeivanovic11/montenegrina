@@ -91,6 +91,14 @@ export function AuthForm({
               />
             </label>
 
+            {mode === 'login' && (
+              <p className="text-sm text-right -mt-2">
+                <Link href="/forgot-password" className="text-accent hover:underline">
+                  {t('auth.forgotPassword')}
+                </Link>
+              </p>
+            )}
+
             {displayError && (
               <p className="text-error text-sm" role="alert">
                 {displayError}
@@ -101,6 +109,20 @@ export function AuthForm({
               {mode === 'login' ? t('auth.submitLogin') : t('auth.submitSignup')}
             </button>
           </form>
+
+          {mode === 'signup' && (
+            <p className="text-xs text-ink-3 mt-4 text-center">
+              {t('auth.termsConsent')}{' '}
+              <Link href="/terms" className="text-accent hover:underline">
+                {t('auth.termsLink')}
+              </Link>{' '}
+              {t('auth.and')}{' '}
+              <Link href="/privacy" className="text-accent hover:underline">
+                {t('auth.privacyLink')}
+              </Link>
+              .
+            </p>
+          )}
 
           <div className="divider my-4">{t('auth.or')}</div>
 

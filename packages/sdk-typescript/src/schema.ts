@@ -308,6 +308,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations/{conversationId}/recording": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getConversationRecording"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/conversations/{conversationId}/events": {
         parameters: {
             query?: never;
@@ -564,6 +580,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listIntegrationChannels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/phone-numbers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPhoneNumbers"];
+        put?: never;
+        post: operations["createPhoneNumber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/phone-numbers/{phoneNumberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deletePhoneNumber"];
+        options?: never;
+        head?: never;
+        patch: operations["updatePhoneNumber"];
+        trace?: never;
+    };
+    "/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listBillingPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createBillingCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createBillingPortal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/stripe/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["stripeWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -710,6 +838,10 @@ export interface components {
             knowledgeBaseIds?: string[];
             /** @default false */
             sensitiveWritesEnabled: boolean;
+            telephony?: {
+                recordingNotice?: string;
+                outboundCallerId?: string;
+            };
         };
         Transcription: {
             language: components["schemas"]["Language"];
@@ -781,6 +913,9 @@ export interface components {
             startedAt: string;
             /** Format: date-time */
             completedAt?: string | null;
+            calledE164?: string | null;
+            callerE164?: string | null;
+            recordingObjectKey?: string | null;
         };
         /** @enum {string} */
         ConversationState: "INITIALIZING" | "LISTENING" | "TRANSCRIBING" | "THINKING" | "TOOL_PENDING" | "SPEAKING" | "INTERRUPTED" | "HANDOFF_PENDING" | "HANDED_OFF" | "COMPLETED" | "FAILED";
@@ -804,6 +939,55 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             language: components["schemas"]["Language"];
+        };
+        CommunicationChannel: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "BROWSER" | "SIP" | "TWILIO" | "TELNYX" | "TELECOM";
+            name: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE" | "COMING_SOON";
+            phoneIntegrationsEnabled?: boolean;
+            sipConfigured?: boolean;
+            inboundConfigured?: boolean;
+        };
+        PhoneNumber: {
+            /** Format: uuid */
+            id: string;
+            e164: string;
+            label: string;
+            /** Format: uuid */
+            inboundAgentId?: string | null;
+            enabled: boolean;
+            callerIdE164?: string | null;
+            livekitDispatchRuleId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PhoneNumberList: {
+            items: components["schemas"]["PhoneNumber"][];
+            sipConfigured: boolean;
+            inboundConfigured: boolean;
+            phoneIntegrationsEnabled: boolean;
+        };
+        CreatePhoneNumberRequest: {
+            e164: string;
+            label?: string;
+            /** Format: uuid */
+            inboundAgentId?: string;
+            /** @default false */
+            enabled: boolean;
+            callerIdE164?: string;
+        };
+        UpdatePhoneNumberRequest: {
+            label?: string;
+            /** Format: uuid */
+            inboundAgentId?: string | null;
+            enabled?: boolean;
+            callerIdE164?: string | null;
         };
         Citation: {
             /** Format: uuid */
@@ -1583,6 +1767,34 @@ export interface operations {
             };
         };
     };
+    getConversationRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: components["parameters"]["ConversationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Presigned recording download URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        url: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        objectKey: string;
+                    };
+                };
+            };
+        };
+    };
     streamConversationEvents: {
         parameters: {
             query?: never;
@@ -1965,6 +2177,211 @@ export interface operations {
                         items: components["schemas"]["Usage"][];
                     };
                 };
+            };
+        };
+    };
+    listIntegrationChannels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Communication channels */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["CommunicationChannel"][];
+                    };
+                };
+            };
+        };
+    };
+    listPhoneNumbers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization phone numbers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhoneNumberList"];
+                };
+            };
+        };
+    };
+    createPhoneNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePhoneNumberRequest"];
+            };
+        };
+        responses: {
+            /** @description Created phone number */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhoneNumber"];
+                };
+            };
+        };
+    };
+    deletePhoneNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                phoneNumberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted phone number */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updatePhoneNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                phoneNumberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePhoneNumberRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated phone number */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhoneNumber"];
+                };
+            };
+        };
+    };
+    listBillingPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Public plan catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        billingEnabled?: boolean;
+                        items?: Record<string, never>[];
+                    };
+                };
+            };
+        };
+    };
+    createBillingCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    planSlug: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stripe checkout session URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        url?: string;
+                    };
+                };
+            };
+        };
+    };
+    createBillingPortal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stripe customer portal URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        url?: string;
+                    };
+                };
+            };
+        };
+    };
+    stripeWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -18,6 +18,7 @@ tags:
   - name: Knowledge
   - name: Tools
   - name: Evaluations
+  - name: Billing
 paths:
   /health/live:
     get:
@@ -320,6 +321,23 @@ paths:
                   segments:
                     type: array
                     items: { $ref: '#/components/schemas/TranscriptSegment' }
+  /v1/conversations/{conversationId}/recording:
+    get:
+      operationId: getConversationRecording
+      tags: [Conversations]
+      parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+      responses:
+        '200':
+          description: Presigned recording download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresAt, objectKey]
+                properties:
+                  url: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+                  objectKey: { type: string }
   /v1/conversations/{conversationId}/events:
     get:
       operationId: streamConversationEvents
@@ -585,6 +603,135 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/Usage' }
+  /v1/integrations/channels:
+    get:
+      operationId: listIntegrationChannels
+      tags: [Integrations]
+      responses:
+        '200':
+          description: Communication channels
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CommunicationChannel' }
+  /v1/integrations/phone-numbers:
+    get:
+      operationId: listPhoneNumbers
+      tags: [Integrations]
+      responses:
+        '200':
+          description: Organization phone numbers
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhoneNumberList' }
+    post:
+      operationId: createPhoneNumber
+      tags: [Integrations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePhoneNumberRequest' }
+      responses:
+        '201':
+          description: Created phone number
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhoneNumber' }
+  /v1/integrations/phone-numbers/{phoneNumberId}:
+    patch:
+      operationId: updatePhoneNumber
+      tags: [Integrations]
+      parameters:
+        - name: phoneNumberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdatePhoneNumberRequest' }
+      responses:
+        '200':
+          description: Updated phone number
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhoneNumber' }
+    delete:
+      operationId: deletePhoneNumber
+      tags: [Integrations]
+      parameters:
+        - name: phoneNumberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted phone number
+  /v1/billing/plans:
+    get:
+      operationId: listBillingPlans
+      tags: [Billing]
+      security: []
+      responses:
+        '200':
+          description: Public plan catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  billingEnabled: { type: boolean }
+                  items: { type: array, items: { type: object } }
+  /v1/billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [Billing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planSlug]
+              properties:
+                planSlug: { type: string }
+      responses:
+        '200':
+          description: Stripe checkout session URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+  /v1/billing/portal:
+    post:
+      operationId: createBillingPortal
+      tags: [Billing]
+      responses:
+        '200':
+          description: Stripe customer portal URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+  /v1/billing/stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      tags: [Billing]
+      security: []
+      responses:
+        '200':
+          description: Webhook accepted
 components:
   securitySchemes:
     apiKey:
@@ -803,6 +950,12 @@ components:
         knowledgeSourceIds: { type: array, items: { type: string, format: uuid } }
         knowledgeBaseIds: { type: array, items: { type: string, format: uuid } }
         sensitiveWritesEnabled: { type: boolean, default: false }
+        telephony:
+          type: object
+          additionalProperties: false
+          properties:
+            recordingNotice: { type: string, maxLength: 500 }
+            outboundCallerId: { type: string, pattern: '^\\+[1-9][0-9]{7,14}$' }
     Transcription:
       type: object
       additionalProperties: false
@@ -884,6 +1037,9 @@ components:
         language: { $ref: '#/components/schemas/Language' }
         startedAt: { type: string, format: date-time }
         completedAt: { type: [string, 'null'], format: date-time }
+        calledE164: { type: [string, 'null'] }
+        callerE164: { type: [string, 'null'] }
+        recordingObjectKey: { type: [string, 'null'] }
     ConversationState:
       type: string
       enum: [INITIALIZING, LISTENING, TRANSCRIBING, THINKING, TOOL_PENDING, SPEAKING, INTERRUPTED, HANDOFF_PENDING, HANDED_OFF, COMPLETED, FAILED]
@@ -910,6 +1066,61 @@ components:
         livekitUrl: { type: string }
         expiresAt: { type: string, format: date-time }
         language: { $ref: '#/components/schemas/Language' }
+    CommunicationChannel:
+      type: object
+      additionalProperties: false
+      required: [id, type, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [BROWSER, SIP, TWILIO, TELNYX, TELECOM] }
+        name: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE, COMING_SOON] }
+        phoneIntegrationsEnabled: { type: boolean }
+        sipConfigured: { type: boolean }
+        inboundConfigured: { type: boolean }
+    PhoneNumber:
+      type: object
+      additionalProperties: false
+      required: [id, e164, label, enabled, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        e164: { type: string, pattern: '^\\+[1-9][0-9]{7,14}$' }
+        label: { type: string }
+        inboundAgentId: { type: [string, 'null'], format: uuid }
+        enabled: { type: boolean }
+        callerIdE164: { type: [string, 'null'] }
+        livekitDispatchRuleId: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PhoneNumberList:
+      type: object
+      additionalProperties: false
+      required: [items, sipConfigured, inboundConfigured, phoneIntegrationsEnabled]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PhoneNumber' }
+        sipConfigured: { type: boolean }
+        inboundConfigured: { type: boolean }
+        phoneIntegrationsEnabled: { type: boolean }
+    CreatePhoneNumberRequest:
+      type: object
+      additionalProperties: false
+      required: [e164]
+      properties:
+        e164: { type: string, pattern: '^\\+[1-9][0-9]{7,14}$' }
+        label: { type: string, maxLength: 120 }
+        inboundAgentId: { type: string, format: uuid }
+        enabled: { type: boolean, default: false }
+        callerIdE164: { type: string, pattern: '^\\+[1-9][0-9]{7,14}$' }
+    UpdatePhoneNumberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        label: { type: string, maxLength: 120 }
+        inboundAgentId: { type: [string, 'null'], format: uuid }
+        enabled: { type: boolean }
+        callerIdE164: { type: [string, 'null'], pattern: '^\\+[1-9][0-9]{7,14}$' }
     Citation:
       type: object
       additionalProperties: false

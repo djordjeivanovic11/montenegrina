@@ -17,9 +17,24 @@ class RoutingPolicy(BaseModel):
     realtimeModel: str | None = None
 
 
+class TelephonySettings(BaseModel):
+    recordingNotice: str | None = None
+    outboundCallerId: str | None = None
+
+
+class RetentionPolicy(BaseModel):
+    transcriptDays: int
+    recordAudio: bool
+    audioDays: int
+
+
 class RuntimeConfig(BaseModel):
     systemPrompt: str
     routingPolicy: RoutingPolicy
+    retention: RetentionPolicy = Field(
+        default_factory=lambda: RetentionPolicy(transcriptDays=30, recordAudio=False, audioDays=7)
+    )
+    telephony: TelephonySettings | None = None
     knowledgeBaseIds: list[str] = Field(default_factory=list)
 
 
@@ -35,6 +50,7 @@ class RuntimeBootstrap(BaseModel):
     agentId: str
     agentVersionId: str
     conversationId: str
+    channel: Literal['TEXT', 'BROWSER', 'SIP', 'BATCH'] = 'BROWSER'
     traceId: str
     language: Literal["cnr"]
     config: RuntimeConfig

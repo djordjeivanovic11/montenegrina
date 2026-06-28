@@ -4,74 +4,48 @@ Last updated: 2026-06-28.
 
 ## Completed
 
-### Platform (Phase 0)
-- Knowledge bases schema aligned with API (`knowledge_bases`, assignments, ingestion jobs)
-- `POST /v1/auth/register` with automatic workspace bootstrap
-- Google OAuth creates/links user and ensures personal workspace
-- `GET /v1/auth/me` returns user, organizations, onboarding state
-- Password reset flow (dev token logged locally)
-- Voice runtime events persist to `transcript_segments`
-- Migration journal reconciled; `0003_saas_platform.sql` added
-- Audit logging on knowledge, onboarding, team, webhook mutations
+### Platform
+- Knowledge bases, auth, onboarding, workspace bootstrap, entitlements, audit logging
+- Stripe billing (checkout, portal, webhooks) behind `BILLING_ENABLED`
+- Transactional email (Resend + console) for invites and password reset
+- Webhooks with signing secrets and delivery worker
+- CI workflow, Playwright smoke tests, enriched health checks, optional Sentry
 
-### Marketing (Phase 1)
-- Bilingual EN/CNR homepage at `/` with hero, use cases, how-it-works, knowledge, security, deployment, pricing, FAQ, CTA
-- Language toggle in marketing header
+### Voice & telephony (LiveKit SIP)
+- Shared `LiveKitVoiceService` for browser + outbound SIP (room dispatch before dial)
+- Inbound `provision-inbound` + Python agent branch
+- Phone numbers CRUD with LiveKit dispatch rule + inbound trunk number sync
+- LiveKit webhooks (call completion, egress metadata)
+- Call recording egress to S3 + presigned download API
+- Integrations UI (add/edit/delete numbers) and playground outbound test with status polling
+- Conversations UI with SIP metadata and recording download
 
-### Auth (Phase 2)
-- `/login`, `/signup` with email and Google
-- Session bootstrap via `useSession` hook
-
-### Onboarding (Phase 3)
-- Seven-step wizard at `/onboarding`
-- `PATCH /v1/organizations/:id/onboarding`
-
-### Dashboard (Phases 4–7)
-- App shell with Overview, Agents, Knowledge, Conversations, Integrations, Usage, Team, Billing, Settings
-- Playground with browser voice and text at `/playground`
-- Agent duplicate/archive API endpoints
-
-### Team & integrations (Phase 8)
-- Invitations and membership management (`/v1/team/*`)
-- Communication channel stubs (browser active; phone providers coming soon)
-- Webhook CRUD behind `WEBHOOKS_ENABLED`
-- API keys (existing) with list/revoke patterns in settings
-
-### Billing (Phase 9)
-- Plans table seeded: Free, Pro, Business, Enterprise
-- Entitlement enforcement on agent creation
-- `/billing` page with plan comparison and usage summary
-- `BILLING_ENABLED=false` — no Stripe checkout
-
-### Security (Phase 10)
-- Redis rate limits on auth and voice session creation
-- Cross-tenant `assertTenant` unit tests
-- Tenant isolation via org-scoped queries and composite FKs
-
-### Provider abstraction (Phase 11)
-- `packages/provider-core/src/channels.ts` — browser + stub phone channels
-- DB models for channels, phone numbers, provider credentials
-
-### QA (Phase 12)
-- API and web typecheck pass
-- Web production build passes
-- API unit tests pass
-- Documentation in `docs/product/saas-platform.md`
+### Marketing & app surfaces
+- Bilingual homepage, auth, onboarding, dashboard, legal pages
 
 ## Behind feature flags
 
-| Feature | Flag | Status |
+| Feature | Flag | Notes |
 | --- | --- | --- |
-| Stripe billing | `BILLING_ENABLED` | Schema + UI only |
-| Phone/SIP/Twilio | `PHONE_INTEGRATIONS_ENABLED` | DB + disabled UI |
-| Public anonymous demo | `PUBLIC_DEMO_ENABLED` | Not built |
+| Stripe billing | `BILLING_ENABLED` | Code complete; enable with live Stripe keys |
+| Phone/SIP UI | `PHONE_INTEGRATIONS_ENABLED` | Requires LiveKit Cloud SIP trunks |
+| Public demo | `PUBLIC_DEMO_ENABLED` | Not built |
 | Per-tenant provider keys | — | Platform env keys only |
 
-## Before accepting paying customers
+## Ops checklist (not code)
 
-1. Stripe Customer Portal and webhook handlers
-2. Transactional email (invites, password reset)
-3. Per-tenant provider credential resolution in voice runtime
-4. Production SIP routing with runtime token dispatch
-5. SOC2/DPA and data residency documentation
-6. Load testing for concurrent voice sessions per org
+1. Apply all DB migrations including `0005_phone_telephony.sql`
+2. LiveKit Cloud project + outbound/inbound SIP trunks + webhook URL
+3. Secrets Manager: `VOICE_AGENT_SERVICE_SECRET`, LiveKit keys, optional egress S3 IAM user
+4. Set `PHONE_INTEGRATIONS_ENABLED=true` on staging/prod
+5. Purchase/route DIDs; for Montenegro +382 inbound consider local operator SIP trunk
+6. Enable `BILLING_ENABLED`, Resend, Google OAuth prod origins for paying customers
+
+## E2E smoke tests
+
+```bash
+./run_local
+pnpm --filter @montenegrina/web e2e
+```
+
+SIP/PSTN requires LiveKit Cloud — not testable on local Docker LiveKit alone.

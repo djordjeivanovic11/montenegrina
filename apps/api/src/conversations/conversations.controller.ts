@@ -56,6 +56,12 @@ export class ConversationsController {
     return this.conversations.handoff(actor, id, body.reason ?? 'Zahtjev korisnika');
   }
 
+  @Get('conversations/:conversationId/recording')
+  @RequirePermissions('conversations:read')
+  recording(@CurrentActor() actor: RequestActor, @Param('conversationId') id: string) {
+    return this.conversations.recordingUrl(actor, id);
+  }
+
   @Post('agents/:agentId/realtime-sessions')
   @RequirePermissions('conversations:create')
   realtime(

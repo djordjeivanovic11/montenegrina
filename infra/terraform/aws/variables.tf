@@ -41,6 +41,25 @@ variable "livekit_sip_outbound_trunk_id" {
   default     = ""
 }
 
+variable "livekit_sip_inbound_trunk_id" {
+  type        = string
+  description = "Optional LiveKit SIP inbound trunk identifier."
+  default     = ""
+}
+
+variable "phone_integrations_enabled" {
+  type        = bool
+  description = "Enable phone number management UI and SIP channel activation."
+  default     = false
+}
+
+variable "voice_agent_service_secret" {
+  type        = string
+  description = "Shared secret for voice agent inbound provisioning."
+  default     = ""
+  sensitive   = true
+}
+
 variable "db_instance_class" {
   type    = string
   default = "db.t4g.micro"
