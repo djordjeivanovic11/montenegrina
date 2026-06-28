@@ -26,7 +26,7 @@ class RuntimeApi:
         )
         response.raise_for_status()
         payload = response.json()
-        return list(payload.get("items", []))
+        return list(payload if isinstance(payload, list) else payload.get("items", []))
 
     async def invoke_tool(
         self, name: str, arguments: dict[str, object], idempotency_key: str
@@ -43,6 +43,8 @@ class RuntimeApi:
             "/internal/v1/runtime/events/batch",
             json={"events": [event.model_dump(exclude_none=True) for event in events]},
         )
+        if response.status_code == 409:
+            return
         response.raise_for_status()
 
     async def close(self) -> None:

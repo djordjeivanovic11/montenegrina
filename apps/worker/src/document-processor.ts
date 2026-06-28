@@ -1,88 +1,29 @@
 import { createHash } from 'node:crypto';
+import { hostname } from 'node:os';
 
 import type { Database } from '@montenegrina/database';
 import { schema } from '@montenegrina/database';
+import { chunkSections, flattenParserSections } from '@montenegrina/knowledge-core';
 import type { ProviderRequestContext } from '@montenegrina/provider-core';
 import type { ProviderSet } from '@montenegrina/providers';
 import { and, eq } from 'drizzle-orm';
-import mammoth from 'mammoth';
 import { v7 as uuidv7 } from 'uuid';
 
+import { KnowledgeParserClient } from './knowledge-parser.js';
 import { ObjectStorage } from './storage.js';
-
-interface ExtractedSection {
-  text: string;
-  page?: number;
-  section?: string;
-}
-
-interface Chunk extends ExtractedSection {
-  content: string;
-  tokenCount: number;
-}
-
-async function extractPdf(bytes: Uint8Array): Promise<ExtractedSection[]> {
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const document = await pdfjs.getDocument({ data: bytes, useWorkerFetch: false }).promise;
-  if (document.numPages > 1_000) throw new Error('PDF_PAGE_LIMIT_EXCEEDED');
-  const pages: ExtractedSection[] = [];
-  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-    const page = await document.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const text = content.items
-      .map((item) => ('str' in item ? item.str : ''))
-      .join(' ')
-      .replace(/\s+/gu, ' ')
-      .trim();
-    if (text) pages.push({ text, page: pageNumber });
-  }
-  return pages;
-}
-
-async function extract(bytes: Uint8Array, mediaType: string): Promise<ExtractedSection[]> {
-  if (mediaType === 'application/pdf') return extractPdf(bytes);
-  if (mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-    const result = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
-    return [{ text: result.value }];
-  }
-  return [{ text: new TextDecoder('utf-8', { fatal: true }).decode(bytes) }];
-}
-
-function chunks(sections: ExtractedSection[]): Chunk[] {
-  const result: Chunk[] = [];
-  for (const source of sections) {
-    const paragraphs = source.text
-      .split(/\n{2,}/u)
-      .flatMap((value) =>
-        Math.ceil(value.length / 4) > 600 ? value.split(/(?<=[.!?])\s+/u) : [value],
-      )
-      .map((value) => value.trim())
-      .filter(Boolean);
-    let current = '';
-    for (const paragraph of paragraphs.length ? paragraphs : [source.text]) {
-      if (current && Math.ceil((current.length + paragraph.length) / 4) > 600) {
-        result.push({ ...source, content: current, tokenCount: Math.ceil(current.length / 4) });
-        const overlap = current.slice(-400);
-        current = `${overlap}\n\n${paragraph}`;
-      } else {
-        current = current ? `${current}\n\n${paragraph}` : paragraph;
-      }
-    }
-    if (current) result.push({ ...source, content: current, tokenCount: Math.ceil(current.length / 4) });
-  }
-  return result;
-}
 
 export class DocumentProcessor {
   constructor(
     private readonly database: Database,
     private readonly storage: ObjectStorage,
     private readonly providers: ProviderSet,
+    private readonly parser = new KnowledgeParserClient(),
   ) {}
 
   async process(data: Record<string, unknown>): Promise<void> {
     const documentId = String(data.documentId);
     const versionId = String(data.documentVersionId);
+    const ingestionJobId = data.ingestionJobId ? String(data.ingestionJobId) : undefined;
     const version = await this.database.query.documentVersions.findFirst({
       where: and(
         eq(schema.documentVersions.id, versionId),
@@ -93,18 +34,54 @@ export class DocumentProcessor {
       where: eq(schema.documents.id, documentId),
     });
     if (!version || !document || !version.objectKey) throw new Error('DOCUMENT_VERSION_NOT_FOUND');
+
+    const updateJob = async (
+      stage: typeof schema.ingestionJobs.$inferSelect.stage,
+      progressPercent: number,
+      status: typeof schema.ingestionJobs.$inferSelect.status = 'RUNNING',
+      error?: { code: string; details?: string },
+    ) => {
+      if (!ingestionJobId) return;
+      await this.database
+        .update(schema.ingestionJobs)
+        .set({
+          stage,
+          progressPercent,
+          status,
+          workerId: hostname(),
+          ...(status === 'RUNNING' && progressPercent <= 5 ? { startedAt: new Date() } : {}),
+          ...(status === 'COMPLETED' ? { completedAt: new Date(), errorCode: null, errorDetails: null } : {}),
+          ...(status === 'FAILED'
+            ? {
+                completedAt: new Date(),
+                errorCode: error?.code ?? 'INGESTION_FAILED',
+                errorDetails: error?.details?.slice(0, 4000) ?? null,
+              }
+            : {}),
+        })
+        .where(eq(schema.ingestionJobs.id, ingestionJobId));
+    };
+
     await this.database
       .update(schema.documents)
       .set({ status: 'PROCESSING', updatedAt: new Date() })
       .where(eq(schema.documents.id, documentId));
+    await updateJob('DOWNLOADING', 5);
+
     try {
       const bytes = await this.storage.get(version.objectKey);
       if (bytes.byteLength !== version.byteSize) throw new Error('DOCUMENT_SIZE_MISMATCH');
       const digest = createHash('sha256').update(bytes).digest('hex');
       if (digest !== version.sha256) throw new Error('DOCUMENT_DIGEST_MISMATCH');
-      const extracted = await extract(bytes, version.mediaType);
-      const documentChunks = chunks(extracted);
+
+      await updateJob('PARSING', 20);
+      const parsed = await this.parser.parse(bytes, version.mediaType);
+      const sections = flattenParserSections(parsed.sections);
+      await updateJob('CHUNKING', 45);
+      const documentChunks = chunkSections(sections);
       if (!documentChunks.length) throw new Error('DOCUMENT_EMPTY');
+
+      await updateJob('EMBEDDING', 60);
       const context: ProviderRequestContext = {
         requestId: uuidv7(),
         traceId: digest.slice(0, 32),
@@ -125,46 +102,91 @@ export class DocumentProcessor {
         );
         vectors.push(...response.data);
       }
+
+      await updateJob('INDEXING', 85);
+      const sectionIds = sections.map(() => uuidv7());
       await this.database.transaction(async (transaction) => {
+        await transaction
+          .delete(schema.documentSections)
+          .where(eq(schema.documentSections.documentVersionId, versionId));
         await transaction
           .delete(schema.documentChunks)
           .where(eq(schema.documentChunks.documentVersionId, versionId));
+        if (sections.length) {
+          await transaction.insert(schema.documentSections).values(
+            sections.map((section, index) => ({
+              id: sectionIds[index] as string,
+              organizationId: document.organizationId,
+              documentId,
+              documentVersionId: versionId,
+              parentSectionId:
+                section.parentOrdinal === undefined
+                  ? null
+                  : (sectionIds[section.parentOrdinal] ?? null),
+              ordinal: section.ordinal,
+              heading: section.heading,
+              level: section.level,
+              pageStart: section.pageStart,
+              pageEnd: section.pageEnd,
+              articleNumber: section.articleNumber,
+              content: section.content,
+              metadata: section.metadata ?? {},
+            })),
+          );
+        }
         await transaction.insert(schema.documentChunks).values(
           documentChunks.map((chunk, index) => ({
             id: uuidv7(),
             organizationId: document.organizationId,
             documentId,
             documentVersionId: versionId,
-            ordinal: index,
+            sectionId:
+              chunk.sectionOrdinal === undefined
+                ? null
+                : (sectionIds[chunk.sectionOrdinal] ?? null),
+            ordinal: chunk.ordinal,
             page: chunk.page,
             section: chunk.section,
+            articleNumber: chunk.articleNumber,
+            headingPath: chunk.headingPath,
             content: chunk.content,
             tokenCount: chunk.tokenCount,
             embedding: vectors[index] as number[],
-            searchText: chunk.content,
+            searchText: chunk.searchText,
           })),
         );
         await transaction
           .update(schema.documentVersions)
-          .set({ extractedText: extracted.map((section) => section.text).join('\n\n') })
+          .set({
+            extractedText: parsed.extractedText,
+            pageCount: parsed.pageCount ?? null,
+            parserVersion: parsed.parserVersion,
+            structureJson: { sectionCount: sections.length, chunkCount: documentChunks.length },
+          })
           .where(eq(schema.documentVersions.id, versionId));
         await transaction
           .update(schema.documents)
-          .set({ status: 'READY', errorCode: null, updatedAt: new Date() })
+          .set({
+            status: 'READY',
+            sha256: digest,
+            errorCode: null,
+            updatedAt: new Date(),
+          })
           .where(eq(schema.documents.id, documentId));
       });
+      await updateJob('COMPLETED', 100, 'COMPLETED');
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'DOCUMENT_PROCESSING_FAILED';
       await this.database
         .update(schema.documents)
         .set({
           status: 'FAILED',
-          errorCode: error instanceof Error ? error.message.slice(0, 100) : 'DOCUMENT_PROCESSING_FAILED',
+          errorCode: message.slice(0, 100),
           updatedAt: new Date(),
         })
         .where(eq(schema.documents.id, documentId));
+      await updateJob('FAILED', 100, 'FAILED', { code: message.slice(0, 100), details: message });
       throw error;
     }
   }
 }
-
-export { chunks as chunkDocument };

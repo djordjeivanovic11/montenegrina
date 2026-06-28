@@ -6,15 +6,21 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { createDatabase } from './client.js';
 import {
+  accessGroupMemberships,
+  accessGroups,
+  agentKnowledgeBaseAssignments,
   agentVersions,
   agents,
   deploymentEnvironments,
   evaluationCases,
   evaluationDatasets,
-  knowledgeSources,
+  knowledgeBases,
   languageProfiles,
   memberships,
+  organizationOnboarding,
   organizations,
+  planEntitlements,
+  plans,
   promptVersions,
   providerConfigurations,
   routingPolicies,
@@ -41,7 +47,8 @@ try {
       const routingPolicyId = uuidv7();
       const agentId = uuidv7();
       const agentVersionId = uuidv7();
-      const knowledgeSourceId = uuidv7();
+      const knowledgeBaseId = uuidv7();
+      const accessGroupId = uuidv7();
       const datasetId = uuidv7();
       const providerIds = {
         stt: uuidv7(),
@@ -160,11 +167,30 @@ try {
         slug: 'lokalni-asistent',
         description: 'Produkcijski Montenegrin controlled-pipeline agent.',
       });
-      await transaction.insert(knowledgeSources).values({
-        id: knowledgeSourceId,
+      await transaction.insert(knowledgeBases).values({
+        id: knowledgeBaseId,
+        organizationId,
+        name: 'Lokalna dokumentacija',
+        slug: 'lokalna-dokumentacija',
+        description: 'Primjer baze znanja za lokalni razvoj.',
+        defaultLanguage: 'cnr',
+      });
+      await transaction.insert(agentKnowledgeBaseAssignments).values({
         organizationId,
         agentId,
-        name: 'Lokalna dokumentacija',
+        knowledgeBaseId,
+      });
+      await transaction.insert(accessGroups).values({
+        id: accessGroupId,
+        organizationId,
+        name: 'Administracija',
+        slug: 'administracija',
+        description: 'Pristup ograničenim dokumentima.',
+      });
+      await transaction.insert(accessGroupMemberships).values({
+        organizationId,
+        accessGroupId,
+        userId,
       });
 
       const toolRows = [
@@ -215,6 +241,7 @@ try {
           routingPolicy: {
             mode: 'real',
             pipelineMode: 'controlled',
+            sttLanguage: 'sr',
             fallbackAllowed: true,
             allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
             allowedRegions: ['global'],
@@ -225,7 +252,7 @@ try {
             audioDays: environment.AUDIO_RETENTION_DAYS,
           },
           toolIds,
-          knowledgeSourceIds: [knowledgeSourceId],
+          knowledgeBaseIds: [knowledgeBaseId],
           sensitiveWritesEnabled: false,
         },
       });
@@ -256,6 +283,87 @@ try {
       });
     });
     process.stdout.write('Default organization bootstrap completed.\n');
+  }
+
+  const planDefinitions = [
+    {
+      slug: 'free',
+      name: 'Free',
+      description: 'Test Montenegrina with strict limits.',
+      sortOrder: 0,
+      entitlements: [
+        { metric: 'AGENTS' as const, limitValue: 1 },
+        { metric: 'VOICE_MINUTES' as const, limitValue: 30 },
+        { metric: 'TEXT_MESSAGES' as const, limitValue: 200 },
+        { metric: 'DOCUMENTS' as const, limitValue: 5 },
+        { metric: 'TEAM_MEMBERS' as const, limitValue: 1 },
+        { metric: 'RETRIEVAL_QUERIES' as const, limitValue: 500 },
+      ],
+    },
+    {
+      slug: 'pro',
+      name: 'Pro',
+      description: 'For growing teams deploying production agents.',
+      sortOrder: 1,
+      entitlements: [
+        { metric: 'AGENTS' as const, limitValue: 5 },
+        { metric: 'VOICE_MINUTES' as const, limitValue: 500 },
+        { metric: 'TEXT_MESSAGES' as const, limitValue: 5000 },
+        { metric: 'DOCUMENTS' as const, limitValue: 100 },
+        { metric: 'TEAM_MEMBERS' as const, limitValue: 5 },
+        { metric: 'RETRIEVAL_QUERIES' as const, limitValue: 10_000 },
+      ],
+    },
+    {
+      slug: 'business',
+      name: 'Business',
+      description: 'Higher limits for institutions and contact centers.',
+      sortOrder: 2,
+      entitlements: [
+        { metric: 'AGENTS' as const, limitValue: 25 },
+        { metric: 'VOICE_MINUTES' as const, limitValue: 5000 },
+        { metric: 'TEXT_MESSAGES' as const, limitValue: 50_000 },
+        { metric: 'DOCUMENTS' as const, limitValue: 1000 },
+        { metric: 'TEAM_MEMBERS' as const, limitValue: 25 },
+        { metric: 'RETRIEVAL_QUERIES' as const, limitValue: 100_000 },
+      ],
+    },
+    {
+      slug: 'enterprise',
+      name: 'Enterprise',
+      description: 'Custom limits, SLAs, and dedicated support.',
+      sortOrder: 3,
+      entitlements: [
+        { metric: 'AGENTS' as const, limitValue: 999_999 },
+        { metric: 'VOICE_MINUTES' as const, limitValue: 999_999 },
+        { metric: 'TEXT_MESSAGES' as const, limitValue: 999_999 },
+        { metric: 'DOCUMENTS' as const, limitValue: 999_999 },
+        { metric: 'TEAM_MEMBERS' as const, limitValue: 999_999 },
+        { metric: 'RETRIEVAL_QUERIES' as const, limitValue: 999_999 },
+      ],
+    },
+  ];
+
+  for (const planDef of planDefinitions) {
+    const existingPlan = await db.query.plans.findFirst({ where: eq(plans.slug, planDef.slug) });
+    if (existingPlan) continue;
+    const planId = uuidv7();
+    await db.insert(plans).values({
+      id: planId,
+      slug: planDef.slug,
+      name: planDef.name,
+      description: planDef.description,
+      sortOrder: planDef.sortOrder,
+    });
+    for (const entitlement of planDef.entitlements) {
+      await db.insert(planEntitlements).values({
+        id: uuidv7(),
+        planId,
+        metric: entitlement.metric,
+        limitValue: entitlement.limitValue,
+      });
+    }
+    process.stdout.write(`Seeded plan ${planDef.slug}.\n`);
   }
 } finally {
   await pool.end();

@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "^3.900.0",
     "@montenegrina/config": "workspace:*",
     "@montenegrina/database": "workspace:*",
+    "@montenegrina/knowledge-core": "workspace:*",
     "@montenegrina/evals": "workspace:*",
     "@montenegrina/language-cnr": "workspace:*",
     "@montenegrina/provider-core": "workspace:*",

@@ -3,7 +3,7 @@ import type { RealtimeEvent } from '@montenegrina/contracts';
 import type { FastifyRequest } from 'fastify';
 
 import { ConversationsService } from '../conversations/conversations.service.js';
-import { KnowledgeService } from '../knowledge/knowledge.service.js';
+import { RetrievalService } from '../knowledge/retrieval.service.js';
 import { Public } from '../security/public.decorator.js';
 import type { RequestActor } from '../security/actor.js';
 import { ToolsService } from '../tools/tools.service.js';
@@ -15,7 +15,7 @@ import { InternalGuard } from './internal.guard.js';
 export class InternalController {
   constructor(
     private readonly conversations: ConversationsService,
-    private readonly knowledge: KnowledgeService,
+    private readonly retrieval: RetrievalService,
     private readonly tools: ToolsService,
   ) {}
 
@@ -57,7 +57,10 @@ export class InternalController {
       organizationId: claims.organizationId,
       permissions: new Set(['knowledge:read']),
     };
-    return this.knowledge.retrieve(actor, claims.agentId, body.query, body.topK ?? 8);
+    return this.retrieval.retrieveForAgent(actor, claims.agentId, body.query, {
+      topK: body.topK ?? 8,
+      conversationId: claims.conversationId,
+    });
   }
 
   @Post('tools/invoke')

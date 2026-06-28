@@ -26,7 +26,8 @@ class MontenegrinAgent(Agent):
     ) -> None:
         if not self._retrieval:
             return
-        text = new_message.text_content()
+        text_value = getattr(new_message, "text_content", "")
+        text = text_value() if callable(text_value) else text_value
         citations = await self._runtime.retrieve(text)
         if citations:
             turn_ctx.add_message(
@@ -171,9 +172,11 @@ async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
     batcher.start()
     events = RuntimeEvents(config, ctx.room, batcher)
     session = create_session(config, settings)
+    configured_ids = getattr(config.config, "knowledgeBaseIds", None) or []
     controlled = config.config.routingPolicy.pipelineMode == "controlled"
+    retrieval_enabled = controlled and len(configured_ids) > 0
     agent = MontenegrinAgent(
-        runtime, config, runtime_tools(config.tools, runtime, events), retrieval=controlled
+        runtime, config, runtime_tools(config.tools, runtime, events), retrieval=retrieval_enabled
     )
     closed = asyncio.Event()
     wire_events(session, events, closed)

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { ENVIRONMENT } from '../core/tokens.js';
 
@@ -39,5 +40,13 @@ export class ObjectStorageService {
 
   async delete(key: string): Promise<void> {
     await this.#client.send(new DeleteObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }));
+  }
+
+  async presignedGetUrl(key: string, expiresInSeconds = 900): Promise<string> {
+    return getSignedUrl(
+      this.#client,
+      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
+      { expiresIn: expiresInSeconds },
+    );
   }
 }

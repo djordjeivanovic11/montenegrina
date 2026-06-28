@@ -14,9 +14,9 @@ import { SessionService } from './session.service.js';
 
 const rolePermissions: Record<string, string[]> = {
   OWNER: ['*'],
-  ADMIN: ['agents:*', 'knowledge:*', 'tools:*', 'evaluations:*', 'usage:read', 'memberships:*', 'api-keys:*'],
-  DEVELOPER: ['agents:*', 'knowledge:*', 'tools:*', 'evaluations:*', 'usage:read', 'conversations:*'],
-  VIEWER: ['agents:read', 'knowledge:read', 'tools:read', 'evaluations:read', 'usage:read', 'conversations:read'],
+  ADMIN: ['agents:*', 'knowledge:*', 'tools:*', 'evaluations:*', 'usage:read', 'memberships:*', 'api-keys:*', 'organizations:*', 'billing:read'],
+  DEVELOPER: ['agents:*', 'knowledge:*', 'tools:*', 'evaluations:*', 'usage:read', 'conversations:*', 'organizations:read', 'billing:read'],
+  VIEWER: ['agents:read', 'knowledge:read', 'tools:read', 'evaluations:read', 'usage:read', 'conversations:read', 'organizations:read', 'billing:read'],
 };
 
 function permissionMatches(granted: string, required: string): boolean {

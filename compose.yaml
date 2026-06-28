@@ -67,12 +67,15 @@ services:
   livekit:
     image: livekit/livekit-server:v1.9.10
     command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      NODE_IP: "127.0.0.1"
     volumes:
       - ./infra/docker/livekit.yaml:/etc/livekit.yaml:ro
     ports:
       - "7880:7880"
       - "7881:7881"
       - "7882:7882/udp"
+      - "50000-50100:50000-50100/udp"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:7880"]
       interval: 5s
@@ -123,6 +126,20 @@ services:
     ports:
       - "16686:16686"
 
+  knowledge-parser:
+    build:
+      context: .
+      dockerfile: apps/knowledge-parser/Dockerfile
+    environment:
+      KNOWLEDGE_PARSER_PORT: 8090
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
   migrate:
     build:
       context: .
@@ -171,6 +188,8 @@ services:
         condition: service_completed_successfully
       livekit:
         condition: service_healthy
+      knowledge-parser:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
@@ -193,6 +212,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      knowledge-parser:
+        condition: service_healthy
 
   voice-agent:
     build:
@@ -216,11 +237,13 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
         NEXT_PUBLIC_LIVEKIT_URL: ${PUBLIC_LIVEKIT_URL:-ws://localhost:7880}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${PUBLIC_GOOGLE_CLIENT_ID:-}
     environment:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
       NEXT_PUBLIC_LIVEKIT_URL: ${PUBLIC_LIVEKIT_URL:-ws://localhost:7880}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${PUBLIC_GOOGLE_CLIENT_ID:-}
     ports:
       - "3000:3000"
     depends_on:

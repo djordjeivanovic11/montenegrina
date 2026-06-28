@@ -272,7 +272,7 @@ export class ToolsService {
 
   private async executeFixedHttps(config: Record<string, unknown>, input: Record<string, unknown>) {
     const url = await this.validateConnector(config);
-    const method = String(config.method ?? 'POST');
+    const method = typeof config.method === 'string' ? config.method : 'POST';
     const timeoutMs = Math.min(15_000, Math.max(100, Number(config.timeoutMs ?? 5_000)));
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const secretRef = typeof config.secretRef === 'string' ? config.secretRef : undefined;
@@ -317,14 +317,14 @@ export class ToolsService {
   private async validateConnector(config: Record<string, unknown>): Promise<URL> {
     let url: URL;
     try {
-      url = new URL(String(config.url ?? ''));
+      url = new URL(typeof config.url === 'string' ? config.url : '');
     } catch {
       throw new ApiException({ code: 'TOOL_CONNECTOR_INVALID', message: 'The connector URL is invalid.', status: 422 });
     }
     if (url.protocol !== 'https:' || url.username || url.password || url.port) {
       throw new ApiException({ code: 'TOOL_CONNECTOR_REJECTED', message: 'Connectors require a fixed HTTPS URL.', status: 422 });
     }
-    const method = String(config.method ?? 'POST');
+    const method = typeof config.method === 'string' ? config.method : 'POST';
     if (!['GET', 'POST', 'PUT', 'PATCH'].includes(method)) {
       throw new ApiException({ code: 'TOOL_CONNECTOR_METHOD_REJECTED', message: 'The connector method is not allowed.', status: 422 });
     }

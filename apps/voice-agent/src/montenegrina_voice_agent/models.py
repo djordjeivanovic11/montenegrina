@@ -20,6 +20,7 @@ class RoutingPolicy(BaseModel):
 class RuntimeConfig(BaseModel):
     systemPrompt: str
     routingPolicy: RoutingPolicy
+    knowledgeBaseIds: list[str] = Field(default_factory=list)
 
 
 class RuntimeTool(BaseModel):

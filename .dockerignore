@@ -1,5 +1,7 @@
 .git
 .github
+deploy
+run_local
 .env
 .env.*
 !.env.example

@@ -1,0 +1,107 @@
+{
+  "nav": {
+    "overview": "Pregled",
+    "agents": "Agenti",
+    "knowledge": "Znanje",
+    "conversations": "Razgovori",
+    "integrations": "Integracije",
+    "usage": "Potrošnja",
+    "team": "Tim",
+    "billing": "Naplata",
+    "settings": "Podešavanja",
+    "playground": "Igraonica",
+    "login": "Prijava",
+    "signup": "Registracija",
+    "getStarted": "Započni"
+  },
+  "marketing": {
+    "heroTitle": "Glasovni AI za Crnu Goru",
+    "heroSubtitle": "Implementirajte dvojezične glasovne i chat agente sa poslovnim znanjem, sigurnošću i on-prem opcijama.",
+    "heroCta": "Besplatna proba",
+    "heroSecondary": "Cijene",
+    "useCasesTitle": "Za stvarne institucije",
+    "useCasesSubtitle": "Od opština do banaka — agenti koji prirodno govore crnogorski.",
+    "howTitle": "Kako funkcioniše",
+    "howStep1": "Kreirajte radni prostor",
+    "howStep1Desc": "Registrujte se i podesite organizaciju za nekoliko minuta.",
+    "howStep2": "Obučite znanjem",
+    "howStep2Desc": "Učitajte politike, FAQ i dokumente sa kontrolom pristupa.",
+    "howStep3": "Implementirajte svuda",
+    "howStep3Desc": "Ugradite na sajt ili povežite glasovne kanale.",
+    "knowledgeTitle": "Poslovno znanje",
+    "knowledgeDesc": "Hibridno pretraživanje, reranking i grupe pristupa za tačne odgovore.",
+    "securityTitle": "Sigurnost na prvom mjestu",
+    "securityDesc": "Sesijska autentifikacija, CSRF zaštita, izolacija tenant-a i audit log.",
+    "deploymentTitle": "Vaš cloud ili naš",
+    "deploymentDesc": "Potpuno upravljano ili on-prem za regulisane industrije.",
+    "pricingTitle": "Jednostavne cijene",
+    "pricingSubtitle": "Počnite besplatno, skalirajte kako rastete.",
+    "faqTitle": "Česta pitanja",
+    "ctaTitle": "Spremni za Montenegrinu?",
+    "ctaSubtitle": "Kreirajte radni prostor i pokrenite prvog agenta danas."
+  },
+  "auth": {
+    "loginTitle": "Prijavite se",
+    "signupTitle": "Kreirajte nalog",
+    "email": "E-pošta",
+    "password": "Lozinka",
+    "displayName": "Ime i prezime",
+    "submitLogin": "Prijavi se",
+    "submitSignup": "Kreiraj nalog",
+    "google": "Nastavi s Googleom",
+    "or": "ili",
+    "noAccount": "Nemate nalog?",
+    "hasAccount": "Već imate nalog?",
+    "signupLink": "Registrujte se",
+    "loginLink": "Prijavite se"
+  },
+  "app": {
+    "welcome": "Dobrodošli nazad",
+    "loading": "Učitavanje…",
+    "save": "Sačuvaj",
+    "cancel": "Otkaži",
+    "continue": "Nastavi",
+    "back": "Nazad",
+    "complete": "Završi podešavanje",
+    "logout": "Odjava",
+    "comingSoon": "Uskoro",
+    "active": "Aktivno"
+  },
+  "onboarding": {
+    "title": "Podesite radni prostor",
+    "step1": "Ime radnog prostora",
+    "step2": "Odaberite slučaj",
+    "step3": "Kreirajte agenta",
+    "step4": "Podesite agenta",
+    "step5": "Dodajte znanje",
+    "step6": "Testirajte agenta",
+    "step7": "Objavite agenta"
+  },
+  "integrations": {
+    "title": "Integracije",
+    "browserTitle": "Browser widget",
+    "browserDesc": "Ugradite Montenegrinu na sajt sa laganim skriptom.",
+    "phoneTitle": "Telefon / SIP",
+    "phoneDesc": "Povežite telefoniju za dolazne i odlazne pozive."
+  },
+  "billing": {
+    "title": "Naplata",
+    "currentPlan": "Trenutni plan",
+    "usage": "Potrošnja u periodu",
+    "upgrade": "Zatraži nadogradnju",
+    "noPlan": "Besplatni nivo"
+  },
+  "team": {
+    "title": "Tim",
+    "members": "Članovi",
+    "invite": "Pozovi člana",
+    "email": "E-pošta",
+    "role": "Uloga",
+    "sendInvite": "Pošalji pozivnicu"
+  },
+  "settings": {
+    "title": "Podešavanja",
+    "profile": "Profil",
+    "workspace": "Radni prostor"
+  }
+}

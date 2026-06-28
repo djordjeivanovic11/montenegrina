@@ -1,8 +1,7 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { schema } from '@montenegrina/database';
 import argon2 from 'argon2';
 import { eq, inArray } from 'drizzle-orm';
-import type { FastifyRequest } from 'fastify';
 import { v7 as uuidv7 } from 'uuid';
 import { randomBytes } from 'node:crypto';
 
@@ -48,6 +47,22 @@ export class OrganizationsController {
     });
     const created = await this.database.db.query.organizations.findFirst({ where: eq(schema.organizations.id, id) });
     return this.organization(created as typeof schema.organizations.$inferSelect);
+  }
+
+  @Patch('organizations/:organizationId')
+  @RequirePermissions('organizations:update')
+  async update(
+    @CurrentActor() actor: RequestActor,
+    @Param('organizationId') organizationId: string,
+    @Body() body: { name?: string; slug?: string },
+  ) {
+    this.requireOrganization(actor, organizationId);
+    await this.database.db
+      .update(schema.organizations)
+      .set({ ...body, updatedAt: new Date() })
+      .where(eq(schema.organizations.id, organizationId));
+    const updated = await this.database.db.query.organizations.findFirst({ where: eq(schema.organizations.id, organizationId) });
+    return this.organization(updated as typeof schema.organizations.$inferSelect);
   }
 
   @Get('organizations/:organizationId/memberships')

@@ -415,6 +415,50 @@ paths:
                 to: { type: string, pattern: '^\\+[1-9][0-9]{7,14}$' }
       responses:
         '202': { $ref: '#/components/responses/Conversation' }
+  /v1/knowledge/bases:
+    get:
+      operationId: listKnowledgeBases
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Knowledge bases
+    post:
+      operationId: createKnowledgeBase
+      tags: [Knowledge]
+      responses:
+        '201':
+          description: Created knowledge base
+  /v1/knowledge/bases/{knowledgeBaseId}/assignments:
+    get:
+      operationId: listKnowledgeBaseAssignments
+      tags: [Knowledge]
+      parameters:
+        - name: knowledgeBaseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Agent assignments
+  /v1/knowledge/retrieve/test:
+    post:
+      operationId: testKnowledgeRetrieval
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Retrieval test results
+  /v1/knowledge/ingestion-jobs/{jobId}:
+    get:
+      operationId: getIngestionJob
+      tags: [Knowledge]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Ingestion job status
   /v1/knowledge/documents:
     get:
       operationId: listKnowledgeDocuments
@@ -431,8 +475,9 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [agentId, title, file]
+              required: [knowledgeBaseId, title, file]
               properties:
+                knowledgeBaseId: { type: string, format: uuid }
                 agentId: { type: string, format: uuid }
                 title: { type: string, minLength: 1, maxLength: 300 }
                 file: { type: string, format: binary }
@@ -756,6 +801,7 @@ components:
             audioDays: { type: integer, minimum: 0, maximum: 3650 }
         toolIds: { type: array, items: { type: string, format: uuid } }
         knowledgeSourceIds: { type: array, items: { type: string, format: uuid } }
+        knowledgeBaseIds: { type: array, items: { type: string, format: uuid } }
         sensitiveWritesEnabled: { type: boolean, default: false }
     Transcription:
       type: object

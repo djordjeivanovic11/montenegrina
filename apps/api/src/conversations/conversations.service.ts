@@ -306,6 +306,20 @@ export class ConversationsService {
               occurredAt: new Date(event.timestamp),
             })
             .onConflictDoNothing();
+          const text = typeof event.payload.text === 'string' ? event.payload.text.trim() : '';
+          if (text && (event.type === 'transcription.final' || event.type === 'assistant.text.completed')) {
+            await transaction.insert(schema.transcriptSegments).values({
+              id: uuidv7(),
+              organizationId: event.organizationId,
+              conversationId: event.conversationId,
+              turnId: event.turnId,
+              speaker: event.type === 'transcription.final' ? 'USER' : 'ASSISTANT',
+              originalText: text,
+              normalizedText: text,
+              startedAtMs: Date.now(),
+              final: true,
+            });
+          }
         }
         lastSequence = event.sequence;
         accepted += 1;

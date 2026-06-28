@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { defaultMontenegrinSystemInstruction } from '@montenegrina/language-cnr';
 import { schema } from '@montenegrina/database';
-import { and, asc, desc, eq, gt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ApiException } from '../core/api-exception.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { RequestActor } from '../security/actor.js';
 
@@ -12,7 +13,10 @@ type AgentConfig = schema.AgentConfigurationSnapshot;
 
 @Injectable()
 export class AgentsService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly entitlements: EntitlementsService,
+  ) {}
 
   async list(actor: RequestActor, cursor?: string, limit = 20) {
     const organizationId = this.organization(actor);
@@ -38,6 +42,7 @@ export class AgentsService {
 
   async create(actor: RequestActor, body: { name: string; slug: string; description?: string }) {
     const organizationId = this.organization(actor);
+    await this.entitlements.assertWithinLimit(organizationId, 'AGENTS', 1);
     const id = uuidv7();
     await this.database.db.insert(schema.agents).values({
       id,
@@ -162,6 +167,38 @@ export class AgentsService {
     return this.get(actor, agentId);
   }
 
+  async duplicate(actor: RequestActor, agentId: string) {
+    const organizationId = this.organization(actor);
+    await this.entitlements.assertWithinLimit(organizationId, 'AGENTS', 1);
+    const source = await this.find(actor, agentId);
+    const newId = uuidv7();
+    const slug = `${source.slug}-copy-${newId.slice(0, 6)}`;
+    await this.database.db.insert(schema.agents).values({
+      id: newId,
+      organizationId,
+      name: `${source.name} (copy)`,
+      slug,
+      description: source.description,
+    });
+    const latest = await this.database.db.query.agentVersions.findFirst({
+      where: and(eq(schema.agentVersions.organizationId, organizationId), eq(schema.agentVersions.agentId, agentId)),
+      orderBy: [desc(schema.agentVersions.version)],
+    });
+    if (latest) {
+      await this.createVersion(actor, newId, latest.config);
+    }
+    return this.get(actor, newId);
+  }
+
+  async archive(actor: RequestActor, agentId: string) {
+    await this.find(actor, agentId);
+    await this.database.db
+      .update(schema.agents)
+      .set({ archivedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(schema.agents.id, agentId), eq(schema.agents.organizationId, this.organization(actor))));
+    return this.get(actor, agentId);
+  }
+
   async published(actor: RequestActor, agentId: string) {
     const agent = await this.find(actor, agentId);
     if (!agent.publishedVersionId) {
@@ -252,6 +289,7 @@ export class AgentsService {
       description: item.description,
       language: 'cnr' as const,
       publishedVersionId: item.publishedVersionId,
+      archivedAt: item.archivedAt?.toISOString() ?? null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
     };

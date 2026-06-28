@@ -64,5 +64,17 @@ export class AgentsController {
   ) {
     return this.agents.publish(actor, id, body.versionId);
   }
+
+  @Post(':agentId/duplicate')
+  @RequirePermissions('agents:create')
+  duplicate(@CurrentActor() actor: RequestActor, @Param('agentId') id: string) {
+    return this.agents.duplicate(actor, id);
+  }
+
+  @Post(':agentId/archive')
+  @RequirePermissions('agents:update')
+  archive(@CurrentActor() actor: RequestActor, @Param('agentId') id: string) {
+    return this.agents.archive(actor, id);
+  }
 }
 

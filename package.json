@@ -23,9 +23,9 @@
     "db:migrate": "pnpm --filter @montenegrina/database migrate",
     "db:seed": "pnpm --filter @montenegrina/database seed",
     "evals": "pnpm --filter @montenegrina/evals run fixtures",
-    "compose:config": "docker compose config --quiet"
-    ,"local": "./run_local"
-    ,"deploy": "./deploy"
+    "compose:config": "docker compose config --quiet",
+    "local": "./run_local",
+    "deploy": "./deploy"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

@@ -10,5 +10,5 @@
     "sourceMap": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["test", "dist"]
+  "exclude": ["dist"]
 }

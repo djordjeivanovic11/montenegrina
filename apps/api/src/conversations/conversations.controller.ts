@@ -1,6 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Query, Req, Sse } from '@nestjs/common';
-import type { RealtimeEvent } from '@montenegrina/contracts';
-import type { FastifyRequest } from 'fastify';
+import { Body, Controller, Delete, Get, Headers, Param, Post, Sse } from '@nestjs/common';
 
 import { ConversationsService } from './conversations.service.js';
 import type { RequestActor } from '../security/actor.js';

@@ -1,0 +1,107 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "agents": "Agents",
+    "knowledge": "Knowledge",
+    "conversations": "Conversations",
+    "integrations": "Integrations",
+    "usage": "Usage",
+    "team": "Team",
+    "billing": "Billing",
+    "settings": "Settings",
+    "playground": "Playground",
+    "login": "Log in",
+    "signup": "Sign up",
+    "getStarted": "Get started"
+  },
+  "marketing": {
+    "heroTitle": "Voice AI built for Montenegro",
+    "heroSubtitle": "Deploy bilingual voice and chat agents with enterprise knowledge, security, and on-prem options.",
+    "heroCta": "Start free trial",
+    "heroSecondary": "View pricing",
+    "useCasesTitle": "Built for real institutions",
+    "useCasesSubtitle": "From municipalities to banks — agents that speak Montenegrin naturally.",
+    "howTitle": "How it works",
+    "howStep1": "Create your workspace",
+    "howStep1Desc": "Sign up and configure your organization in minutes.",
+    "howStep2": "Train with knowledge",
+    "howStep2Desc": "Upload policies, FAQs, and documents with access controls.",
+    "howStep3": "Deploy everywhere",
+    "howStep3Desc": "Embed in your site or connect voice channels.",
+    "knowledgeTitle": "Enterprise knowledge",
+    "knowledgeDesc": "Hybrid retrieval, reranking, and access groups keep answers accurate and compliant.",
+    "securityTitle": "Security first",
+    "securityDesc": "Session auth, CSRF protection, tenant isolation, and audit trails.",
+    "deploymentTitle": "Your cloud or ours",
+    "deploymentDesc": "Run fully managed or deploy on-prem for regulated industries.",
+    "pricingTitle": "Simple pricing",
+    "pricingSubtitle": "Start free, scale as you grow.",
+    "faqTitle": "FAQ",
+    "ctaTitle": "Ready to deploy Montenegrina?",
+    "ctaSubtitle": "Create your workspace and launch your first agent today."
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "signupTitle": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display name",
+    "submitLogin": "Log in",
+    "submitSignup": "Create account",
+    "google": "Continue with Google",
+    "or": "or",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signupLink": "Sign up",
+    "loginLink": "Log in"
+  },
+  "app": {
+    "welcome": "Welcome back",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "complete": "Complete setup",
+    "logout": "Log out",
+    "comingSoon": "Coming soon",
+    "active": "Active"
+  },
+  "onboarding": {
+    "title": "Set up your workspace",
+    "step1": "Name workspace",
+    "step2": "Choose use case",
+    "step3": "Create agent",
+    "step4": "Configure agent",
+    "step5": "Add knowledge",
+    "step6": "Test agent",
+    "step7": "Publish agent"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "browserTitle": "Browser widget",
+    "browserDesc": "Embed Montenegrina in your website with a lightweight script.",
+    "phoneTitle": "Phone / SIP",
+    "phoneDesc": "Connect telephony for inbound and outbound voice."
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "usage": "Usage this period",
+    "upgrade": "Request upgrade",
+    "noPlan": "Free tier"
+  },
+  "team": {
+    "title": "Team",
+    "members": "Members",
+    "invite": "Invite member",
+    "email": "Email",
+    "role": "Role",
+    "sendInvite": "Send invitation"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "workspace": "Workspace"
+  }
+}

@@ -35,6 +35,7 @@ export const environmentSchema = z
     LIVEKIT_API_KEY: z.string().min(1),
     LIVEKIT_API_SECRET: z.string().min(1),
     LIVEKIT_SIP_OUTBOUND_TRUNK_ID: optionalSecret,
+    GOOGLE_CLIENT_ID: z.string().optional(),
     OPENAI_API_KEY: optionalSecret,
     OPENAI_MODEL: z.string().default('gpt-5.4-mini'),
     OPENAI_REALTIME_MODEL: z.string().default('gpt-realtime-2'),
@@ -53,6 +54,15 @@ export const environmentSchema = z
     EVALUATION_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
     MAX_CONVERSATION_MINUTES: z.coerce.number().int().min(1).max(240).default(30),
     MAX_CONCURRENT_SESSIONS: z.coerce.number().int().min(1).max(1_000).default(25),
+    KNOWLEDGE_PARSER_URL: z.url().default('http://localhost:8090'),
+    KNOWLEDGE_MAX_BULK_FILES: z.coerce.number().int().min(1).max(50).default(20),
+    KNOWLEDGE_RETRIEVAL_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
+    BILLING_ENABLED: booleanFromString,
+    PHONE_INTEGRATIONS_ENABLED: booleanFromString,
+    WEBHOOKS_ENABLED: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
+    PUBLIC_DEMO_ENABLED: booleanFromString,
+    RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(20),
+    RATE_LIMIT_VOICE_SESSIONS_PER_HOUR: z.coerce.number().int().min(1).max(10_000).default(60),
   })
   .superRefine((environment, context) => {
     if (environment.NODE_ENV === 'production' && !environment.COOKIE_SECURE) {

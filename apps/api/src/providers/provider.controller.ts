@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import type { AudioEncoding, AudioFormat } from '@montenegrina/provider-core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -106,6 +106,21 @@ export class ProviderController {
     @Body() body: { texts: string[]; agentId?: string },
   ) {
     return this.providers.embed({ actor, requestId: request.requestId, ...body });
+  }
+
+  @Get('conversations')
+  @RequirePermissions('conversations:read')
+  listConversations(@CurrentActor() actor: RequestActor) {
+    return this.providers.listConversations(actor);
+  }
+
+  @Get('conversations/:conversationId/messages')
+  @RequirePermissions('conversations:read')
+  getConversationMessages(
+    @CurrentActor() actor: RequestActor,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return this.providers.getConversationMessages(actor, conversationId);
   }
 }
 

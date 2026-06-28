@@ -4,17 +4,13 @@ Last updated: 2026-06-28.
 
 | Milestone | Status | Verification |
 | --- | --- | --- |
-| 0 — Assessment and decisions | Complete | Repository and local tooling inspected; architecture and ADRs written |
-| 1 — Contracts and local platform | In progress | Pending dependency install and checks |
-| 2 — Control plane and tenancy | Not started | — |
-| 3 — Montenegrin language | Not started | — |
-| 4 — Provider adapters | Not started | — |
-| 5 — Realtime runtime | Not started | — |
-| 6 — Knowledge and tools | Not started | — |
-| 7 — Evaluation | Not started | — |
-| 8 — Admin/demo | Not started | — |
-| 9 — Hardening and staging | Not started | — |
-
-External credentials are not required for local tests. Real-provider and SIP
-validation will remain explicitly credential-gated.
-
+| SaaS public website | Complete | Bilingual marketing homepage at `/` |
+| Auth & workspace bootstrap | Complete | Register, Google, `/v1/auth/me`, auto org |
+| Onboarding wizard | Complete | Seven-step flow at `/onboarding` |
+| Dashboard & playground | Complete | All nav sections; voice + text at `/playground` |
+| Knowledge bases | Complete | CRUD, upload, ingestion jobs, scoped retrieval |
+| Team & invitations | Complete | `/v1/team/*` + UI |
+| Billing & entitlements | Complete (no checkout) | Plans seeded; quotas on agent create |
+| Integrations infrastructure | Complete (stubs) | Browser active; phone coming soon |
+| Security hardening | Partial | Rate limits, audit, tenant tests |
+| Paying customers ready | Not yet | See `docs/product/implementation-report.md` |

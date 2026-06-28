@@ -8,12 +8,13 @@ import type {
 } from '@montenegrina/provider-core';
 import type { ProviderSet } from '@montenegrina/providers';
 import { v7 as uuidv7 } from 'uuid';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 
 import { AgentsService } from '../agents/agents.service.js';
 import type { RequestActor } from '../security/actor.js';
 import { PROVIDERS } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
-import { KnowledgeService } from '../knowledge/knowledge.service.js';
+import { RetrievalService } from '../knowledge/retrieval.service.js';
 
 @Injectable()
 export class ProviderService {
@@ -21,7 +22,7 @@ export class ProviderService {
     @Inject(PROVIDERS) private readonly providers: ProviderSet,
     private readonly agents: AgentsService,
     private readonly database: DatabaseService,
-    private readonly knowledge: KnowledgeService,
+    private readonly retrieval: RetrievalService,
   ) {}
 
   async transcribe(options: {
@@ -70,23 +71,57 @@ export class ProviderService {
     conversationId?: string;
   }) {
     const { version } = await this.agents.published(options.actor, options.agentId);
+    const convId = options.conversationId ?? uuidv7();
+    if (!options.conversationId) {
+      await this.database.db.insert(schema.conversations).values({
+        id: convId,
+        organizationId: options.actor.organizationId as string,
+        agentId: options.agentId,
+        agentVersionId: version.id,
+        channel: 'TEXT',
+        state: 'LISTENING',
+        language: 'cnr',
+        traceId: options.requestId.replaceAll('-', '').slice(0, 32),
+        startedAt: new Date(),
+      });
+    }
     const context = this.context(
       options.actor,
       options.requestId,
       options.agentId,
       version.config,
-      options.conversationId,
+      convId,
     );
-    const sources = await this.knowledge.retrieve(options.actor, options.agentId, options.input, 5);
-    const sourceContext = sources.length
-      ? `\n\nIZVORI (navedi oznaku samo kada izvor podržava tvrdnju):\n${sources
-          .map((source, index) => `[S${index + 1}] ${source.title}: ${source.content}`)
-          .join('\n')}`
-      : '';
+    const history = await this.database.db.query.transcriptSegments.findMany({
+      where: and(
+        eq(schema.transcriptSegments.organizationId, options.actor.organizationId as string),
+        eq(schema.transcriptSegments.conversationId, convId),
+      ),
+      orderBy: [asc(schema.transcriptSegments.createdAt)],
+      limit: 30,
+    });
+    const configuredIds =
+      version.config.knowledgeBaseIds?.length
+        ? version.config.knowledgeBaseIds
+        : (version.config.knowledgeSourceIds ?? []);
+    const sources = configuredIds.length
+      ? await this.retrieval.retrieveForAgent(options.actor, options.agentId, options.input, {
+          topK: 5,
+          conversationId: convId,
+        })
+      : [];
+    const sourceContext = this.retrieval.buildPromptBlock(sources);
+    const messages = [
+      ...history.map((s) => ({
+        role: s.speaker === 'USER' ? ('user' as const) : ('assistant' as const),
+        content: s.originalText,
+      })),
+      { role: 'user' as const, content: options.input },
+    ];
     const result = await this.providers.llm.generate(
       {
         system: `${version.config.systemPrompt}${sourceContext}`,
-        messages: [{ role: 'user', content: options.input }],
+        messages,
         ...(version.config.routingPolicy.llmModel
           ? { model: version.config.routingPolicy.llmModel }
           : {}),
@@ -100,10 +135,33 @@ export class ProviderService {
     await this.recordUsage(
       options.actor,
       options.agentId,
-      options.conversationId,
+      convId,
       'response',
       result.metadata,
     );
+    const now = Date.now();
+    await this.database.db.insert(schema.transcriptSegments).values([
+      {
+        id: uuidv7(),
+        organizationId: options.actor.organizationId as string,
+        conversationId: convId,
+        speaker: 'USER',
+        originalText: options.input,
+        normalizedText: options.input,
+        startedAtMs: now,
+        final: true,
+      },
+      {
+        id: uuidv7(),
+        organizationId: options.actor.organizationId as string,
+        conversationId: convId,
+        speaker: 'ASSISTANT',
+        originalText: result.data.text,
+        normalizedText: language.correctedText,
+        startedAtMs: now + 1,
+        final: true,
+      },
+    ]);
     const citedIndexes = new Set(
       [...language.correctedText.matchAll(/\[S(\d+)\]/gu)].map((match) => Number(match[1]) - 1),
     );
@@ -114,9 +172,51 @@ export class ProviderService {
       warnings: language.warnings.map((warning) => warning.code),
       citations: sources
         .filter((_source, index) => citedIndexes.has(index))
-        .map(({ content: _content, ...citation }) => citation),
+        .map((source) => {
+          const { content, ...citation } = source;
+          void content;
+          return citation;
+        }),
       toolCalls: result.data.toolCalls,
       provider: this.publicMetadata(result.metadata),
+      conversationId: convId,
+    };
+  }
+
+  async listConversations(actor: RequestActor) {
+    const items = await this.database.db.query.conversations.findMany({
+      where: and(
+        eq(schema.conversations.organizationId, actor.organizationId as string),
+        isNull(schema.conversations.deletedAt),
+      ),
+      orderBy: [desc(schema.conversations.startedAt)],
+      limit: 50,
+    });
+    return {
+      items: items.map(c => ({
+        id: c.id,
+        agentId: c.agentId,
+        startedAt: c.startedAt.toISOString(),
+        state: c.state,
+      })),
+    };
+  }
+
+  async getConversationMessages(actor: RequestActor, conversationId: string) {
+    const segments = await this.database.db.query.transcriptSegments.findMany({
+      where: and(
+        eq(schema.transcriptSegments.organizationId, actor.organizationId as string),
+        eq(schema.transcriptSegments.conversationId, conversationId),
+      ),
+      orderBy: [asc(schema.transcriptSegments.createdAt)],
+    });
+    return {
+      messages: segments.map(s => ({
+        id: s.id,
+        role: s.speaker === 'USER' ? 'user' : 'assistant',
+        content: s.originalText,
+        ts: s.createdAt.getTime(),
+      })),
     };
   }
 
