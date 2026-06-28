@@ -89,7 +89,9 @@
     "driveTitle": "Google Drive",
     "driveDesc": "Drive import is coming soon — it requires separate Google permissions and integration beyond sign-in.",
     "step6": "Test agent",
-    "step7": "Publish agent"
+    "step7": "Publish agent",
+    "step7Desc": "Click Continue to publish your agent and enable voice in the playground.",
+    "publishMissingVersion": "No agent version to publish. Go back and configure the agent again."
   },
   "integrations": {
     "title": "Integrations",

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card, PageHeader } from '../../components/ui/page-shell';
 import { KnowledgeUploadStep } from '../../components/onboarding/knowledge-upload-step';
 import { API_URL, api, apiHeaders } from '../../lib/api-client';
+import { buildOnboardingAgentConfig } from '../../lib/onboarding-agent-config';
 import { useI18n } from '../../lib/i18n/index';
 import { useSession } from '../../lib/hooks/use-session';
 import { useWorkspace } from '../../lib/hooks/use-workspace';
@@ -44,7 +45,9 @@ export default function OnboardingPage() {
   const [agentName, setAgentName] = useState('My Agent');
   const [instructions, setInstructions] = useState('You are a helpful Montenegrina assistant.');
   const [agentId, setAgentId] = useState<string | null>(null);
+  const [versionId, setVersionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stepError, setStepError] = useState('');
 
   useEffect(() => {
     if (organization?.name) setWorkspaceName(organization.name);
@@ -67,6 +70,7 @@ export default function OnboardingPage() {
 
   async function next() {
     setLoading(true);
+    setStepError('');
     try {
       if (currentStep === 'NAME_WORKSPACE' && workspaceName) {
         await fetch(`${API_URL}/v1/organizations/${organizationId}`, {
@@ -93,6 +97,26 @@ export default function OnboardingPage() {
             params: { path: { agentId: resolvedAgentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
             body: { description: instructions },
           });
+
+          const basesRes = await fetch(`${API_URL}/v1/knowledge/bases`, {
+            credentials: 'include',
+            headers: apiHeaders(),
+          });
+          let knowledgeBaseIds: string[] = [];
+          if (basesRes.ok) {
+            const basesData = (await basesRes.json()) as { items: Array<{ id: string }> };
+            if (basesData.items[0]?.id) knowledgeBaseIds = [basesData.items[0].id];
+          }
+
+          const version = await api.POST('/v1/agents/{agentId}/versions', {
+            params: { path: { agentId: resolvedAgentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+            body: { config: buildOnboardingAgentConfig(instructions, knowledgeBaseIds) },
+          });
+          if (!version.response.ok || !version.data) {
+            setStepError('Failed to create agent version.');
+            return;
+          }
+          setVersionId(version.data.id);
         }
         await patchOnboarding({ currentStep: 'ADD_KNOWLEDGE' });
       } else if (currentStep === 'ADD_KNOWLEDGE') {
@@ -100,6 +124,43 @@ export default function OnboardingPage() {
       } else if (currentStep === 'TEST_AGENT') {
         await patchOnboarding({ currentStep: 'PUBLISH_AGENT' });
       } else if (currentStep === 'PUBLISH_AGENT') {
+        const resolvedAgentId = agentId ?? (await api.GET('/v1/agents')).data?.items[0]?.id;
+        let resolvedVersionId = versionId;
+        if (resolvedAgentId && !resolvedVersionId) {
+          const agentRes = await api.GET('/v1/agents/{agentId}', { params: { path: { agentId: resolvedAgentId } } });
+          resolvedVersionId = agentRes.data?.publishedVersionId ?? null;
+          if (!resolvedVersionId) {
+            const basesRes = await fetch(`${API_URL}/v1/knowledge/bases`, {
+              credentials: 'include',
+              headers: apiHeaders(),
+            });
+            let knowledgeBaseIds: string[] = [];
+            if (basesRes.ok) {
+              const basesData = (await basesRes.json()) as { items: Array<{ id: string }> };
+              if (basesData.items[0]?.id) knowledgeBaseIds = [basesData.items[0].id];
+            }
+            const prompt = agentRes.data?.description?.trim() || instructions;
+            const version = await api.POST('/v1/agents/{agentId}/versions', {
+              params: { path: { agentId: resolvedAgentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+              body: { config: buildOnboardingAgentConfig(prompt, knowledgeBaseIds) },
+            });
+            if (!version.response.ok || !version.data) {
+              setStepError(t('onboarding.publishMissingVersion'));
+              return;
+            }
+            resolvedVersionId = version.data.id;
+          }
+        }
+        if (resolvedAgentId && resolvedVersionId) {
+          const published = await api.POST('/v1/agents/{agentId}/publish', {
+            params: { path: { agentId: resolvedAgentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+            body: { versionId: resolvedVersionId },
+          });
+          if (!published.response.ok) {
+            setStepError('Failed to publish agent.');
+            return;
+          }
+        }
         await patchOnboarding({ complete: true, currentStep: 'COMPLETED' });
         await refresh();
         router.replace('/overview');
@@ -166,7 +227,12 @@ export default function OnboardingPage() {
             <p className="text-sm text-ink-2">{t('onboarding.step6')} — use the Playground after setup to test voice and chat.</p>
           )}
           {currentStep === 'PUBLISH_AGENT' && (
-            <p className="text-sm text-ink-2">{t('onboarding.step7')} — publish your agent to make it available.</p>
+            <p className="text-sm text-ink-2">{t('onboarding.step7Desc')}</p>
+          )}
+          {stepError && (
+            <p className="text-error text-sm mt-4" role="alert">
+              {stepError}
+            </p>
           )}
           <div className="flex gap-3 mt-6">
             {stepIndex > 0 && (

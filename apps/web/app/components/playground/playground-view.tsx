@@ -88,16 +88,18 @@ export function PlaygroundView() {
     }
   }
 
-  async function startVoice(): Promise<void> {
+    async function startVoice(): Promise<void> {
     if (!agentId) return;
     await roomRef.current?.disconnect();
     setVoiceState('connecting');
+    setError('');
     const response = await api.POST('/v1/agents/{agentId}/realtime-sessions', {
       params: { path: { agentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
       headers: { ...headers(), 'Idempotency-Key': crypto.randomUUID() },
       body: { participantName: 'Web korisnik' },
     });
     if (!response.response.ok || !response.data) {
+      setError('The agent has no published version. Finish onboarding or publish the agent first.');
       setVoiceState('error');
       return;
     }

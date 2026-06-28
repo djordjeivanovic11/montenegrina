@@ -89,7 +89,9 @@
     "driveTitle": "Google Drive",
     "driveDesc": "Uvoz sa Drive-a dolazi uskoro — zahtijeva posebnu Google dozvolu i odvojenu integraciju od prijave.",
     "step6": "Testirajte agenta",
-    "step7": "Objavite agenta"
+    "step7": "Objavite agenta",
+    "step7Desc": "Kliknite Nastavi da objavite agenta i omogućite glasovni razgovor u igraonici.",
+    "publishMissingVersion": "Nema verzije agenta za objavu. Vratite se korak nazad i podesite agenta ponovo."
   },
   "integrations": {
     "title": "Integracije",
