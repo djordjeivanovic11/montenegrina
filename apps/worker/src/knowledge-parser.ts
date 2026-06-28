@@ -25,7 +25,7 @@ export class KnowledgeParserClient {
   async parse(bytes: Uint8Array, mediaType: string): Promise<ParsedDocument> {
     const form = new FormData();
     form.append('mediaType', mediaType);
-    form.append('file', new Blob([bytes], { type: mediaType }), 'document');
+    form.append('file', new Blob([Buffer.from(bytes)], { type: mediaType }), 'document');
     const response = await fetch(`${this.baseUrl}/v1/parse-bytes`, {
       method: 'POST',
       body: form,

@@ -145,6 +145,10 @@ ALTER TABLE "documents" DROP CONSTRAINT "document_source_tenant_fk";--> statemen
 ALTER TABLE "documents" DROP COLUMN "knowledge_source_id";--> statement-breakpoint
 DROP TABLE "knowledge_sources";--> statement-breakpoint
 ALTER TABLE "knowledge_bases" ADD CONSTRAINT "knowledge_bases_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "knowledge_bases_org_id_uq" ON "knowledge_bases" USING btree ("organization_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "knowledge_bases_slug_uq" ON "knowledge_bases" USING btree ("organization_id","slug");--> statement-breakpoint
+CREATE UNIQUE INDEX "access_groups_org_id_uq" ON "access_groups" USING btree ("organization_id","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "access_groups_slug_uq" ON "access_groups" USING btree ("organization_id","slug");--> statement-breakpoint
 ALTER TABLE "agent_knowledge_base_assignments" ADD CONSTRAINT "agent_kb_assignment_agent_tenant_fk" FOREIGN KEY ("organization_id","agent_id") REFERENCES "public"."agents"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "agent_knowledge_base_assignments" ADD CONSTRAINT "agent_kb_assignment_kb_tenant_fk" FOREIGN KEY ("organization_id","knowledge_base_id") REFERENCES "public"."knowledge_bases"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "access_groups" ADD CONSTRAINT "access_groups_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -156,6 +160,7 @@ ALTER TABLE "documents" ADD CONSTRAINT "documents_created_by_user_id_users_id_fk
 ALTER TABLE "document_access_groups" ADD CONSTRAINT "document_access_groups_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "document_access_groups" ADD CONSTRAINT "document_access_group_document_tenant_fk" FOREIGN KEY ("organization_id","document_id") REFERENCES "public"."documents"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "document_access_groups" ADD CONSTRAINT "document_access_group_group_tenant_fk" FOREIGN KEY ("organization_id","access_group_id") REFERENCES "public"."access_groups"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "document_sections_org_id_uq" ON "document_sections" USING btree ("organization_id","id");--> statement-breakpoint
 ALTER TABLE "document_sections" ADD CONSTRAINT "document_section_version_tenant_fk" FOREIGN KEY ("organization_id","document_version_id") REFERENCES "public"."document_versions"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "document_sections" ADD CONSTRAINT "document_section_document_tenant_fk" FOREIGN KEY ("organization_id","document_id") REFERENCES "public"."documents"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "document_chunks" ADD CONSTRAINT "document_chunk_section_tenant_fk" FOREIGN KEY ("organization_id","section_id") REFERENCES "public"."document_sections"("organization_id","id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -163,15 +168,10 @@ ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_jobs_organization_id_orga
 ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_job_document_tenant_fk" FOREIGN KEY ("organization_id","document_id") REFERENCES "public"."documents"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ingestion_jobs" ADD CONSTRAINT "ingestion_job_version_tenant_fk" FOREIGN KEY ("organization_id","document_version_id") REFERENCES "public"."document_versions"("organization_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retrieval_events" ADD CONSTRAINT "retrieval_events_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "knowledge_bases_org_id_uq" ON "knowledge_bases" USING btree ("organization_id","id");--> statement-breakpoint
-CREATE UNIQUE INDEX "knowledge_bases_slug_uq" ON "knowledge_bases" USING btree ("organization_id","slug");--> statement-breakpoint
 CREATE INDEX "agent_kb_assignment_agent_idx" ON "agent_knowledge_base_assignments" USING btree ("organization_id","agent_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "access_groups_org_id_uq" ON "access_groups" USING btree ("organization_id","id");--> statement-breakpoint
-CREATE UNIQUE INDEX "access_groups_slug_uq" ON "access_groups" USING btree ("organization_id","slug");--> statement-breakpoint
 CREATE INDEX "access_group_memberships_user_idx" ON "access_group_memberships" USING btree ("organization_id","user_id");--> statement-breakpoint
 CREATE INDEX "documents_kb_status_idx" ON "documents" USING btree ("organization_id","knowledge_base_id","status");--> statement-breakpoint
 CREATE UNIQUE INDEX "documents_kb_sha256_uq" ON "documents" USING btree ("organization_id","knowledge_base_id","sha256") WHERE "deleted_at" IS NULL AND "sha256" IS NOT NULL;--> statement-breakpoint
-CREATE UNIQUE INDEX "document_sections_org_id_uq" ON "document_sections" USING btree ("organization_id","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "document_sections_ordinal_uq" ON "document_sections" USING btree ("document_version_id","ordinal");--> statement-breakpoint
 CREATE INDEX "document_sections_version_idx" ON "document_sections" USING btree ("organization_id","document_version_id");--> statement-breakpoint
 CREATE INDEX "ingestion_jobs_version_idx" ON "ingestion_jobs" USING btree ("document_version_id");--> statement-breakpoint

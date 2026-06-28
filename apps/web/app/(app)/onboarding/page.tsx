@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Card, PageHeader } from '../../components/ui/page-shell';
+import { KnowledgeUploadStep } from '../../components/onboarding/knowledge-upload-step';
 import { API_URL, api, apiHeaders } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 import { useSession } from '../../lib/hooks/use-session';
@@ -42,6 +43,7 @@ export default function OnboardingPage() {
   const [useCase, setUseCase] = useState<(typeof USE_CASES)[number]>('GENERAL');
   const [agentName, setAgentName] = useState('My Agent');
   const [instructions, setInstructions] = useState('You are a helpful Montenegrina assistant.');
+  const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -77,17 +79,18 @@ export default function OnboardingPage() {
       } else if (currentStep === 'CHOOSE_USE_CASE') {
         await patchOnboarding({ currentStep: 'CREATE_AGENT', useCase });
       } else if (currentStep === 'CREATE_AGENT') {
-        await api.POST('/v1/agents', {
+        const created = await api.POST('/v1/agents', {
           params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
           body: { name: agentName, slug: agentName.toLowerCase().replace(/\s+/g, '-') },
         });
+        if (created.data?.id) setAgentId(created.data.id);
         await patchOnboarding({ currentStep: 'CONFIGURE_AGENT' });
       } else if (currentStep === 'CONFIGURE_AGENT') {
-        const agents = await api.GET('/v1/agents');
-        const agentId = agents.data?.items[0]?.id;
-        if (agentId) {
+        const resolvedAgentId = agentId ?? (await api.GET('/v1/agents')).data?.items[0]?.id;
+        if (resolvedAgentId) {
+          if (!agentId) setAgentId(resolvedAgentId);
           await api.PATCH('/v1/agents/{agentId}', {
-            params: { path: { agentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+            params: { path: { agentId: resolvedAgentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
             body: { description: instructions },
           });
         }
@@ -110,6 +113,12 @@ export default function OnboardingPage() {
 
   function back() {
     setStepIndex((i) => Math.max(i - 1, 0));
+  }
+
+  function skipKnowledge() {
+    void patchOnboarding({ currentStep: 'TEST_AGENT' }).then(() => {
+      setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
+    });
   }
 
   return (
@@ -152,9 +161,7 @@ export default function OnboardingPage() {
               <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={5} className="input-field resize-none" />
             </label>
           )}
-          {currentStep === 'ADD_KNOWLEDGE' && (
-            <p className="text-sm text-ink-2">{t('onboarding.step5')} — upload documents later from the Knowledge page.</p>
-          )}
+          {currentStep === 'ADD_KNOWLEDGE' && <KnowledgeUploadStep agentId={agentId} />}
           {currentStep === 'TEST_AGENT' && (
             <p className="text-sm text-ink-2">{t('onboarding.step6')} — use the Playground after setup to test voice and chat.</p>
           )}
@@ -165,6 +172,11 @@ export default function OnboardingPage() {
             {stepIndex > 0 && (
               <button type="button" onClick={back} className="btn-secondary flex-1" disabled={loading}>
                 {t('app.back')}
+              </button>
+            )}
+            {currentStep === 'ADD_KNOWLEDGE' && (
+              <button type="button" onClick={skipKnowledge} className="btn-secondary flex-1" disabled={loading}>
+                {t('onboarding.skip')}
               </button>
             )}
             <button type="button" onClick={() => void next()} className="btn-primary flex-1" disabled={loading}>

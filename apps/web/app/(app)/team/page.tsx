@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Badge, Card, PageHeader } from '../../components/ui/page-shell';
-import { API_URL, api, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
 type Member = { userId: string; email?: string; displayName?: string; role: string; joinedAt: string };

@@ -45,10 +45,10 @@ export function LoginPage({
             <div className="w-8 h-8 flex items-center justify-center shrink-0">
               <svg width="32" height="32" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="28" height="28" rx="7" fill="var(--color-accent)" />
-                <rect x="6" y="11" width="3" height="6" rx="1.5" fill="white" />
-                <rect x="11" y="8" width="3" height="12" rx="1.5" fill="white" />
-                <rect x="16" y="5" width="3" height="18" rx="1.5" fill="white" />
-                <rect x="21" y="9" width="3" height="10" rx="1.5" fill="white" />
+                <rect x="6" y="11" width="3" height="6" rx="1.5" fill="var(--color-gold)" />
+                <rect x="11" y="8" width="3" height="12" rx="1.5" fill="var(--color-gold)" />
+                <rect x="16" y="5" width="3" height="18" rx="1.5" fill="var(--color-gold)" />
+                <rect x="21" y="9" width="3" height="10" rx="1.5" fill="var(--color-gold)" />
               </svg>
             </div>
             <span className="text-xl font-semibold text-ink">Montenegrina</span>

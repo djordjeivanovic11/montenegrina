@@ -15,7 +15,7 @@ export default function AgentDetailPage() {
     if (!params.id) return;
     void (async () => {
       const res = await api.GET('/v1/agents/{agentId}', { params: { path: { agentId: params.id } } });
-      if (res.data) setAgent(res.data as Record<string, unknown>);
+      if (res.data) setAgent(res.data);
     })();
   }, [params.id]);
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { Badge, Card, PageHeader } from '../../components/ui/page-shell';
-import { API_URL, api, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
 type Plan = { id: string; slug: string; name: string; description: string | null; entitlements: Array<{ metric: string; limit: number; period: string }> };

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, type FormEvent } from 'react';
+import { type FormEvent } from 'react';
 
 import { LogoMark } from './app-sidebar';
+import { useGoogleSignIn } from '../lib/hooks/use-google-sign-in';
 import { useI18n, type Locale } from '../lib/i18n/index';
 
 interface AuthFormProps {
@@ -34,19 +35,9 @@ export function AuthForm({
   onGoogleLogin,
 }: AuthFormProps) {
   const { t } = useI18n(locale);
-
-  useEffect(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || !window.google) return;
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response) => onGoogleLogin(response.credential),
-    });
-  }, [onGoogleLogin]);
-
-  function onGoogleSignIn() {
-    window.google?.accounts.id.prompt();
-  }
+  const { signIn, buttonHostRef, ready, configured, loadError } = useGoogleSignIn(onGoogleLogin);
+  const googleError = loadError ? t(`auth.${loadError}`) : '';
+  const displayError = error || googleError;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -100,9 +91,9 @@ export function AuthForm({
               />
             </label>
 
-            {error && (
+            {displayError && (
               <p className="text-error text-sm" role="alert">
-                {error}
+                {displayError}
               </p>
             )}
 
@@ -113,7 +104,14 @@ export function AuthForm({
 
           <div className="divider my-4">{t('auth.or')}</div>
 
-          <button type="button" onClick={onGoogleSignIn} className="btn-secondary w-full flex items-center justify-center gap-3">
+          <div ref={buttonHostRef} className="sr-only" aria-hidden="true" />
+
+          <button
+            type="button"
+            onClick={signIn}
+            disabled={configured && !ready}
+            className="btn-secondary w-full flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             <GoogleIcon />
             {t('auth.google')}
           </button>

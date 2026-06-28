@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { Card, EmptyState, PageHeader } from '../../components/ui/page-shell';
-import { API_URL, api, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
 type Conversation = { id: string; startedAt: string; preview?: string; status?: string };

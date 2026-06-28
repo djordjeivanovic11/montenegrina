@@ -94,10 +94,10 @@ export function LogoMark() {
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
       <rect width="28" height="28" rx="7" fill="var(--color-accent)" />
-      <rect x="6" y="11" width="3" height="6" rx="1.5" fill="white" />
-      <rect x="11" y="8" width="3" height="12" rx="1.5" fill="white" />
-      <rect x="16" y="5" width="3" height="18" rx="1.5" fill="white" />
-      <rect x="21" y="9" width="3" height="10" rx="1.5" fill="white" />
+      <rect x="6" y="11" width="3" height="6" rx="1.5" fill="var(--color-gold)" />
+      <rect x="11" y="8" width="3" height="12" rx="1.5" fill="var(--color-gold)" />
+      <rect x="16" y="5" width="3" height="18" rx="1.5" fill="var(--color-gold)" />
+      <rect x="21" y="9" width="3" height="10" rx="1.5" fill="var(--color-gold)" />
     </svg>
   );
 }

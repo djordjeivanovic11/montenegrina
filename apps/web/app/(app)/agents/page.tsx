@@ -17,7 +17,7 @@ export default function AgentsPage() {
   useEffect(() => {
     void (async () => {
       const res = await api.GET('/v1/agents');
-      if (res.data) setAgents(res.data.items as Agent[]);
+      if (res.data) setAgents(res.data.items);
       setLoading(false);
     })();
   }, []);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { Card, PageHeader } from '../../components/ui/page-shell';
-import { API_URL, api, apiHeaders } from '../../lib/api-client';
+import { API_URL, apiHeaders } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
 type UsageItem = { metric: string; current: number; limit: number | null; period: string };
