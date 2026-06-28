@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE:-.env.deploy}"
+if [[ ! -f "$DEPLOY_ENV_FILE" ]]; then
+  cp .env.deploy.example "$DEPLOY_ENV_FILE"
+  echo "Created $DEPLOY_ENV_FILE. Fill in the required values and run ./deploy again." >&2
+  exit 1
+fi
+set -a
+# shellcheck disable=SC1090
+source "$DEPLOY_ENV_FILE"
+set +a
+
+required=(AWS_REGION PROJECT_NAME ENVIRONMENT LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD)
+missing=()
+for key in "${required[@]}"; do
+  [[ -n "${!key:-}" ]] || missing+=("$key")
+done
+if ((${#missing[@]})); then
+  echo "Missing deployment settings: ${missing[*]}" >&2
+  exit 1
+fi
+
+for command in aws docker jq; do
+  command -v "$command" >/dev/null || { echo "$command is required." >&2; exit 1; }
+done
+docker info >/dev/null
+aws sts get-caller-identity >/dev/null
+
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+AWS_PROFILE="${AWS_PROFILE:-default}"
+export AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
+NAME="${PROJECT_NAME}-${ENVIRONMENT}"
+PROVIDER_SECRET_NAME="${NAME}/providers"
+STATE_BUCKET="${PROJECT_NAME}-${ACCOUNT_ID}-${AWS_REGION}-tfstate"
+
+if ! aws s3api head-bucket --bucket "$STATE_BUCKET" >/dev/null 2>&1; then
+  if [[ "$AWS_REGION" == "us-east-1" ]]; then
+    aws s3api create-bucket --bucket "$STATE_BUCKET" >/dev/null
+  else
+    aws s3api create-bucket --bucket "$STATE_BUCKET" --create-bucket-configuration "LocationConstraint=$AWS_REGION" >/dev/null
+  fi
+  aws s3api put-bucket-versioning --bucket "$STATE_BUCKET" --versioning-configuration Status=Enabled
+  aws s3api put-bucket-encryption --bucket "$STATE_BUCKET" --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"},"BucketKeyEnabled":true}]}'
+fi
+
+secret_file="$(mktemp)"
+trap 'rm -f "$secret_file"' EXIT
+jq -n \
+  --arg openai "$OPENAI_API_KEY" \
+  --arg deepgram "$DEEPGRAM_API_KEY" \
+  --arg elevenlabs "$ELEVENLABS_API_KEY" \
+  --arg voice "$ELEVENLABS_MONTENEGRIN_VOICE_ID" \
+  --arg livekit_key "$LIVEKIT_API_KEY" \
+  --arg livekit_secret "$LIVEKIT_API_SECRET" \
+  --arg admin_email "$INITIAL_ADMIN_EMAIL" \
+  --arg admin_password "$INITIAL_ADMIN_PASSWORD" \
+  '{OPENAI_API_KEY:$openai,DEEPGRAM_API_KEY:$deepgram,ELEVENLABS_API_KEY:$elevenlabs,ELEVENLABS_MONTENEGRIN_VOICE_ID:$voice,LIVEKIT_API_KEY:$livekit_key,LIVEKIT_API_SECRET:$livekit_secret,INITIAL_ADMIN_EMAIL:$admin_email,INITIAL_ADMIN_PASSWORD:$admin_password}' >"$secret_file"
+if aws secretsmanager describe-secret --secret-id "$PROVIDER_SECRET_NAME" >/dev/null 2>&1; then
+  aws secretsmanager put-secret-value --secret-id "$PROVIDER_SECRET_NAME" --secret-string "file://$secret_file" >/dev/null
+else
+  aws secretsmanager create-secret --name "$PROVIDER_SECRET_NAME" --secret-string "file://$secret_file" >/dev/null
+fi
+
+tf() {
+  if command -v terraform >/dev/null; then
+    terraform -chdir="$ROOT/infra/terraform/aws" "$@"
+  else
+    docker run --rm \
+      -v "$ROOT:/workspace" \
+      -v "$HOME/.aws:/root/.aws:ro" \
+      -w /workspace/infra/terraform/aws \
+      -e AWS_PROFILE -e AWS_REGION -e AWS_DEFAULT_REGION \
+      -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
+      hashicorp/terraform:1.14.3 "$@"
+  fi
+}
+
+IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short=12 HEAD 2>/dev/null || date -u +%Y%m%d%H%M%S)}"
+if [[ -n "$(git status --porcelain 2>/dev/null || true)" ]]; then
+  IMAGE_TAG="${IMAGE_TAG}-$(date -u +%Y%m%d%H%M%S)"
+fi
+
+tf init -reconfigure \
+  -backend-config="bucket=$STATE_BUCKET" \
+  -backend-config="key=${PROJECT_NAME}/${ENVIRONMENT}.tfstate" \
+  -backend-config="region=$AWS_REGION" \
+  -backend-config="encrypt=true" \
+  -backend-config="use_lockfile=true"
+tf apply -auto-approve \
+  -var="aws_region=$AWS_REGION" \
+  -var="project_name=$PROJECT_NAME" \
+  -var="environment=$ENVIRONMENT" \
+  -var="image_tag=$IMAGE_TAG" \
+  -var="provider_secret_name=$PROVIDER_SECRET_NAME" \
+  -var="livekit_url=$LIVEKIT_URL" \
+  -var="livekit_sip_outbound_trunk_id=${LIVEKIT_SIP_OUTBOUND_TRUNK_ID:-}" \
+  -var="deletion_protection=${TF_VAR_deletion_protection:-true}" \
+  -var="single_nat_gateway=${TF_VAR_single_nat_gateway:-true}"
+
+APPLICATION_URL="$(tf output -raw application_url)"
+REPOSITORIES="$(tf output -json ecr_repositories)"
+REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+aws ecr get-login-password | docker login --username AWS --password-stdin "$REGISTRY"
+
+build_and_push() {
+  local service="$1" dockerfile="$2" extra_arg="${3:-}"
+  local repository
+  repository="$(jq -r --arg service "$service" '.[$service]' <<<"$REPOSITORIES")"
+  args=(docker buildx build --platform linux/amd64 --file "$dockerfile" --tag "${repository}:${IMAGE_TAG}" --push)
+  [[ -z "$extra_arg" ]] || args+=(--build-arg "$extra_arg")
+  args+=(.)
+  "${args[@]}"
+}
+
+build_and_push api apps/api/Dockerfile
+build_and_push worker apps/worker/Dockerfile
+build_and_push voice-agent apps/voice-agent/Dockerfile
+build_and_push web apps/web/Dockerfile "NEXT_PUBLIC_API_URL=$APPLICATION_URL"
+
+CLUSTER="$(tf output -raw ecs_cluster_name)"
+TASK_DEFINITION="$(tf output -raw api_task_definition_arn)"
+SUBNETS="$(tf output -json private_subnet_ids)"
+SECURITY_GROUP="$(tf output -raw task_security_group_id)"
+NETWORK="$(jq -nc --argjson subnets "$SUBNETS" --arg sg "$SECURITY_GROUP" '{awsvpcConfiguration:{subnets:$subnets,securityGroups:[$sg],assignPublicIp:"DISABLED"}}')"
+
+run_task() {
+  local name="$1" command="$2"
+  local overrides task_arn exit_code
+  overrides="$(jq -nc --argjson command "$command" '{containerOverrides:[{name:"api",command:$command}]}')"
+  task_arn="$(aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE --task-definition "$TASK_DEFINITION" --network-configuration "$NETWORK" --overrides "$overrides" --query 'tasks[0].taskArn' --output text)"
+  [[ "$task_arn" != "None" ]] || { echo "Unable to start $name task." >&2; exit 1; }
+  aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$task_arn"
+  exit_code="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$task_arn" --query 'tasks[0].containers[0].exitCode' --output text)"
+  [[ "$exit_code" == "0" ]] || { echo "$name task failed (exit $exit_code)." >&2; exit 1; }
+}
+
+run_task migration '["node","packages/database/dist/src/migrate.js"]'
+run_task bootstrap '["node","packages/database/dist/src/seed.js"]'
+
+SERVICES="$(tf output -json ecs_service_names)"
+service_names=()
+while IFS= read -r service; do
+  service_names+=("$service")
+done < <(jq -r '.[]' <<<"$SERVICES")
+for service in "${service_names[@]}"; do
+  aws ecs update-service --cluster "$CLUSTER" --service "$service" --force-new-deployment >/dev/null
+done
+aws ecs wait services-stable --cluster "$CLUSTER" --services "${service_names[@]}"
+
+echo "Deployment complete: $APPLICATION_URL"
+echo "OpenAPI: $APPLICATION_URL/openapi.yaml"

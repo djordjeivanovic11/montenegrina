@@ -1,0 +1,41 @@
+{
+  "name": "@montenegrina/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./schema": {
+      "types": "./dist/src/schema.d.ts",
+      "default": "./dist/src/schema.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "lint": "eslint src test --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@montenegrina/config": "workspace:*",
+    "@montenegrina/language-cnr": "workspace:*",
+    "argon2": "^0.44.0",
+    "drizzle-orm": "^0.44.0",
+    "pg": "^8.16.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.20.0"
+  }
+}
+

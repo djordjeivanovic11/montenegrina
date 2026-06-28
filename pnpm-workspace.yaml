@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - evals
+
+onlyBuiltDependencies:
+  - argon2
+  - esbuild
+  - sharp
+

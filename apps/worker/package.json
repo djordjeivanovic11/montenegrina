@@ -1,0 +1,36 @@
+{
+  "name": "@montenegrina/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "lint": "eslint src test --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@montenegrina/config": "workspace:*",
+    "@montenegrina/database": "workspace:*",
+    "@montenegrina/evals": "workspace:*",
+    "@montenegrina/language-cnr": "workspace:*",
+    "@montenegrina/provider-core": "workspace:*",
+    "@montenegrina/providers": "workspace:*",
+    "bullmq": "^5.61.0",
+    "drizzle-orm": "^0.44.0",
+    "file-type": "^21.0.0",
+    "ioredis": "^5.8.0",
+    "mammoth": "^1.11.0",
+    "pdfjs-dist": "^5.4.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
+  }
+}
+

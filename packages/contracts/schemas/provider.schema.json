@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://montenegrina.dev/schemas/provider.schema.json",
+  "title": "ProviderEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "model", "latencyMs", "usage", "metadata"],
+  "properties": {
+    "provider": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "latencyMs": { "type": "integer", "minimum": 0 },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 },
+        "audioInputSeconds": { "type": "number", "minimum": 0 },
+        "audioOutputSeconds": { "type": "number", "minimum": 0 },
+        "characters": { "type": "integer", "minimum": 0 },
+        "estimatedCostUsd": { "type": "number", "minimum": 0 }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    },
+    "fallbackHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "code"],
+        "properties": {
+          "provider": { "type": "string" },
+          "code": { "type": "string" },
+          "retryable": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
+

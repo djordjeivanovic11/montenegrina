@@ -1,0 +1,9 @@
+terraform {
+  backend "s3" {
+    bucket         = "replace-with-your-terraform-state-bucket"
+    key            = "montenegrina/production.tfstate"
+    region         = "eu-central-1"
+    encrypt        = true
+    use_lockfile   = true
+  }
+}

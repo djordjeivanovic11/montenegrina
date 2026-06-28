@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+case "${1:-up}" in
+  down)
+    exec docker compose down --remove-orphans
+    ;;
+  logs)
+    exec docker compose logs --follow --tail=200 "${@:2}"
+    ;;
+  status)
+    exec docker compose ps
+    ;;
+  up)
+    ;;
+  *)
+    echo "Usage: ./run_local [up|down|logs|status]" >&2
+    exit 2
+    ;;
+esac
+
+command -v docker >/dev/null || { echo "Docker is required." >&2; exit 1; }
+docker compose version >/dev/null
+
+if [[ ! -f .env ]]; then
+  cp .env.example .env
+  echo "Created .env from .env.example." >&2
+fi
+
+required=(OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID)
+missing=()
+for key in "${required[@]}"; do
+  if ! grep -Eq "^${key}=.+" .env; then missing+=("$key"); fi
+done
+if ((${#missing[@]})); then
+  echo "Set these real-provider values in .env before startup: ${missing[*]}" >&2
+  exit 1
+fi
+
+docker compose up --build --remove-orphans --wait
+
+echo "Montenegrina is ready:"
+echo "  Web:       http://localhost:3000"
+echo "  API:       http://localhost:3001"
+echo "  OpenAPI:   http://localhost:3001/openapi.yaml"
+echo "  MinIO:     http://localhost:9001"
+echo "  Grafana:   http://localhost:3002"
+echo "  Jaeger:    http://localhost:16686"
+echo "Use './run_local logs' to follow logs and './run_local down' to stop."

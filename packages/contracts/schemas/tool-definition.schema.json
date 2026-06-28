@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://montenegrina.dev/schemas/tool-definition.schema.json",
+  "title": "ToolDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "version", "description", "riskClass", "handler", "inputSchema"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,62}$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "riskClass": {
+      "type": "string",
+      "enum": ["READ_PUBLIC", "READ_CUSTOMER", "WRITE_REVERSIBLE", "WRITE_SENSITIVE"]
+    },
+    "handler": {
+      "type": "string",
+      "enum": [
+        "sandbox.product_lookup",
+        "sandbox.appointment_availability",
+        "sandbox.appointment_create",
+        "sandbox.request_status",
+        "sandbox.handoff",
+        "fixed_https"
+      ]
+    },
+    "inputSchema": { "$ref": "https://json-schema.org/draft/2020-12/schema" },
+    "outputSchema": { "$ref": "https://json-schema.org/draft/2020-12/schema" },
+    "enabled": { "type": "boolean", "default": true }
+  }
+}
+

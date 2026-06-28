@@ -1,0 +1,2 @@
+{"id":"working-hours","expectedTranscript":"Koje je vaše radno vrijeme?","criticalEntities":[],"expectedIntent":"working_hours","expectedResponse":{"contains":["ponedjeljka","petka"]},"language":{"script":"LATIN","requireIjekavian":true},"speaker":{"synthetic":true},"audioCondition":{"condition":"clean","synthetic":true}}
+

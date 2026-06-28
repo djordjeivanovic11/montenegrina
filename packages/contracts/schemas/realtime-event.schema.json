@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://montenegrina.dev/schemas/realtime-event.schema.json",
+  "title": "RealtimeEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "timestamp",
+    "organizationId",
+    "agentId",
+    "conversationId",
+    "traceId",
+    "sequence",
+    "payload"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "session.started",
+        "audio.started",
+        "transcription.partial",
+        "transcription.final",
+        "turn.started",
+        "assistant.text.delta",
+        "assistant.text.completed",
+        "assistant.audio.started",
+        "assistant.audio.chunk",
+        "assistant.audio.completed",
+        "assistant.interrupted",
+        "tool.started",
+        "tool.completed",
+        "tool.failed",
+        "handoff.requested",
+        "handoff.completed",
+        "session.completed",
+        "error"
+      ]
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "organizationId": { "type": "string", "format": "uuid" },
+    "agentId": { "type": "string", "format": "uuid" },
+    "conversationId": { "type": "string", "format": "uuid" },
+    "turnId": { "type": "string", "format": "uuid" },
+    "traceId": { "type": "string", "minLength": 16, "maxLength": 64 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "text": { "type": "string" },
+        "originalText": { "type": "string" },
+        "state": { "$ref": "#/$defs/conversationState" },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "latencyMs": { "type": "integer", "minimum": 0 },
+        "trackSid": { "type": "string" },
+        "offsetMs": { "type": "integer", "minimum": 0 },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "toolInvocationId": { "type": "string", "format": "uuid" }
+      }
+    }
+  },
+  "$defs": {
+    "conversationState": {
+      "type": "string",
+      "enum": [
+        "INITIALIZING",
+        "LISTENING",
+        "TRANSCRIBING",
+        "THINKING",
+        "TOOL_PENDING",
+        "SPEAKING",
+        "INTERRUPTED",
+        "HANDOFF_PENDING",
+        "HANDED_OFF",
+        "COMPLETED",
+        "FAILED"
+      ]
+    }
+  }
+}
+
