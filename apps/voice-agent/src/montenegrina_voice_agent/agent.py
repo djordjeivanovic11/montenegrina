@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections.abc import AsyncIterable
 from typing import Any
 from uuid import uuid4
 
@@ -12,23 +13,38 @@ from .models import RuntimeBootstrap, RuntimeTool
 from .runtime_api import EventBatcher, RuntimeApi
 from .settings import Settings
 from .telemetry import RuntimeEvents
+from .voice_prompt import build_voice_instructions
 
 
 class MontenegrinAgent(Agent):
     def __init__(
-        self, runtime: RuntimeApi, config: RuntimeBootstrap, tools: list[Any], retrieval: bool
+        self,
+        runtime: RuntimeApi,
+        config: RuntimeBootstrap,
+        tools: list[Any],
+        retrieval: bool,
+        events: RuntimeEvents,
     ) -> None:
-        super().__init__(instructions=config.config.systemPrompt, tools=tools)
+        super().__init__(instructions=build_voice_instructions(config.config.systemPrompt), tools=tools)
         self._runtime = runtime
         self._retrieval = retrieval
+        self._events = events
 
     async def on_user_turn_completed(
         self, turn_ctx: ChatContext, new_message: ChatMessage
     ) -> None:
-        if not self._retrieval:
-            return
         text_value = getattr(new_message, "text_content", "")
         text = text_value() if callable(text_value) else text_value
+        text = (text or "").strip()
+        if text:
+            await self._events.emit(
+                "user.turn.completed",
+                {"text": text},
+                turn_id=str(uuid4()),
+                state="THINKING",
+            )
+        if not self._retrieval:
+            return
         citations = await self._runtime.retrieve(text)
         if citations:
             turn_ctx.add_message(
@@ -36,6 +52,23 @@ class MontenegrinAgent(Agent):
                 content="Kontekst iz odobrene baze znanja (citiraj samo ove izvore):\n"
                 + json.dumps(citations, ensure_ascii=False),
             )
+
+    def transcription_node(
+        self, text: AsyncIterable[str], model_settings: Any
+    ) -> AsyncIterable[str]:
+        events = self._events
+
+        async def stream() -> AsyncIterable[str]:
+            async for chunk in text:
+                piece = chunk if isinstance(chunk, str) else str(getattr(chunk, "text", chunk))
+                if piece:
+                    payload: dict[str, str] = {"text": piece}
+                    if events.current_speech_id:
+                        payload["speechId"] = events.current_speech_id
+                    await events.emit("assistant.text.delta", payload)
+                yield chunk
+
+        return stream()
 
 
 def runtime_tools(
@@ -85,6 +118,7 @@ def create_session(config: RuntimeBootstrap, settings: Settings) -> AgentSession
                 modalities=["audio", "text"],
             ),
             user_away_timeout=20.0,
+            min_endpointing_delay=1.2,
         )
     language = routing.sttLanguage
     if language not in {"sr", "hr", "bs", "multi"}:
@@ -96,7 +130,7 @@ def create_session(config: RuntimeBootstrap, settings: Settings) -> AgentSession
             language=language,
             interim_results=True,
             smart_format=True,
-            endpointing_ms=300,
+            endpointing_ms=850,
         ),
         llm=openai.responses.LLM(
             api_key=settings.openai_api_key,
@@ -113,18 +147,31 @@ def create_session(config: RuntimeBootstrap, settings: Settings) -> AgentSession
             apply_text_normalization="off",
         ),
         user_away_timeout=20.0,
+        min_endpointing_delay=1.2,
     )
+
+
+def _speech_payload(events: RuntimeEvents, payload: dict[str, Any]) -> dict[str, Any]:
+    if events.current_speech_id:
+        return {**payload, "speechId": events.current_speech_id}
+    return payload
 
 
 def wire_events(session: AgentSession, events: RuntimeEvents, closed: asyncio.Event) -> None:
     def schedule(coro: Any) -> None:
         asyncio.create_task(coro)
 
+    @session.on("speech_created")
+    def on_speech_created(event: Any) -> None:
+        events.current_speech_id = event.speech_handle.id
+
     @session.on("user_input_transcribed")
     def on_transcript(event: Any) -> None:
         event_type = "transcription.final" if event.is_final else "transcription.partial"
-        state = "THINKING" if event.is_final else "TRANSCRIBING"
-        schedule(events.emit(event_type, {"text": event.transcript}, state=state))
+        emit_kwargs: dict[str, Any] = {}
+        if not event.is_final and events.state == "LISTENING":
+            emit_kwargs["state"] = "TRANSCRIBING"
+        schedule(events.emit(event_type, {"text": event.transcript}, **emit_kwargs))
 
     @session.on("user_state_changed")
     def on_user_state(event: Any) -> None:
@@ -138,7 +185,13 @@ def wire_events(session: AgentSession, events: RuntimeEvents, closed: asyncio.Ev
         if event.new_state == "thinking" and events.state in {"TRANSCRIBING", "LISTENING"}:
             schedule(events.emit("turn.started", {}, state="THINKING"))
         elif event.new_state == "speaking" and events.state in {"THINKING", "TOOL_PENDING"}:
-            schedule(events.emit("assistant.audio.started", {}, state="SPEAKING"))
+            schedule(
+                events.emit(
+                    "assistant.audio.started",
+                    _speech_payload(events, {}),
+                    state="SPEAKING",
+                )
+            )
         elif event.new_state == "listening" and events.state in {"SPEAKING", "INTERRUPTED"}:
             schedule(events.emit("assistant.audio.completed", {}, state="LISTENING"))
 
@@ -149,7 +202,12 @@ def wire_events(session: AgentSession, events: RuntimeEvents, closed: asyncio.Ev
         text_value = getattr(item, "text_content", "")
         text = text_value() if callable(text_value) else text_value
         if role == "assistant" and text:
-            schedule(events.emit("assistant.text.completed", {"text": text}))
+            schedule(
+                events.emit(
+                    "assistant.text.completed",
+                    _speech_payload(events, {"text": text}),
+                )
+            )
 
     @session.on("close")
     def on_close(_event: Any) -> None:
@@ -162,7 +220,7 @@ DEFAULT_RECORDING_NOTICE = (
 
 
 def greeting_instructions(config: RuntimeBootstrap) -> str:
-    base = "Pozdravi korisnika kratko na crnogorskom i pitaj kako možeš pomoći."
+    base = "Pozdravi korisnika kratko na crnogorskom i pitaj kako možeš pomoći. Odgovori jednom kratkom rečenicom."
     if config.channel != "SIP" or not config.config.retention.recordAudio:
         return base
     notice = (
@@ -205,7 +263,7 @@ async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
     controlled = config.config.routingPolicy.pipelineMode == "controlled"
     retrieval_enabled = controlled and len(configured_ids) > 0
     agent = MontenegrinAgent(
-        runtime, config, runtime_tools(config.tools, runtime, events), retrieval=retrieval_enabled
+        runtime, config, runtime_tools(config.tools, runtime, events), retrieval=retrieval_enabled, events=events
     )
     closed = asyncio.Event()
     wire_events(session, events, closed)

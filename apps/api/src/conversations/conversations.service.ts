@@ -20,6 +20,7 @@ import { ObjectStorageService } from '../storage/object-storage.service.js';
 const durableEvents = new Set([
   'session.started',
   'transcription.final',
+  'user.turn.completed',
   'turn.started',
   'assistant.text.completed',
   'assistant.audio.started',
@@ -219,6 +220,7 @@ export class ConversationsService {
     ) {
       throw new ApiException({ code: 'RUNTIME_EVENT_BATCH_MIXED_SCOPE', message: 'A runtime batch must have one scope.' });
     }
+    const conversationStartedAtMs = conversation.startedAt.getTime();
     let accepted = 0;
     await this.database.db.transaction(async (transaction) => {
       let state = conversation.state;
@@ -249,16 +251,16 @@ export class ConversationsService {
             })
             .onConflictDoNothing();
           const text = typeof event.payload.text === 'string' ? event.payload.text.trim() : '';
-          if (text && (event.type === 'transcription.final' || event.type === 'assistant.text.completed')) {
+          if (text && (event.type === 'user.turn.completed' || event.type === 'assistant.text.completed')) {
             await transaction.insert(schema.transcriptSegments).values({
               id: uuidv7(),
               organizationId: event.organizationId,
               conversationId: event.conversationId,
               turnId: event.turnId,
-              speaker: event.type === 'transcription.final' ? 'USER' : 'ASSISTANT',
+              speaker: event.type === 'user.turn.completed' ? 'USER' : 'ASSISTANT',
               originalText: text,
               normalizedText: text,
-              startedAtMs: Date.now(),
+              startedAtMs: Date.now() - conversationStartedAtMs,
               final: true,
             });
           }

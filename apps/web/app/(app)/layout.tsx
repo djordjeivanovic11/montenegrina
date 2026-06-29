@@ -39,6 +39,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
 
   const isPlayground = pathname === '/playground';
   const isOnboarding = pathname === '/onboarding';
+  const isKnowledge = pathname === '/knowledge';
 
   if (isPlayground || isOnboarding) {
     return <div className="min-h-screen bg-bg">{children}</div>;
@@ -47,7 +48,7 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <AppSidebar />
-      <main className="app-main">{children}</main>
+      <main className={isKnowledge ? 'app-main app-main-fill' : 'app-main'}>{children}</main>
     </div>
   );
 }

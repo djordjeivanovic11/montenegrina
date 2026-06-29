@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ApiException } from '../core/api-exception.js';
@@ -151,6 +151,17 @@ export class KnowledgeController {
     return this.knowledge.preview(actor, id);
   }
 
+  @Get('documents/:documentId/content')
+  @RequirePermissions('knowledge:read')
+  async documentContent(
+    @CurrentActor() actor: RequestActor,
+    @Param('documentId') id: string,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const { body, contentType } = await this.knowledge.content(actor, id);
+    await reply.header('Content-Type', contentType).send(Buffer.from(body));
+  }
+
   @Patch('documents/:documentId')
   @RequirePermissions('knowledge:update')
   updateDocument(
@@ -260,11 +271,12 @@ export class KnowledgeController {
   @RequirePermissions('knowledge:read')
   async testRetrieval(
     @CurrentActor() actor: RequestActor,
-    @Body() body: { agentId: string; query: string; topK?: number },
+    @Body() body: { agentId: string; query: string; topK?: number; knowledgeBaseId?: string },
   ) {
     const results = await this.retrieval.retrieveForAgent(actor, body.agentId, body.query, {
       topK: body.topK ?? 8,
       testMode: true,
+      ...(body.knowledgeBaseId ? { knowledgeBaseId: body.knowledgeBaseId } : {}),
     });
     return {
       query: body.query,

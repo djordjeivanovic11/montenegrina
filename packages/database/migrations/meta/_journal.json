@@ -36,6 +36,13 @@
       "when": 1782646940636,
       "tag": "0005_phone_telephony",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782720600000,
+      "tag": "0006_free_plan_documents_20",
+      "breakpoints": true
     }
   ]
 }

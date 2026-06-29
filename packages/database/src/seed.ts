@@ -295,7 +295,7 @@ try {
         { metric: 'AGENTS' as const, limitValue: 1 },
         { metric: 'VOICE_MINUTES' as const, limitValue: 30 },
         { metric: 'TEXT_MESSAGES' as const, limitValue: 200 },
-        { metric: 'DOCUMENTS' as const, limitValue: 5 },
+        { metric: 'DOCUMENTS' as const, limitValue: 20 },
         { metric: 'TEAM_MEMBERS' as const, limitValue: 1 },
         { metric: 'RETRIEVAL_QUERIES' as const, limitValue: 500 },
       ],

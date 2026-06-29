@@ -9,8 +9,8 @@
     "start": "next start",
     "lint": "eslint app --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:unit": "vitest run --passWithNoTests",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
     "test:integration": "vitest run --passWithNoTests",
     "e2e": "playwright test"
   },

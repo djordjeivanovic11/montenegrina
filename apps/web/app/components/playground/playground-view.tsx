@@ -8,7 +8,7 @@ import {
   type RemoteTrack,
   type RemoteParticipant,
 } from 'livekit-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { Composer } from '../composer';
 import { ConversationArea, type Message } from '../conversation-area';
@@ -18,6 +18,10 @@ import { TopBar } from '../top-bar';
 import { API_URL, apiHeaders, errorMessage } from '../../lib/api-client';
 import { useSession } from '../../lib/hooks/use-session';
 import { useWorkspace } from '../../lib/hooks/use-workspace';
+import {
+  initialVoiceTranscriptState,
+  voiceTranscriptReducer,
+} from '../../lib/voice-transcript';
 
 type Agent = components['schemas']['Agent'];
 type RealtimeSession = components['schemas']['RealtimeSession'];
@@ -31,7 +35,12 @@ export function PlaygroundView() {
   const [agentId, setAgentId] = useState('');
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [transcriptState, dispatchTranscript] = useReducer(
+    voiceTranscriptReducer,
+    undefined,
+    initialVoiceTranscriptState,
+  );
+  const messages = transcriptState.messages;
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [isDevOpen, setIsDevOpen] = useState(false);
   const [events, setEvents] = useState<string[]>([]);
@@ -41,6 +50,7 @@ export function PlaygroundView() {
   const [sipConfigured, setSipConfigured] = useState(false);
   const [conversations, setConversations] = useState<Array<{ id: string; startedAt: string; preview?: string }>>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
+  const [voiceUiActive, setVoiceUiActive] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const api = useMemo(() => createApiClient(API_URL), []);
@@ -79,7 +89,7 @@ export function PlaygroundView() {
   async function sendText(): Promise<void> {
     if (!agentId || !input.trim()) return;
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: input.trim(), ts: Date.now() };
-    setMessages((prev) => [...prev, userMsg]);
+    dispatchTranscript({ type: 'message.add', message: userMsg });
     const sentInput = input.trim();
     setInput('');
 
@@ -91,7 +101,10 @@ export function PlaygroundView() {
       setError(errorMessage(response.error));
       return;
     }
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: response.data.text, ts: Date.now() }]);
+    dispatchTranscript({
+      type: 'message.add',
+      message: { id: crypto.randomUUID(), role: 'assistant', content: response.data.text, ts: Date.now() },
+    });
     const returnedConvId = (response.data as unknown as { conversationId?: string }).conversationId;
     if (!activeConversationId && returnedConvId) {
       setActiveConversationId(returnedConvId);
@@ -102,6 +115,7 @@ export function PlaygroundView() {
     async function startVoice(): Promise<void> {
     if (!agentId) return;
     await roomRef.current?.disconnect();
+    dispatchTranscript({ type: 'session.reset' });
     setVoiceState('connecting');
     setError('');
     const response = await api.POST('/v1/agents/{agentId}/realtime-sessions', {
@@ -137,18 +151,25 @@ export function PlaygroundView() {
       if (topic !== 'montenegrina.events') return;
       const evt = JSON.parse(new TextDecoder().decode(bytes)) as { type: string; payload: Record<string, unknown> };
       setEvents((current) => [`${evt.type}: ${JSON.stringify(evt.payload)}`, ...current].slice(0, 40));
-      if (evt.type === 'transcription.final') {
-        const content = typeof evt.payload.text === 'string' ? evt.payload.text : null;
-        if (content) setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'user', content, ts: Date.now() }]);
-      } else if (evt.type === 'assistant.text.completed') {
-        const content = typeof evt.payload.text === 'string' ? evt.payload.text : null;
-        if (content) setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content, ts: Date.now() }]);
-      }
+      const handled = new Set([
+        'transcription.partial',
+        'transcription.final',
+        'user.turn.completed',
+        'turn.started',
+        'assistant.audio.started',
+        'assistant.text.delta',
+        'assistant.text.completed',
+        'assistant.interrupted',
+        'assistant.audio.completed',
+      ]);
+      if (!handled.has(evt.type)) return;
+      dispatchTranscript({ type: 'voice.event', event: evt });
     });
     room.on(RoomEvent.Disconnected, () => setVoiceState('idle'));
     await room.connect(session.livekitUrl, session.participantToken, { autoSubscribe: true });
     await room.localParticipant.setMicrophoneEnabled(true);
     roomRef.current = room;
+    setVoiceUiActive(true);
     setVoiceState('listening');
   }
 
@@ -211,7 +232,13 @@ export function PlaygroundView() {
         <KnowledgeSection apiUrl={API_URL} headers={headers} agentId={agentId} />
       ) : (
         <>
-          <ConversationArea messages={messages} voiceState={voiceState} agentId={agentId} onStartVoice={() => void startVoice()} />
+          <ConversationArea
+            messages={messages}
+            voiceState={voiceState}
+            agentId={agentId}
+            voiceMode={voiceUiActive}
+            onStartVoice={() => void startVoice()}
+          />
           <Composer
             input={input}
             agentId={agentId}

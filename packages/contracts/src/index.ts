@@ -6,6 +6,7 @@ export const realtimeEventTypes = [
   'audio.started',
   'transcription.partial',
   'transcription.final',
+  'user.turn.completed',
   'turn.started',
   'assistant.text.delta',
   'assistant.text.completed',

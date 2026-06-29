@@ -18,6 +18,7 @@ class RuntimeEvents:
         self._batcher = batcher
         self.sequence = bootstrap.lastSequence
         self.state: ConversationState = "INITIALIZING"
+        self.current_speech_id: str | None = None
 
     async def emit(
         self,

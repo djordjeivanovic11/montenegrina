@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { defaultMontenegrinSystemInstruction } from '@montenegrina/language-cnr';
 import { schema } from '@montenegrina/database';
-import { and, asc, desc, eq, gt } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ApiException } from '../core/api-exception.js';
@@ -21,10 +21,9 @@ export class AgentsService {
   async list(actor: RequestActor, cursor?: string, limit = 20) {
     const organizationId = this.organization(actor);
     const boundedLimit = Math.max(1, Math.min(100, limit));
+    const active = and(eq(schema.agents.organizationId, organizationId), isNull(schema.agents.archivedAt));
     const items = await this.database.db.query.agents.findMany({
-      where: cursor
-        ? and(eq(schema.agents.organizationId, organizationId), gt(schema.agents.id, cursor))
-        : eq(schema.agents.organizationId, organizationId),
+      where: cursor ? and(active, gt(schema.agents.id, cursor)) : active,
       orderBy: [asc(schema.agents.id)],
       limit: boundedLimit + 1,
     });
@@ -37,7 +36,12 @@ export class AgentsService {
   }
 
   async get(actor: RequestActor, id: string) {
-    return this.formatAgent(await this.find(actor, id));
+    const item = await this.find(actor, id);
+    const config = await this.resolveActiveConfig(actor, item);
+    return {
+      ...this.formatAgent(item),
+      ...(config ? { config } : {}),
+    };
   }
 
   async create(actor: RequestActor, body: { name: string; slug: string; description?: string }) {
@@ -163,6 +167,7 @@ export class AgentsService {
         .update(schema.agents)
         .set({ publishedVersionId: versionId, updatedAt: new Date() })
         .where(and(eq(schema.agents.organizationId, organizationId), eq(schema.agents.id, agentId)));
+      await this.syncKnowledgeBaseAssignments(transaction, organizationId, agentId, version.config.knowledgeBaseIds ?? []);
     });
     return this.get(actor, agentId);
   }
@@ -191,7 +196,10 @@ export class AgentsService {
   }
 
   async archive(actor: RequestActor, agentId: string) {
-    await this.find(actor, agentId);
+    const item = await this.find(actor, agentId);
+    if (item.archivedAt) {
+      throw new ApiException({ code: 'AGENT_ALREADY_ARCHIVED', message: 'Agent is already archived.', status: 409 });
+    }
     await this.database.db
       .update(schema.agents)
       .set({ archivedAt: new Date(), updatedAt: new Date() })
@@ -212,6 +220,54 @@ export class AgentsService {
     });
     if (!version) throw new ApiException({ code: 'PUBLISHED_VERSION_MISSING', message: 'Published agent configuration is unavailable.', status: 500 });
     return { agent, version };
+  }
+
+  private async syncKnowledgeBaseAssignments(
+    transaction: Parameters<Parameters<DatabaseService['db']['transaction']>[0]>[0],
+    organizationId: string,
+    agentId: string,
+    knowledgeBaseIds: string[],
+  ): Promise<void> {
+    await transaction
+      .delete(schema.agentKnowledgeBaseAssignments)
+      .where(
+        and(
+          eq(schema.agentKnowledgeBaseAssignments.organizationId, organizationId),
+          eq(schema.agentKnowledgeBaseAssignments.agentId, agentId),
+        ),
+      );
+    if (!knowledgeBaseIds.length) return;
+    const bases = await transaction.query.knowledgeBases.findMany({
+      where: and(
+        eq(schema.knowledgeBases.organizationId, organizationId),
+        inArray(schema.knowledgeBases.id, knowledgeBaseIds),
+      ),
+    });
+    for (const base of bases) {
+      await transaction.insert(schema.agentKnowledgeBaseAssignments).values({
+        organizationId,
+        agentId,
+        knowledgeBaseId: base.id,
+      });
+    }
+  }
+
+  private async resolveActiveConfig(actor: RequestActor, item: typeof schema.agents.$inferSelect): Promise<AgentConfig | null> {
+    const organizationId = this.organization(actor);
+    if (item.publishedVersionId) {
+      const published = await this.database.db.query.agentVersions.findFirst({
+        where: and(
+          eq(schema.agentVersions.organizationId, organizationId),
+          eq(schema.agentVersions.id, item.publishedVersionId),
+        ),
+      });
+      return published?.config ?? null;
+    }
+    const latest = await this.database.db.query.agentVersions.findFirst({
+      where: and(eq(schema.agentVersions.organizationId, organizationId), eq(schema.agentVersions.agentId, item.id)),
+      orderBy: [desc(schema.agentVersions.version)],
+    });
+    return latest?.config ?? null;
   }
 
   private async version(actor: RequestActor, id: string) {

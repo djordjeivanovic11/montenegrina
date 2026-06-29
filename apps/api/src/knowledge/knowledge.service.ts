@@ -260,8 +260,8 @@ export class KnowledgeService {
     return {
       documentId,
       version: version.version,
+      mediaType: version.mediaType,
       extractedText: version.extractedText,
-      downloadUrl: version.objectKey ? await this.storage.presignedGetUrl(version.objectKey) : null,
       sections: sections.map((section) => ({
         id: section.id,
         heading: section.heading,
@@ -272,6 +272,21 @@ export class KnowledgeService {
         content: section.content,
       })),
     };
+  }
+
+  async content(actor: RequestActor, documentId: string) {
+    const document = await this.requireDocument(actor, documentId);
+    const version = await this.database.db.query.documentVersions.findFirst({
+      where: and(
+        eq(schema.documentVersions.documentId, documentId),
+        eq(schema.documentVersions.version, document.currentVersion),
+      ),
+    });
+    if (!version?.objectKey) {
+      throw new ApiException({ code: 'DOCUMENT_VERSION_NOT_FOUND', message: 'Document version was not found.', status: 404 });
+    }
+    const object = await this.storage.get(version.objectKey);
+    return { body: object.body, contentType: version.mediaType || object.contentType };
   }
 
   async getIngestionJob(actor: RequestActor, jobId: string) {

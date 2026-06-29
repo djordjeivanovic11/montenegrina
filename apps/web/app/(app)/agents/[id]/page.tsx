@@ -1,66 +1,119 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 import { Badge, Card, PageHeader } from '../../../components/ui/page-shell';
-import { API_URL, api, apiHeaders } from '../../../lib/api-client';
-import { buildOnboardingAgentConfig } from '../../../lib/onboarding-agent-config';
+import { archiveAgent, publishAgentVersion, type AgentRecord } from '../../../lib/agent-actions';
+import { api } from '../../../lib/api-client';
+import { useI18n } from '../../../lib/i18n/index';
 
 export default function AgentDetailPage() {
   const params = useParams<{ id: string }>();
-  const [agent, setAgent] = useState<Record<string, unknown> | null>(null);
+  const router = useRouter();
+  const { t } = useI18n('cnr');
+  const [agent, setAgent] = useState<AgentRecord | null>(null);
+  const [name, setName] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [loadedInstructions, setLoadedInstructions] = useState('');
+  const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     if (!params.id) return;
     const res = await api.GET('/v1/agents/{agentId}', { params: { path: { agentId: params.id } } });
-    if (res.data) setAgent(res.data as Record<string, unknown>);
+    if (!res.data) return;
+    const record = res.data as AgentRecord;
+    setAgent(record);
+    const prompt = record.config?.systemPrompt ?? record.description ?? '';
+    setName(record.name);
+    setInstructions(prompt);
+    setLoadedInstructions(prompt);
   }, [params.id]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function publishAgent(): Promise<void> {
+  async function saveAgent(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    if (!params.id) return;
+    setSaving(true);
+    setMessage('');
+    setError('');
+
+    const trimmedName = name.trim();
+    const trimmedInstructions = instructions.trim();
+    if (!trimmedName || !trimmedInstructions) {
+      setError(t('agents.requiredFields'));
+      setSaving(false);
+      return;
+    }
+
+    const updated = await api.PATCH('/v1/agents/{agentId}', {
+      params: { path: { agentId: params.id }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+      body: { name: trimmedName, description: trimmedInstructions },
+    });
+    if (!updated.response.ok) {
+      setError(t('agents.saveFailed'));
+      setSaving(false);
+      return;
+    }
+
+    if (trimmedInstructions !== loadedInstructions) {
+      const published = await publishAgentVersion(params.id, trimmedInstructions, agent?.config);
+      if (!published.ok) {
+        setError(published.message ?? t('agents.publishFailed'));
+        setSaving(false);
+        return;
+      }
+      setMessage(t('agents.savedAndPublished'));
+    } else {
+      setMessage(t('agents.saved'));
+    }
+
+    await load();
+    setSaving(false);
+  }
+
+  async function publishDraft(): Promise<void> {
     if (!params.id) return;
     setPublishing(true);
     setMessage('');
-    try {
-      let versionId = agent?.publishedVersionId as string | undefined;
-      if (!versionId) {
-        const basesRes = await fetch(`${API_URL}/v1/knowledge/bases`, { credentials: 'include', headers: apiHeaders() });
-        let knowledgeBaseIds: string[] = [];
-        if (basesRes.ok) {
-          const data = (await basesRes.json()) as { items: Array<{ id: string }> };
-          if (data.items[0]?.id) knowledgeBaseIds = [data.items[0].id];
-        }
-        const prompt = ((agent?.description as string) || 'You are a helpful Montenegrina assistant.').trim();
-        const version = await api.POST('/v1/agents/{agentId}/versions', {
-          params: { path: { agentId: params.id }, header: { 'Idempotency-Key': crypto.randomUUID() } },
-          body: { config: buildOnboardingAgentConfig(prompt, knowledgeBaseIds) },
-        });
-        if (!version.response.ok || !version.data) {
-          setMessage('Failed to create agent version.');
-          return;
-        }
-        versionId = version.data.id;
-      }
-      const published = await api.POST('/v1/agents/{agentId}/publish', {
-        params: { path: { agentId: params.id }, header: { 'Idempotency-Key': crypto.randomUUID() } },
-        body: { versionId },
-      });
-      if (!published.response.ok) {
-        setMessage('Failed to publish agent.');
-        return;
-      }
-      setMessage('Agent published. Voice is now available in the playground.');
-      await load();
-    } finally {
+    setError('');
+    const prompt = instructions.trim() || loadedInstructions;
+    if (!prompt) {
+      setError(t('agents.requiredFields'));
       setPublishing(false);
+      return;
     }
+    const published = await publishAgentVersion(params.id, prompt, agent?.config);
+    if (!published.ok) {
+      setError(published.message ?? t('agents.publishFailed'));
+      setPublishing(false);
+      return;
+    }
+    setMessage(t('agents.publishedSuccess'));
+    await load();
+    setPublishing(false);
+  }
+
+  async function deleteAgent(): Promise<void> {
+    if (!params.id || !agent) return;
+    if (!window.confirm(t('agents.deleteConfirm', { name: agent.name }))) return;
+    setDeleting(true);
+    setError('');
+    const ok = await archiveAgent(params.id);
+    if (!ok) {
+      setError(t('agents.deleteFailed'));
+      setDeleting(false);
+      return;
+    }
+    router.push('/agents');
   }
 
   const isPublished = Boolean(agent?.publishedVersionId);
@@ -68,38 +121,66 @@ export default function AgentDetailPage() {
   return (
     <div className="page-content">
       <PageHeader
-        title={(agent?.name as string) ?? 'Agent'}
-        description={(agent?.slug as string) ?? ''}
+        title={agent?.name ?? t('agents.edit')}
+        description={agent?.slug ?? ''}
         actions={
           <>
-            {!isPublished && (
-              <button type="button" onClick={() => void publishAgent()} className="btn-primary text-sm" disabled={publishing}>
-                {publishing ? 'Publishing…' : 'Publish agent'}
-              </button>
-            )}
-            <Link href="/playground" className="btn-secondary text-sm">Test in playground</Link>
-            <Badge>{isPublished ? 'PUBLISHED' : 'DRAFT'}</Badge>
+            <Badge variant={isPublished ? 'success' : 'muted'}>
+              {isPublished ? t('agents.published') : t('agents.draft')}
+            </Badge>
+            <Link href="/playground" className="btn-secondary text-sm">{t('agents.testPlayground')}</Link>
           </>
         }
       />
+
       <Card className="p-5 mt-6">
-        <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt className="text-ink-3">ID</dt>
-            <dd className="text-ink mt-1 font-mono text-xs">{params.id}</dd>
+        <form onSubmit={(e) => void saveAgent(e)} className="space-y-4">
+          <label className="field-label block">
+            {t('agents.name')}
+            <input value={name} onChange={(e) => setName(e.target.value)} className="input-field mt-1" required />
+          </label>
+          <label className="field-label block">
+            {t('agents.instructions')}
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              rows={8}
+              className="input-field mt-1 resize-none"
+              required
+            />
+          </label>
+          <p className="text-xs text-ink-3">{t('agents.instructionsHint')}</p>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          {message && <p className="text-sm text-ink-2">{message}</p>}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button type="submit" className="btn-primary text-sm" disabled={saving || publishing || deleting}>
+              {saving ? t('agents.saving') : t('app.save')}
+            </button>
+            {!isPublished && (
+              <button
+                type="button"
+                onClick={() => void publishDraft()}
+                className="btn-secondary text-sm"
+                disabled={saving || publishing || deleting}
+              >
+                {publishing ? t('agents.publishing') : t('agents.publish')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void deleteAgent()}
+              className="btn-secondary text-sm text-red-600"
+              disabled={saving || publishing || deleting}
+            >
+              {deleting ? t('agents.deleting') : t('agents.delete')}
+            </button>
           </div>
-          <div>
-            <dt className="text-ink-3">Language</dt>
-            <dd className="text-ink mt-1">{(agent?.defaultLanguage as string) ?? 'cnr'}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt className="text-ink-3">Instructions</dt>
-            <dd className="text-ink-2 mt-1 whitespace-pre-wrap">{(agent?.description as string) ?? '—'}</dd>
-          </div>
-        </dl>
-        {message && <p className="text-sm text-ink-2 mt-4">{message}</p>}
+        </form>
       </Card>
-      <Link href="/agents" className="inline-block mt-6 text-sm text-ink-2 hover:text-ink">← Back to agents</Link>
+
+      <Link href="/agents" className="inline-block mt-6 text-sm text-ink-2 hover:text-ink">
+        ← {t('agents.backToList')}
+      </Link>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   buildKnowledgePromptBlock,
   canAccessDocument,
   deduplicateCandidates,
+  diversifyCandidatesByDocument,
   mergeRetrievalScores,
   reciprocalRankFusion,
   type AccessContext,
@@ -50,7 +51,7 @@ export class RetrievalService {
     actor: RequestActor,
     agentId: string,
     query: string,
-    options: { topK?: number; conversationId?: string; testMode?: boolean } = {},
+    options: { topK?: number; conversationId?: string; testMode?: boolean; knowledgeBaseId?: string } = {},
   ): Promise<GroundedContext[]> {
     const topK = Math.max(1, Math.min(20, options.topK ?? 8));
     const organizationId = this.organization(actor);
@@ -59,16 +60,12 @@ export class RetrievalService {
       version.config.knowledgeBaseIds?.length
         ? version.config.knowledgeBaseIds
         : (version.config.knowledgeSourceIds ?? []);
-    if (!configuredIds.length) return [];
-
-    const assignments = await this.database.db.query.agentKnowledgeBaseAssignments.findMany({
-      where: and(
-        eq(schema.agentKnowledgeBaseAssignments.organizationId, organizationId),
-        eq(schema.agentKnowledgeBaseAssignments.agentId, agentId),
-        inArray(schema.agentKnowledgeBaseAssignments.knowledgeBaseId, configuredIds),
-      ),
-    });
-    const knowledgeBaseIds = assignments.map((item) => item.knowledgeBaseId);
+    const knowledgeBaseIds = await this.resolveKnowledgeBaseIds(
+      organizationId,
+      agentId,
+      configuredIds,
+      options,
+    );
     if (!knowledgeBaseIds.length) return [];
 
     const cacheKey = `knowledge:retrieve:${organizationId}:${agentId}:${createHash('sha256').update(`${query}:${knowledgeBaseIds.join(',')}`).digest('hex')}`;
@@ -203,7 +200,7 @@ export class RetrievalService {
         rerankScore: rerankScores[index] ?? candidate.rrfScore,
       })),
     );
-    const deduped = deduplicateCandidates(merged).slice(0, topK);
+    const deduped = diversifyCandidatesByDocument(deduplicateCandidates(merged), topK);
 
     await this.database.db.insert(schema.retrievalEvents).values({
       id: uuidv7(),
@@ -237,6 +234,46 @@ export class RetrievalService {
     }
 
     return deduped;
+  }
+
+  private async resolveKnowledgeBaseIds(
+    organizationId: string,
+    agentId: string,
+    configuredIds: string[],
+    options: { testMode?: boolean; knowledgeBaseId?: string },
+  ): Promise<string[]> {
+    if (options.testMode && options.knowledgeBaseId) {
+      const base = await this.database.db.query.knowledgeBases.findFirst({
+        where: and(
+          eq(schema.knowledgeBases.organizationId, organizationId),
+          eq(schema.knowledgeBases.id, options.knowledgeBaseId),
+          eq(schema.knowledgeBases.enabled, true),
+        ),
+      });
+      return base ? [base.id] : [];
+    }
+
+    if (!configuredIds.length) return [];
+
+    const assignments = await this.database.db.query.agentKnowledgeBaseAssignments.findMany({
+      where: and(
+        eq(schema.agentKnowledgeBaseAssignments.organizationId, organizationId),
+        eq(schema.agentKnowledgeBaseAssignments.agentId, agentId),
+        inArray(schema.agentKnowledgeBaseAssignments.knowledgeBaseId, configuredIds),
+      ),
+    });
+    if (assignments.length) {
+      return assignments.map((item) => item.knowledgeBaseId);
+    }
+
+    const bases = await this.database.db.query.knowledgeBases.findMany({
+      where: and(
+        eq(schema.knowledgeBases.organizationId, organizationId),
+        inArray(schema.knowledgeBases.id, configuredIds),
+        eq(schema.knowledgeBases.enabled, true),
+      ),
+    });
+    return bases.map((base) => base.id);
   }
 
   private async documentAccessMap(

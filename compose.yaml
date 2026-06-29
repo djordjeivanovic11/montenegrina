@@ -75,7 +75,7 @@ services:
       - "7880:7880"
       - "7881:7881"
       - "7882:7882/udp"
-      - "50000-50100:50000-50100/udp"
+      - "40000-40100:40000-40100/udp"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:7880"]
       interval: 5s
@@ -177,6 +177,8 @@ services:
         required: false
     environment:
       NODE_ENV: development
+      KNOWLEDGE_PARSER_URL: http://knowledge-parser:8090
+      S3_ENDPOINT: http://minio:9000
     ports:
       - "3001:3001"
     depends_on:
@@ -205,6 +207,8 @@ services:
         required: false
     environment:
       NODE_ENV: development
+      KNOWLEDGE_PARSER_URL: http://knowledge-parser:8090
+      S3_ENDPOINT: http://minio:9000
     depends_on:
       seed:
         condition: service_completed_successfully

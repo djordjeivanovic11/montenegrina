@@ -222,6 +222,17 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Agent' }
         '422': { $ref: '#/components/responses/Error' }
+  /v1/agents/{agentId}/archive:
+    post:
+      operationId: archiveAgent
+      tags: [Agents]
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': { $ref: '#/components/responses/Agent' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
   /v1/transcriptions:
     post:
       operationId: createTranscription
@@ -875,6 +886,8 @@ components:
         description: { type: string }
         language: { $ref: '#/components/schemas/Language' }
         publishedVersionId: { type: [string, 'null'], format: uuid }
+        archivedAt: { type: [string, 'null'], format: date-time }
+        config: { $ref: '#/components/schemas/AgentConfiguration' }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     CreateAgentRequest:

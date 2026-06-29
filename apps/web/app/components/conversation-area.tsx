@@ -11,6 +11,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   ts: number;
+  streaming?: boolean;
 }
 
 interface ConversationAreaProps {
@@ -18,6 +19,7 @@ interface ConversationAreaProps {
   voiceState: VoiceState;
   agentId: string;
   onStartVoice: () => void;
+  voiceMode?: boolean;
 }
 
 function formatTime(ts: number): string {
@@ -32,6 +34,7 @@ export function ConversationArea({
   voiceState,
   agentId,
   onStartVoice,
+  voiceMode = false,
 }: ConversationAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const isVoiceActive =
@@ -123,7 +126,7 @@ export function ConversationArea({
       {/* Messages */}
       {!isEmpty && (
         <div className="flex flex-col gap-4 px-6 py-6">
-          {messages.map((msg) => (
+          {messages.filter((msg) => msg.content.trim() || msg.streaming).map((msg) => (
             <div
               key={msg.id}
               className={`flex flex-col gap-1 animate-fade-in max-w-[72%] ${
@@ -143,6 +146,9 @@ export function ConversationArea({
                 >
                   {formatTime(msg.ts)}
                 </span>
+                {msg.streaming && (
+                  <span className="text-xs text-accent animate-pulse">…</span>
+                )}
               </div>
               <div
                 className="px-4 py-3 rounded-2xl text-sm leading-relaxed"
@@ -153,9 +159,10 @@ export function ConversationArea({
                       : 'var(--color-surface)',
                   border: '1px solid var(--color-border)',
                   color: 'var(--color-ink)',
+                  opacity: msg.streaming ? 0.92 : 1,
                 }}
               >
-                {msg.role === 'assistant' ? (
+                {msg.role === 'assistant' && !voiceMode ? (
                   <MarkdownContent content={msg.content} />
                 ) : (
                   <span className="whitespace-pre-wrap">{msg.content}</span>

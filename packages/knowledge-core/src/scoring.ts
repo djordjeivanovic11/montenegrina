@@ -41,6 +41,27 @@ export function deduplicateCandidates(candidates: RetrievalCandidate[]): Retriev
   return [...seen.values()].sort((left, right) => right.finalScore - left.finalScore);
 }
 
+/** Prefer breadth across documents so one long PDF does not dominate the prompt. */
+export function diversifyCandidatesByDocument(
+  candidates: RetrievalCandidate[],
+  topK: number,
+  maxPerDocument = 2,
+): RetrievalCandidate[] {
+  const result: RetrievalCandidate[] = [];
+  const perDocument = new Map<string, number>();
+  for (const candidate of candidates) {
+    if (result.length >= topK) break;
+    const used = perDocument.get(candidate.documentId) ?? 0;
+    if (used >= maxPerDocument) continue;
+    perDocument.set(candidate.documentId, used + 1);
+    result.push(candidate);
+  }
+  return result;
+}
+
+const KNOWLEDGE_ANSWER_GUIDANCE =
+  'Odgovori sažeto (obično 2–5 rečenica ili kratka lista tačaka). Ne prepisuj cijele izvore; izvuci samo ono što odgovara na pitanje i citiraj [Sn]. Ako korisnik traži detaljan vodič, tada možeš biti opširniji.';
+
 export function buildKnowledgePromptBlock(sources: RetrievalCandidate[]): string {
   if (!sources.length) {
     return '\n\nNema dostupnih izvora iz baze znanja. Ako korisnik traži činjenice koje zahtijevaju izvore, reci da nema dovoljno informacija u dostupnim dokumentima.';
@@ -50,5 +71,5 @@ export function buildKnowledgePromptBlock(sources: RetrievalCandidate[]): string
       (source, index) =>
         `[S${index + 1}] ${source.title}${source.page ? `, str. ${source.page}` : ''}${source.section ? `, ${source.section}` : ''}: ${source.content}`,
     )
-    .join('\n')}`;
+    .join('\n')}\n\n${KNOWLEDGE_ANSWER_GUIDANCE}`;
 }

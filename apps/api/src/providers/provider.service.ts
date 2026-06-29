@@ -139,7 +139,14 @@ export class ProviderService {
       'response',
       result.metadata,
     );
-    const now = Date.now();
+    const conversationStartedAtMs = options.conversationId
+      ? (
+          await this.database.db.query.conversations.findFirst({
+            where: eq(schema.conversations.id, convId),
+          })
+        )?.startedAt.getTime() ?? Date.now()
+      : Date.now();
+    const offsetMs = Date.now() - conversationStartedAtMs;
     await this.database.db.insert(schema.transcriptSegments).values([
       {
         id: uuidv7(),
@@ -148,7 +155,7 @@ export class ProviderService {
         speaker: 'USER',
         originalText: options.input,
         normalizedText: options.input,
-        startedAtMs: now,
+        startedAtMs: offsetMs,
         final: true,
       },
       {
@@ -158,7 +165,7 @@ export class ProviderService {
         speaker: 'ASSISTANT',
         originalText: result.data.text,
         normalizedText: language.correctedText,
-        startedAtMs: now + 1,
+        startedAtMs: offsetMs + 1,
         final: true,
       },
     ]);

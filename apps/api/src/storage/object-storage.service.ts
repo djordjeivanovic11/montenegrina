@@ -42,6 +42,17 @@ export class ObjectStorageService {
     await this.#client.send(new DeleteObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }));
   }
 
+  async get(key: string): Promise<{ body: Uint8Array; contentType: string }> {
+    const response = await this.#client.send(
+      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
+    );
+    if (!response.Body) throw new Error(`Object is empty: ${key}`);
+    return {
+      body: await response.Body.transformToByteArray(),
+      contentType: response.ContentType ?? 'application/octet-stream',
+    };
+  }
+
   async presignedGetUrl(key: string, expiresInSeconds = 900): Promise<string> {
     return getSignedUrl(
       this.#client,

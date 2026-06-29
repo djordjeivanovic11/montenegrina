@@ -24,6 +24,7 @@
         "audio.started",
         "transcription.partial",
         "transcription.final",
+        "user.turn.completed",
         "turn.started",
         "assistant.text.delta",
         "assistant.text.completed",
@@ -64,7 +65,8 @@
         "code": { "type": "string" },
         "message": { "type": "string" },
         "retryable": { "type": "boolean" },
-        "toolInvocationId": { "type": "string", "format": "uuid" }
+        "toolInvocationId": { "type": "string", "format": "uuid" },
+        "speechId": { "type": "string" }
       }
     }
   },
