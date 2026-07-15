@@ -22,8 +22,7 @@ umask 077
   for key in LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID GOOGLE_CLIENT_ID PUBLIC_GOOGLE_CLIENT_ID; do
     printf '%s=%s\n' "$key" "$(read_value "$key")"
   done
-  printf 'RESEND_API_KEY=\nTURNSTILE_SECRET_KEY=\nPUBLIC_TURNSTILE_SITE_KEY=\n'
   printf 'CUSTOM_WEB_DOMAIN=voice.mne-mcp.com\nCUSTOM_API_DOMAIN=api.voice.mne-mcp.com\n'
 } >"$TARGET"
 chmod 600 "$TARGET"
-echo "Created .env.azure with fresh application secrets. Add Azure subscription, Resend, and Turnstile values."
+echo "Created .env.azure with fresh application secrets. Add the Azure subscription and Google OAuth client ID."

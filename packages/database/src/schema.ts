@@ -294,10 +294,8 @@ export const users = pgTable(
     id: uuid('id').primaryKey(),
     email: text('email').notNull(),
     displayName: text('display_name').notNull(),
-    passwordHash: text('password_hash'),
     googleId: text('google_id'),
     avatarUrl: text('avatar_url'),
-    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -344,39 +342,6 @@ export const invitations = pgTable(
   (table) => [
     index('invitations_org_idx').on(table.organizationId),
     index('invitations_email_idx').on(sql`lower(${table.email})`),
-  ],
-);
-
-export const passwordResetTokens = pgTable(
-  'password_reset_tokens',
-  {
-    id: uuid('id').primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    tokenHash: text('token_hash').notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-    usedAt: timestamp('used_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [index('password_reset_tokens_user_idx').on(table.userId)],
-);
-
-export const emailVerificationTokens = pgTable(
-  'email_verification_tokens',
-  {
-    id: uuid('id').primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    tokenHash: text('token_hash').notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-    usedAt: timestamp('used_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    uniqueIndex('email_verification_tokens_hash_uq').on(table.tokenHash),
-    index('email_verification_tokens_user_idx').on(table.userId),
   ],
 );
 

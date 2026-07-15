@@ -38,70 +38,21 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Health' }
         '503': { $ref: '#/components/responses/Error' }
-  /v1/auth/login:
+  /v1/auth/google:
     post:
-      operationId: login
+      operationId: loginWithGoogle
       tags: [Authentication]
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/LoginRequest' }
+            schema: { $ref: '#/components/schemas/GoogleCredentialRequest' }
       responses:
         '200': { $ref: '#/components/responses/Session' }
         '401': { $ref: '#/components/responses/Error' }
-  /v1/auth/register:
-    post:
-      operationId: register
-      tags: [Authentication]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RegisterRequest' }
-      responses:
-        '202':
-          description: Registration accepted pending email verification
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/PendingVerification' }
-        '409': { $ref: '#/components/responses/Error' }
-        '422': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/Error' }
         '503': { $ref: '#/components/responses/Error' }
-  /v1/auth/verify-email:
-    post:
-      operationId: verifyEmail
-      tags: [Authentication]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/VerificationTokenRequest' }
-      responses:
-        '200': { $ref: '#/components/responses/Session' }
-        '400': { $ref: '#/components/responses/Error' }
-        '429': { $ref: '#/components/responses/Error' }
-  /v1/auth/resend-verification:
-    post:
-      operationId: resendVerification
-      tags: [Authentication]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/EmailRequest' }
-      responses:
-        '202':
-          description: Verification delivery accepted without disclosing account existence
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AcceptedResponse' }
-        '429': { $ref: '#/components/responses/Error' }
   /v1/auth/logout:
     post:
       operationId: logout
@@ -861,47 +812,12 @@ components:
     SttLanguage:
       type: string
       enum: [sr, hr, bs, multi]
-    LoginRequest:
+    GoogleCredentialRequest:
       type: object
       additionalProperties: false
-      required: [email, password]
+      required: [credential]
       properties:
-        email: { type: string, format: email }
-        password: { type: string, minLength: 12, maxLength: 200 }
-    RegisterRequest:
-      type: object
-      additionalProperties: false
-      required: [email, password, displayName, turnstileToken]
-      properties:
-        email: { type: string, format: email, maxLength: 320 }
-        password: { type: string, minLength: 12, maxLength: 256 }
-        displayName: { type: string, minLength: 2, maxLength: 100 }
-        turnstileToken: { type: string, minLength: 1, maxLength: 4096 }
-    VerificationTokenRequest:
-      type: object
-      additionalProperties: false
-      required: [token]
-      properties:
-        token: { type: string, minLength: 32, maxLength: 256 }
-    EmailRequest:
-      type: object
-      additionalProperties: false
-      required: [email]
-      properties:
-        email: { type: string, format: email, maxLength: 320 }
-    AcceptedResponse:
-      type: object
-      additionalProperties: false
-      required: [accepted]
-      properties:
-        accepted: { type: boolean, const: true }
-    PendingVerification:
-      type: object
-      additionalProperties: false
-      required: [accepted, verificationRequired]
-      properties:
-        accepted: { type: boolean, const: true }
-        verificationRequired: { type: boolean, const: true }
+        credential: { type: string, minLength: 1, maxLength: 16384 }
     Session:
       type: object
       additionalProperties: false

@@ -36,7 +36,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/v1/auth/login': {
+  '/v1/auth/google': {
     parameters: {
       query?: never;
       header?: never;
@@ -45,55 +45,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post: operations['login'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/v1/auth/register': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['register'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/v1/auth/verify-email': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['verifyEmail'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/v1/auth/resend-verification': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['resendVerification'];
+    post: operations['loginWithGoogle'];
     delete?: never;
     options?: never;
     head?: never;
@@ -777,34 +729,8 @@ export interface components {
     MembershipRole: 'OWNER' | 'ADMIN' | 'DEVELOPER' | 'VIEWER';
     /** @enum {string} */
     SttLanguage: 'sr' | 'hr' | 'bs' | 'multi';
-    LoginRequest: {
-      /** Format: email */
-      email: string;
-      password: string;
-    };
-    RegisterRequest: {
-      /** Format: email */
-      email: string;
-      password: string;
-      displayName: string;
-      turnstileToken: string;
-    };
-    VerificationTokenRequest: {
-      token: string;
-    };
-    EmailRequest: {
-      /** Format: email */
-      email: string;
-    };
-    AcceptedResponse: {
-      /** @constant */
-      accepted: true;
-    };
-    PendingVerification: {
-      /** @constant */
-      accepted: true;
-      /** @constant */
-      verificationRequired: true;
+    GoogleCredentialRequest: {
+      credential: string;
     };
     Session: {
       user: components['schemas']['User'];
@@ -1440,7 +1366,7 @@ export interface operations {
       503: components['responses']['Error'];
     };
   };
-  login: {
+  loginWithGoogle: {
     parameters: {
       query?: never;
       header?: never;
@@ -1449,83 +1375,14 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['LoginRequest'];
+        'application/json': components['schemas']['GoogleCredentialRequest'];
       };
     };
     responses: {
       200: components['responses']['Session'];
       401: components['responses']['Error'];
-    };
-  };
-  register: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegisterRequest'];
-      };
-    };
-    responses: {
-      /** @description Registration accepted pending email verification */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PendingVerification'];
-        };
-      };
-      409: components['responses']['Error'];
-      422: components['responses']['Error'];
       429: components['responses']['Error'];
       503: components['responses']['Error'];
-    };
-  };
-  verifyEmail: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VerificationTokenRequest'];
-      };
-    };
-    responses: {
-      200: components['responses']['Session'];
-      400: components['responses']['Error'];
-      429: components['responses']['Error'];
-    };
-  };
-  resendVerification: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['EmailRequest'];
-      };
-    };
-    responses: {
-      /** @description Verification delivery accepted without disclosing account existence */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AcceptedResponse'];
-        };
-      };
-      429: components['responses']['Error'];
     };
   };
   logout: {

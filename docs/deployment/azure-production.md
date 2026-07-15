@@ -8,7 +8,7 @@ Montenegrina is deployed independently from MNE-MCP into `rg-montenegrina-prod`.
 
 ## External release inputs
 
-Before provisioning, configure Resend for `voice.mne-mcp.com` and create a Cloudflare Turnstile site for `https://voice.mne-mcp.com`. Put the Resend API key, Turnstile secret, and public Turnstile site key in the ignored `.env.azure` file. Never commit or paste secret values into command output.
+Before provisioning, configure the existing Google OAuth client for `https://voice.mne-mcp.com` and put its client ID in the ignored `.env.azure` file. Never commit or paste secret values into command output.
 
 GoDaddy must receive the CNAME and `asuid` TXT records printed by the domain script. Domain binding must not run until those records resolve publicly.
 
@@ -43,6 +43,6 @@ The rollback creates new revisions using the known-good images and reruns readin
 
 ## Production checks
 
-Confirm both custom domains have valid TLS, `/health/live` and `/health/ready` return 200, password registration requires Turnstile and email verification, and Google login creates a free workspace with a published starter agent. Complete one browser conversation and confirm it ends within five minutes, appears in monthly usage, and cannot exceed the free ten-minute allowance.
+Confirm both custom domains have valid TLS, `/health/live` and `/health/ready` return 200, and Google login creates a free workspace with a published starter agent. Complete one browser conversation and confirm it ends within five minutes, appears in monthly usage, and cannot exceed the free ten-minute allowance.
 
 Blob containers, PostgreSQL, Redis, and Key Vault are private. Validate that recordings, phone/SIP, billing, anonymous demo, and local bootstrap administration remain disabled. Review the Log Analytics scheduled alerts for readiness, 5xx responses, restart loops, replica exhaustion, PostgreSQL/Redis failures, queue failures, and provider failures.

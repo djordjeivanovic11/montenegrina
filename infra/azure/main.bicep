@@ -26,11 +26,6 @@ param elevenlabsApiKey string
 param elevenlabsVoiceId string
 @secure()
 param googleClientId string
-@secure()
-param resendApiKey string
-@secure()
-param turnstileSecretKey string
-param turnstileSiteKey string
 param tags object = {}
 
 var mergedTags = union(tags, { 'azd-env-name': environmentName, workload: 'montenegrina' })
@@ -62,9 +57,6 @@ module resources 'resources.bicep' = {
     elevenlabsApiKey: elevenlabsApiKey
     elevenlabsVoiceId: elevenlabsVoiceId
     googleClientId: googleClientId
-    resendApiKey: resendApiKey
-    turnstileSecretKey: turnstileSecretKey
-    turnstileSiteKey: turnstileSiteKey
   }
 }
 

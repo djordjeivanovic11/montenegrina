@@ -45,7 +45,6 @@ import { AuthGuard } from './security/auth.guard.js';
 import { RateLimitGuard } from './security/rate-limit.guard.js';
 import { SessionService } from './security/session.service.js';
 import { ObjectStorageService } from './storage/object-storage.service.js';
-import { EmailServiceWrapper } from './email/email.service.js';
 import { EvaluationsController } from './evaluations/evaluations.controller.js';
 import { EvaluationsService } from './evaluations/evaluations.service.js';
 import { TeamController } from './team/team.controller.js';
@@ -124,7 +123,6 @@ const environment = loadEnvironment();
         }),
     },
     SessionService,
-    EmailServiceWrapper,
     WorkspaceBootstrapService,
     AuditService,
     EntitlementsService,

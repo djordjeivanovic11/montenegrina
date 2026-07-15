@@ -57,6 +57,13 @@
       "when": 1784142000000,
       "tag": "0007_verified_public_trial",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784145600000,
+      "tag": "0008_google_only_auth",
+      "breakpoints": true
     }
   ]
 }

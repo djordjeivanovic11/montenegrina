@@ -3,7 +3,7 @@
 ## Product surfaces
 
 - **Marketing site** (`/`) — bilingual EN/CNR public homepage
-- **Auth** (`/login`, `/signup`, `/forgot-password`, `/reset-password`, `/invite/accept`) — email and Google authentication
+- **Auth** (`/login`, `/signup`, `/invite/accept`) — Google authentication only
 - **App** (`/overview`, `/agents`, `/knowledge`, etc.) — authenticated workspace dashboard
 - **Onboarding** (`/onboarding`) — seven-step first-run wizard
 - **Legal** (`/terms`, `/privacy`) — terms of service and privacy policy
@@ -18,29 +18,28 @@ Plans: Free, Pro, Business, Enterprise (seeded). Quotas enforced on agent creati
 
 ## Feature flags
 
-| Flag | Default | Purpose |
-| --- | --- | --- |
-| `BILLING_ENABLED` | false | Stripe checkout and customer portal |
-| `PHONE_INTEGRATIONS_ENABLED` | false | SIP/Twilio UI |
-| `WEBHOOKS_ENABLED` | true | Webhook CRUD and delivery |
-| `PUBLIC_DEMO_ENABLED` | false | Anonymous homepage demo |
-| `SENTRY_ENABLED` | false | Error reporting (API + web) |
+| Flag                         | Default | Purpose                             |
+| ---------------------------- | ------- | ----------------------------------- |
+| `BILLING_ENABLED`            | false   | Stripe checkout and customer portal |
+| `PHONE_INTEGRATIONS_ENABLED` | false   | SIP/Twilio UI                       |
+| `WEBHOOKS_ENABLED`           | true    | Webhook CRUD and delivery           |
+| `PUBLIC_DEMO_ENABLED`        | false   | Anonymous homepage demo             |
+| `SENTRY_ENABLED`             | false   | Error reporting (API + web)         |
 
 ## Environment variables (user-facing)
 
-| Variable | Purpose |
-| --- | --- |
-| `PUBLIC_WEB_URL` | Web app URL for email links and Stripe redirects |
-| `PUBLIC_API_URL` | API URL for web client |
-| `EMAIL_PROVIDER` | `console` (dev) or `resend` (production) |
-| `RESEND_API_KEY` | Resend API key when `EMAIL_PROVIDER=resend` |
-| `EMAIL_FROM` | From address for transactional email |
-| `STRIPE_SECRET_KEY` | Stripe secret key (test or live) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_PRICE_PRO` | Stripe Price ID for Pro plan |
-| `STRIPE_PRICE_BUSINESS` | Stripe Price ID for Business plan |
-| `SENTRY_DSN` | Optional Sentry DSN |
-| `KNOWLEDGE_PARSER_URL` | Internal URL for document parser service |
+| Variable                  | Purpose                                                |
+| ------------------------- | ------------------------------------------------------ |
+| `PUBLIC_WEB_URL`          | Web app URL for invitation links and Stripe redirects  |
+| `PUBLIC_API_URL`          | API URL for web client                                 |
+| `PUBLIC_GOOGLE_CLIENT_ID` | Google Identity Services client ID for the web app     |
+| `GOOGLE_CLIENT_ID`        | Google client ID used by the API to verify credentials |
+| `STRIPE_SECRET_KEY`       | Stripe secret key (test or live)                       |
+| `STRIPE_WEBHOOK_SECRET`   | Stripe webhook signing secret                          |
+| `STRIPE_PRICE_PRO`        | Stripe Price ID for Pro plan                           |
+| `STRIPE_PRICE_BUSINESS`   | Stripe Price ID for Business plan                      |
+| `SENTRY_DSN`              | Optional Sentry DSN                                    |
+| `KNOWLEDGE_PARSER_URL`    | Internal URL for document parser service               |
 
 ## Webhook signatures
 
@@ -83,16 +82,16 @@ PSTN ↔ Twilio/Telnyx ↔ LiveKit Cloud SIP ↔ LiveKit room ↔ `montenegrina-
 
 ### Environment checklist (staging/prod)
 
-| Variable | Purpose |
-| --- | --- |
-| `LIVEKIT_URL` / `PUBLIC_LIVEKIT_URL` | LiveKit Cloud WebSocket URL (`wss://….livekit.cloud`) |
-| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | LiveKit project credentials |
-| `LIVEKIT_SIP_OUTBOUND_TRUNK_ID` | Outbound trunk (`ST_…`) for API-initiated calls |
-| `LIVEKIT_SIP_INBOUND_TRUNK_ID` | Inbound trunk for DID routing |
-| `LIVEKIT_WEBHOOK_SECRET` | Optional; LiveKit signs webhooks with API secret |
-| `VOICE_AGENT_SERVICE_SECRET` | Shared secret for inbound `provision-inbound` (API + voice-agent) |
+| Variable                                                                  | Purpose                                                                                      |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `LIVEKIT_URL` / `PUBLIC_LIVEKIT_URL`                                      | LiveKit Cloud WebSocket URL (`wss://….livekit.cloud`)                                        |
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET`                                  | LiveKit project credentials                                                                  |
+| `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`                                           | Outbound trunk (`ST_…`) for API-initiated calls                                              |
+| `LIVEKIT_SIP_INBOUND_TRUNK_ID`                                            | Inbound trunk for DID routing                                                                |
+| `LIVEKIT_WEBHOOK_SECRET`                                                  | Optional; LiveKit signs webhooks with API secret                                             |
+| `VOICE_AGENT_SERVICE_SECRET`                                              | Shared secret for inbound `provision-inbound` (API + voice-agent)                            |
 | `LIVEKIT_EGRESS_S3_ACCESS_KEY_ID` / `LIVEKIT_EGRESS_S3_SECRET_ACCESS_KEY` | Optional dedicated IAM user credentials for LiveKit Cloud egress (falls back to `S3_*` keys) |
-| `PHONE_INTEGRATIONS_ENABLED` | Enables phone number UI and SIP channel management |
+| `PHONE_INTEGRATIONS_ENABLED`                                              | Enables phone number UI and SIP channel management                                           |
 
 Set the same `VOICE_AGENT_SERVICE_SECRET` on API and voice-agent containers.
 
@@ -130,7 +129,7 @@ Per-number dispatch rules are created automatically when you enable a number in 
 ## Before accepting paying customers
 
 - Enable Stripe billing (`BILLING_ENABLED=true`) with test mode first
-- Configure Resend for transactional email
+- Configure Google OAuth production origins
 - Phone/SIP via LiveKit Cloud (see above)
 - Per-tenant provider credentials
 - SOC2 / DPA artifacts

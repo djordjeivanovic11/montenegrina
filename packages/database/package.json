@@ -26,8 +26,6 @@
   },
   "dependencies": {
     "@montenegrina/config": "workspace:*",
-    "@montenegrina/language-cnr": "workspace:*",
-    "argon2": "^0.44.0",
     "drizzle-orm": "^0.44.0",
     "pg": "^8.16.0",
     "uuid": "^13.0.0"
@@ -38,4 +36,3 @@
     "tsx": "^4.20.0"
   }
 }
-

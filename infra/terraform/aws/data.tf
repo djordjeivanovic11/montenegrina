@@ -46,8 +46,6 @@ locals {
     { name = "MAX_CONCURRENT_SESSIONS", value = "25" },
     { name = "KNOWLEDGE_PARSER_URL", value = "http://knowledge-parser.${local.name}.local:8090" },
     { name = "PUBLIC_WEB_URL", value = "https://${aws_cloudfront_distribution.app.domain_name}" },
-    { name = "EMAIL_PROVIDER", value = "resend" },
-    { name = "EMAIL_FROM", value = "Montenegrina <noreply@montenegrina.me>" },
     { name = "BILLING_ENABLED", value = "false" },
     { name = "WEBHOOKS_ENABLED", value = "true" },
     { name = "SENTRY_ENABLED", value = "false" },
@@ -69,7 +67,5 @@ locals {
     { name = "ELEVENLABS_MONTENEGRIN_VOICE_ID", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:ELEVENLABS_MONTENEGRIN_VOICE_ID::" },
     { name = "LIVEKIT_API_KEY", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:LIVEKIT_API_KEY::" },
     { name = "LIVEKIT_API_SECRET", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:LIVEKIT_API_SECRET::" },
-    { name = "LOCAL_ADMIN_EMAIL", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:INITIAL_ADMIN_EMAIL::" },
-    { name = "LOCAL_ADMIN_PASSWORD", valueFrom = "${data.aws_secretsmanager_secret.providers.arn}:INITIAL_ADMIN_PASSWORD::" },
   ]
 }

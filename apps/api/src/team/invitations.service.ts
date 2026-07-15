@@ -1,7 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common';
-import type { Environment } from '@montenegrina/config';
+import { Injectable } from '@nestjs/common';
 import { schema } from '@montenegrina/database';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
@@ -9,9 +8,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { AuditService } from '../audit/audit.service.js';
 import { EntitlementsService } from '../billing/entitlements.service.js';
 import { ApiException } from '../core/api-exception.js';
-import { ENVIRONMENT } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
-import { EmailServiceWrapper } from '../email/email.service.js';
 import type { RequestActor } from '../security/actor.js';
 
 @Injectable()
@@ -20,8 +17,6 @@ export class InvitationsService {
     private readonly database: DatabaseService,
     private readonly audit: AuditService,
     private readonly entitlements: EntitlementsService,
-    private readonly email: EmailServiceWrapper,
-    @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
   async list(actor: RequestActor) {
@@ -49,9 +44,6 @@ export class InvitationsService {
   ) {
     const organizationId = this.organization(actor);
     await this.entitlements.assertWithinLimit(organizationId, 'TEAM_MEMBERS', 1);
-    const org = await this.database.db.query.organizations.findFirst({
-      where: eq(schema.organizations.id, organizationId),
-    });
     const token = randomBytes(32).toString('base64url');
     const id = uuidv7();
     await this.database.db.insert(schema.invitations).values({
@@ -71,26 +63,37 @@ export class InvitationsService {
       requestId,
       after: { email: body.email, role: body.role ?? 'DEVELOPER' },
     });
-    const inviteUrl = `${this.environment.PUBLIC_WEB_URL}/invite/accept?token=${token}`;
-    await this.email.sendTeamInvitation(body.email, inviteUrl, org?.name ?? 'your workspace');
     return {
       id,
       email: body.email,
-      ...(this.environment.NODE_ENV === 'development' ? { devInviteLink: inviteUrl } : {}),
+      token,
     };
   }
 
   async accept(token: string, userId: string) {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const invitation = await this.database.db.query.invitations.findFirst({
-      where: and(eq(schema.invitations.tokenHash, tokenHash), eq(schema.invitations.status, 'PENDING')),
+      where: and(
+        eq(schema.invitations.tokenHash, tokenHash),
+        eq(schema.invitations.status, 'PENDING'),
+      ),
     });
     if (!invitation || invitation.expiresAt < new Date()) {
-      throw new ApiException({ code: 'INVITATION_INVALID', message: 'Invitation is invalid or expired.', status: 400 });
+      throw new ApiException({
+        code: 'INVITATION_INVALID',
+        message: 'Invitation is invalid or expired.',
+        status: 400,
+      });
     }
-    const user = await this.database.db.query.users.findFirst({ where: eq(schema.users.id, userId) });
+    const user = await this.database.db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
     if (!user || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new ApiException({ code: 'INVITATION_EMAIL_MISMATCH', message: 'Invitation email does not match your account.', status: 403 });
+      throw new ApiException({
+        code: 'INVITATION_EMAIL_MISMATCH',
+        message: 'Invitation email does not match your account.',
+        status: 403,
+      });
     }
     await this.database.db.transaction(async (transaction) => {
       await transaction.insert(schema.memberships).values({
@@ -111,7 +114,12 @@ export class InvitationsService {
     await this.database.db
       .update(schema.invitations)
       .set({ status: 'REVOKED' })
-      .where(and(eq(schema.invitations.organizationId, organizationId), eq(schema.invitations.id, invitationId)));
+      .where(
+        and(
+          eq(schema.invitations.organizationId, organizationId),
+          eq(schema.invitations.id, invitationId),
+        ),
+      );
     await this.audit.record({
       actor,
       action: 'invitation.revoked',
@@ -145,15 +153,29 @@ export class InvitationsService {
     return { items: users };
   }
 
-  async updateMemberRole(actor: RequestActor, userId: string, role: (typeof schema.membershipRole.enumValues)[number], requestId: string) {
+  async updateMemberRole(
+    actor: RequestActor,
+    userId: string,
+    role: (typeof schema.membershipRole.enumValues)[number],
+    requestId: string,
+  ) {
     const organizationId = this.organization(actor);
     if (userId === actor.userId) {
-      throw new ApiException({ code: 'MEMBERSHIP_SELF_UPDATE', message: 'You cannot change your own role.', status: 422 });
+      throw new ApiException({
+        code: 'MEMBERSHIP_SELF_UPDATE',
+        message: 'You cannot change your own role.',
+        status: 422,
+      });
     }
     await this.database.db
       .update(schema.memberships)
       .set({ role })
-      .where(and(eq(schema.memberships.organizationId, organizationId), eq(schema.memberships.userId, userId)));
+      .where(
+        and(
+          eq(schema.memberships.organizationId, organizationId),
+          eq(schema.memberships.userId, userId),
+        ),
+      );
     await this.audit.record({
       actor,
       action: 'membership.updated',
@@ -168,11 +190,20 @@ export class InvitationsService {
   async removeMember(actor: RequestActor, userId: string, requestId: string) {
     const organizationId = this.organization(actor);
     if (userId === actor.userId) {
-      throw new ApiException({ code: 'MEMBERSHIP_SELF_REMOVE', message: 'You cannot remove yourself.', status: 422 });
+      throw new ApiException({
+        code: 'MEMBERSHIP_SELF_REMOVE',
+        message: 'You cannot remove yourself.',
+        status: 422,
+      });
     }
     await this.database.db
       .delete(schema.memberships)
-      .where(and(eq(schema.memberships.organizationId, organizationId), eq(schema.memberships.userId, userId)));
+      .where(
+        and(
+          eq(schema.memberships.organizationId, organizationId),
+          eq(schema.memberships.userId, userId),
+        ),
+      );
     await this.audit.record({
       actor,
       action: 'membership.removed',
@@ -184,7 +215,12 @@ export class InvitationsService {
   }
 
   private organization(actor: RequestActor): string {
-    if (!actor.organizationId) throw new ApiException({ code: 'ORGANIZATION_REQUIRED', message: 'Select an organization.', status: 400 });
+    if (!actor.organizationId)
+      throw new ApiException({
+        code: 'ORGANIZATION_REQUIRED',
+        message: 'Select an organization.',
+        status: 400,
+      });
     return actor.organizationId;
   }
 }

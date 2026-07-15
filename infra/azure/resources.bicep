@@ -26,11 +26,6 @@ param elevenlabsApiKey string
 param elevenlabsVoiceId string
 @secure()
 param googleClientId string
-@secure()
-param resendApiKey string
-@secure()
-param turnstileSecretKey string
-param turnstileSiteKey string
 
 var registryName = take('crmont${replace(environmentName, '-', '')}${resourceToken}', 50)
 var storageName = take('stmont${replace(environmentName, '-', '')}${resourceToken}', 24)
@@ -209,8 +204,6 @@ var staticKeyVaultValues = [
   { name: 'elevenlabs-api-key', value: elevenlabsApiKey }
   { name: 'elevenlabs-voice-id', value: elevenlabsVoiceId }
   { name: 'google-client-id', value: googleClientId }
-  { name: 'resend-api-key', value: resendApiKey }
-  { name: 'turnstile-secret-key', value: turnstileSecretKey }
 ]
 resource vaultSecrets 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = [for secret in staticKeyVaultValues: {
   parent: vault
@@ -271,7 +264,7 @@ var backendIdentityMap = { '${backendIdentity.id}': {} }
 var frontendIdentityMap = { '${frontendIdentity.id}': {} }
 var registryBackend = [{ server: registry.properties.loginServer, identity: backendIdentity.id }]
 var registryFrontend = [{ server: registry.properties.loginServer, identity: frontendIdentity.id }]
-var backendSecretNames = ['database-url', 'redis-url', 'session-secret', 'internal-token-secret', 'voice-agent-service-secret', 'livekit-url', 'livekit-api-key', 'livekit-api-secret', 'openai-api-key', 'deepgram-api-key', 'elevenlabs-api-key', 'elevenlabs-voice-id', 'google-client-id', 'resend-api-key', 'turnstile-secret-key']
+var backendSecretNames = ['database-url', 'redis-url', 'session-secret', 'internal-token-secret', 'voice-agent-service-secret', 'livekit-url', 'livekit-api-key', 'livekit-api-secret', 'openai-api-key', 'deepgram-api-key', 'elevenlabs-api-key', 'elevenlabs-voice-id', 'google-client-id']
 var backendSecretRefs = [for name in backendSecretNames: { name: name, keyVaultUrl: 'https://${vault.name}${environment().suffixes.keyvaultDns}/secrets/${name}', identity: backendIdentity.id }]
 var commonBackendEnv = [
   { name: 'NODE_ENV', value: 'production' }
@@ -294,27 +287,19 @@ var commonBackendEnv = [
   { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }
   { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }
   { name: 'GOOGLE_CLIENT_ID', secretRef: 'google-client-id' }
-  { name: 'RESEND_API_KEY', secretRef: 'resend-api-key' }
-  { name: 'TURNSTILE_SECRET_KEY', secretRef: 'turnstile-secret-key' }
   { name: 'PUBLIC_WEB_URL', value: publicWebUrl }
   { name: 'PUBLIC_API_URL', value: publicApiUrl }
   { name: 'CORS_ORIGINS', value: publicWebUrl }
   { name: 'COOKIE_SECURE', value: 'true' }
-  { name: 'EMAIL_PROVIDER', value: 'resend' }
-  { name: 'EMAIL_FROM', value: 'Montenegrina <noreply@voice.mne-mcp.com>' }
-  { name: 'EMAIL_VERIFICATION_REQUIRED', value: 'true' }
   { name: 'REGISTRATION_ENABLED', value: 'true' }
   { name: 'BILLING_ENABLED', value: 'false' }
   { name: 'PHONE_INTEGRATIONS_ENABLED', value: 'false' }
   { name: 'RECORDINGS_ENABLED', value: 'false' }
   { name: 'PUBLIC_DEMO_ENABLED', value: 'false' }
   { name: 'WEBHOOKS_ENABLED', value: 'false' }
-  { name: 'BOOTSTRAP_ADMIN_ENABLED', value: 'false' }
   { name: 'MAX_CONVERSATION_MINUTES', value: '5' }
   { name: 'MAX_CONCURRENT_SESSIONS', value: '25' }
   { name: 'RATE_LIMIT_AUTH_PER_MINUTE', value: '10' }
-  { name: 'RATE_LIMIT_REGISTRATIONS_PER_HOUR', value: '3' }
-  { name: 'RATE_LIMIT_VERIFICATIONS_PER_DAY', value: '3' }
   { name: 'RATE_LIMIT_VOICE_SESSIONS_PER_HOUR', value: '3' }
 ]
 
@@ -355,7 +340,7 @@ resource web 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Multiple', maxInactiveRevisions: 5, ingress: { external: true, targetPort: 3000, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryFrontend }
-    template: { containers: [{ name: 'web', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: [{ name: 'PORT', value: '3000' }, { name: 'HOSTNAME', value: '0.0.0.0' }, { name: 'NEXT_PUBLIC_API_URL', value: publicApiUrl }, { name: 'NEXT_PUBLIC_LIVEKIT_URL', value: livekitUrl }, { name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID', value: googleClientId }, { name: 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', value: turnstileSiteKey }], probes: [{ type: 'Liveness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 15, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }] } }
+    template: { containers: [{ name: 'web', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: [{ name: 'PORT', value: '3000' }, { name: 'HOSTNAME', value: '0.0.0.0' }, { name: 'NEXT_PUBLIC_API_URL', value: publicApiUrl }, { name: 'NEXT_PUBLIC_LIVEKIT_URL', value: livekitUrl }, { name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID', value: googleClientId }], probes: [{ type: 'Liveness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 15, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }] } }
   }
   dependsOn: [frontendAcrPull]
 }

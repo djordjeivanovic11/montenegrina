@@ -15,9 +15,6 @@
     "deepgramApiKey": { "value": "${DEEPGRAM_API_KEY}" },
     "elevenlabsApiKey": { "value": "${ELEVENLABS_API_KEY}" },
     "elevenlabsVoiceId": { "value": "${ELEVENLABS_MONTENEGRIN_VOICE_ID}" },
-    "googleClientId": { "value": "${GOOGLE_CLIENT_ID}" },
-    "resendApiKey": { "value": "${RESEND_API_KEY}" },
-    "turnstileSecretKey": { "value": "${TURNSTILE_SECRET_KEY}" },
-    "turnstileSiteKey": { "value": "${PUBLIC_TURNSTILE_SITE_KEY}" }
+    "googleClientId": { "value": "${GOOGLE_CLIENT_ID}" }
   }
 }

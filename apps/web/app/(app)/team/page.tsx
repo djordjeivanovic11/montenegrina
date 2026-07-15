@@ -23,6 +23,7 @@ export default function TeamPage() {
   const [role, setRole] = useState<'ADMIN' | 'DEVELOPER' | 'VIEWER'>('DEVELOPER');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
 
   async function load() {
     const headers = apiHeaders();
@@ -48,6 +49,7 @@ export default function TeamPage() {
     event.preventDefault();
     setError('');
     setSuccess('');
+    setInviteLink('');
     const res = await fetch(`${API_URL}/v1/team/invitations`, {
       method: 'POST',
       credentials: 'include',
@@ -70,8 +72,10 @@ export default function TeamPage() {
       }
       return;
     }
+    const invitation = (await res.json()) as { token: string };
     setEmail('');
-    setSuccess(t('team.inviteSent'));
+    setSuccess(t('team.inviteCreated'));
+    setInviteLink(`${window.location.origin}/invite/accept?token=${invitation.token}`);
     await load();
   }
 
@@ -109,6 +113,18 @@ export default function TeamPage() {
         </form>
         {error && <p className="text-error text-sm mt-2">{error}</p>}
         {success && <p className="text-sm text-ink-2 mt-2">{success}</p>}
+        {inviteLink && (
+          <div className="mt-3 flex gap-2">
+            <input className="input-field flex-1" readOnly value={inviteLink} />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void navigator.clipboard.writeText(inviteLink)}
+            >
+              {t('team.copyInvite')}
+            </button>
+          </div>
+        )}
       </Card>
 
       <h2 className="text-sm font-semibold mt-8 mb-3">{t('team.members')}</h2>

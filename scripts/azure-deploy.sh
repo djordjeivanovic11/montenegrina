@@ -19,7 +19,7 @@ build() {
   az acr build --registry "$ACR" --platform linux/amd64 --image "$image:$TAG" --file "$dockerfile" "$@" "$ROOT"
 }
 build montenegrina-api apps/api/Dockerfile
-build montenegrina-web apps/web/Dockerfile --build-arg "NEXT_PUBLIC_API_URL=https://api.voice.mne-mcp.com" --build-arg "NEXT_PUBLIC_LIVEKIT_URL=$LIVEKIT_URL" --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$PUBLIC_GOOGLE_CLIENT_ID" --build-arg "NEXT_PUBLIC_TURNSTILE_SITE_KEY=$PUBLIC_TURNSTILE_SITE_KEY"
+build montenegrina-web apps/web/Dockerfile --build-arg "NEXT_PUBLIC_API_URL=https://api.voice.mne-mcp.com" --build-arg "NEXT_PUBLIC_LIVEKIT_URL=$LIVEKIT_URL" --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$PUBLIC_GOOGLE_CLIENT_ID"
 build montenegrina-worker apps/worker/Dockerfile
 build montenegrina-voice-agent apps/voice-agent/Dockerfile
 build montenegrina-parser apps/knowledge-parser/Dockerfile

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Req, Res } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -14,23 +14,6 @@ import { SessionService } from './session.service.js';
 import { CurrentActor } from './current-actor.decorator.js';
 import type { RequestActor } from './actor.js';
 
-const normalizedEmail = z
-  .email()
-  .max(320)
-  .transform((value) => value.trim().toLocaleLowerCase('en'));
-const registerSchema = z.object({
-  email: normalizedEmail,
-  password: z.string().min(12).max(256),
-  displayName: z.string().trim().min(2).max(100),
-  turnstileToken: z.string().min(1).max(4096).optional(),
-});
-const loginSchema = z.object({ email: normalizedEmail, password: z.string().min(1).max(256) });
-const tokenSchema = z.object({ token: z.string().min(32).max(256) });
-const emailSchema = z.object({ email: normalizedEmail });
-const resetPasswordSchema = z.object({
-  token: z.string().min(32).max(256),
-  password: z.string().min(12).max(256),
-});
 const googleCredentialSchema = z.object({ credential: z.string().min(1).max(16_384) });
 
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
@@ -52,47 +35,6 @@ export class AuthController {
     private readonly database: DatabaseService,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
-
-  @Public()
-  @Post('register')
-  @HttpCode(202)
-  register(
-    @Body() rawBody: unknown,
-    @Req() request: FastifyRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const body = parse(registerSchema, rawBody);
-    return this.sessions.register(
-      body.email,
-      body.password,
-      body.displayName,
-      body.turnstileToken,
-      request.ip,
-      reply,
-    );
-  }
-
-  @Public()
-  @Post('login')
-  login(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
-    const body = parse(loginSchema, rawBody);
-    return this.sessions.login(body.email, body.password, reply);
-  }
-
-  @Public()
-  @Post('verify-email')
-  verifyEmail(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
-    const body = parse(tokenSchema, rawBody);
-    return this.sessions.verifyEmail(body.token, reply);
-  }
-
-  @Public()
-  @Post('resend-verification')
-  @HttpCode(202)
-  resendVerification(@Body() rawBody: unknown) {
-    const body = parse(emailSchema, rawBody);
-    return this.sessions.resendEmailVerification(body.email);
-  }
 
   @Post('logout')
   async logout(
@@ -145,20 +87,6 @@ export class AuthController {
   }
 
   @Public()
-  @Post('forgot-password')
-  forgotPassword(@Body() rawBody: unknown) {
-    const body = parse(emailSchema, rawBody);
-    return this.sessions.forgotPassword(body.email);
-  }
-
-  @Public()
-  @Post('reset-password')
-  resetPassword(@Body() rawBody: unknown) {
-    const body = parse(resetPasswordSchema, rawBody);
-    return this.sessions.resetPassword(body.token, body.password);
-  }
-
-  @Public()
   @Post('google')
   async googleLogin(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
     const body = parse(googleCredentialSchema, rawBody);
@@ -181,7 +109,7 @@ export class AuthController {
         });
       }
       const payload = ticket.getPayload();
-      if (!payload?.sub || !payload.email) {
+      if (!payload?.sub || !payload.email || !payload.email_verified) {
         throw new ApiException({
           code: 'AUTHENTICATION_FAILED',
           message: 'Invalid Google credential payload.',

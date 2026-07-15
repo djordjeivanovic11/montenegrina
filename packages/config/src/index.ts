@@ -18,18 +18,10 @@ export const environmentSchema = z
     PUBLIC_API_URL: z.url().default('http://localhost:3001'),
     PUBLIC_WEB_URL: z.url().default('http://localhost:3000'),
     PUBLIC_LIVEKIT_URL: z.string().min(1).default('ws://localhost:7880'),
-    EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
-    RESEND_API_KEY: optionalSecret,
-    EMAIL_FROM: z.string().default('Montenegrina <noreply@montenegrina.me>'),
-    EMAIL_VERIFICATION_REQUIRED: z
-      .enum(['true', 'false'])
-      .default('false')
-      .transform((value) => value === 'true'),
     REGISTRATION_ENABLED: z
       .enum(['true', 'false'])
       .default('true')
       .transform((value) => value === 'true'),
-    TURNSTILE_SECRET_KEY: optionalSecret,
     STRIPE_SECRET_KEY: optionalSecret,
     STRIPE_WEBHOOK_SECRET: optionalSecret,
     STRIPE_PRICE_PRO: optionalSecret,
@@ -54,8 +46,6 @@ export const environmentSchema = z
       .string()
       .default('http://localhost:3000')
       .transform((value) => value.split(',').map((origin) => origin.trim())),
-    LOCAL_ADMIN_EMAIL: z.email().default('admin@montenegrina.local'),
-    LOCAL_ADMIN_PASSWORD: z.string().min(12).default('local-admin-change-me'),
     LIVEKIT_URL: z.string().min(1),
     LIVEKIT_API_KEY: z.string().min(1),
     LIVEKIT_API_SECRET: z.string().min(1),
@@ -96,13 +86,7 @@ export const environmentSchema = z
       .transform((value) => value === 'true'),
     PUBLIC_DEMO_ENABLED: booleanFromString,
     RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(20),
-    RATE_LIMIT_REGISTRATIONS_PER_HOUR: z.coerce.number().int().min(1).max(100).default(3),
-    RATE_LIMIT_VERIFICATIONS_PER_DAY: z.coerce.number().int().min(1).max(100).default(3),
     RATE_LIMIT_VOICE_SESSIONS_PER_HOUR: z.coerce.number().int().min(1).max(10_000).default(60),
-    BOOTSTRAP_ADMIN_ENABLED: z
-      .enum(['true', 'false'])
-      .default('true')
-      .transform((value) => value === 'true'),
   })
   .superRefine((environment, context) => {
     if (environment.NODE_ENV === 'production' && !environment.COOKIE_SECURE) {
@@ -130,27 +114,6 @@ export const environmentSchema = z
       });
     }
     if (environment.NODE_ENV === 'production') {
-      if (environment.EMAIL_PROVIDER !== 'resend' || !environment.RESEND_API_KEY) {
-        context.addIssue({
-          code: 'custom',
-          path: ['RESEND_API_KEY'],
-          message: 'Resend email is required in production',
-        });
-      }
-      if (!environment.EMAIL_VERIFICATION_REQUIRED) {
-        context.addIssue({
-          code: 'custom',
-          path: ['EMAIL_VERIFICATION_REQUIRED'],
-          message: 'Email verification is required in production',
-        });
-      }
-      if (!environment.TURNSTILE_SECRET_KEY) {
-        context.addIssue({
-          code: 'custom',
-          path: ['TURNSTILE_SECRET_KEY'],
-          message: 'Turnstile is required in production',
-        });
-      }
       if (!environment.GOOGLE_CLIENT_ID) {
         context.addIssue({
           code: 'custom',
@@ -163,13 +126,6 @@ export const environmentSchema = z
           code: 'custom',
           path: ['VOICE_AGENT_SERVICE_SECRET'],
           message: 'Voice-agent service authentication is required in production',
-        });
-      }
-      if (environment.BOOTSTRAP_ADMIN_ENABLED) {
-        context.addIssue({
-          code: 'custom',
-          path: ['BOOTSTRAP_ADMIN_ENABLED'],
-          message: 'Local bootstrap administration must be disabled in production',
         });
       }
       if (

@@ -42,14 +42,9 @@ describe('environmentSchema', () => {
       PUBLIC_WEB_URL: 'https://voice.mne-mcp.com',
       CORS_ORIGINS: 'https://voice.mne-mcp.com',
       COOKIE_SECURE: 'true',
-      EMAIL_PROVIDER: 'resend',
-      RESEND_API_KEY: 'resend-secret',
-      EMAIL_VERIFICATION_REQUIRED: 'true',
-      TURNSTILE_SECRET_KEY: 'turnstile-secret',
       GOOGLE_CLIENT_ID: 'google-client-id',
       STORAGE_BACKEND: 'azure',
       AZURE_STORAGE_ACCOUNT_URL: 'https://store.blob.core.windows.net',
-      BOOTSTRAP_ADMIN_ENABLED: 'false',
       RECORDINGS_ENABLED: 'false',
     });
 
@@ -67,12 +62,7 @@ describe('environmentSchema', () => {
         PUBLIC_WEB_URL: 'https://voice.mne-mcp.com',
         CORS_ORIGINS: 'https://voice.mne-mcp.com,https://evil.example',
         COOKIE_SECURE: 'true',
-        EMAIL_PROVIDER: 'resend',
-        RESEND_API_KEY: 'resend-secret',
-        EMAIL_VERIFICATION_REQUIRED: 'true',
-        TURNSTILE_SECRET_KEY: 'turnstile-secret',
         GOOGLE_CLIENT_ID: 'google-client-id',
-        BOOTSTRAP_ADMIN_ENABLED: 'false',
       }),
     ).toThrow();
   });
