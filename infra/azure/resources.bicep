@@ -127,7 +127,7 @@ resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   name: redisName
   location: location
   tags: tags
-  sku: { name: 'Balanced_B0' }
+  sku: { name: 'Balanced_B1' }
   properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Disabled' }
 }
 resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
