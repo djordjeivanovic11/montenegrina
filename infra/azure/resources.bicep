@@ -31,8 +31,9 @@ var registryName = take('crmont${replace(environmentName, '-', '')}${resourceTok
 var storageName = take('stmont${replace(environmentName, '-', '')}${resourceToken}', 24)
 var vaultName = take('kv-${environmentName}-${resourceToken}', 24)
 var postgresName = take('psql-${environmentName}-${resourceToken}', 63)
-// Keep the replacement name stable while avoiding Azure's retained failed-name state.
-var redisName = take('redis-${environmentName}-${resourceToken}-r3', 60)
+// Azure Managed Redis currently has no deployable HA capacity for this subscription in North Europe.
+var redisLocation = 'swedencentral'
+var redisName = take('redis-${environmentName}-${resourceToken}-sc1', 60)
 var environmentResourceName = 'cae-${environmentName}'
 var webName = take('ca-web-${environmentName}', 32)
 var apiName = take('ca-api-${environmentName}', 32)
@@ -126,9 +127,9 @@ resource postgresExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configura
 
 resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   name: redisName
-  location: location
+  location: redisLocation
   tags: tags
-  sku: { name: 'Balanced_B1' }
+  sku: { name: 'Balanced_B0' }
   properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Enabled' }
 }
 resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
