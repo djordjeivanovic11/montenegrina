@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 
 export type GoogleSignInErrorKey = 'googleNotConfigured' | 'googleLoadFailed' | 'googleNotReady';
 
 interface UseGoogleSignInResult {
-  signIn: () => void;
   buttonHostRef: RefObject<HTMLDivElement | null>;
   ready: boolean;
   configured: boolean;
@@ -57,7 +56,7 @@ export function useGoogleSignIn(onCredential: (credential: string) => void): Use
         theme: 'outline',
         size: 'large',
         text: 'continue_with',
-        width: 280,
+        width: 320,
       });
 
       initializedRef.current = true;
@@ -87,20 +86,5 @@ export function useGoogleSignIn(onCredential: (credential: string) => void): Use
     };
   }, [clientId, configured]);
 
-  const signIn = useCallback(() => {
-    if (!configured) {
-      setLoadError('googleNotConfigured');
-      return;
-    }
-
-    const googleButton = buttonHostRef.current?.querySelector('[role="button"]') as HTMLElement | null;
-    if (googleButton) {
-      googleButton.click();
-      return;
-    }
-
-    setLoadError('googleNotReady');
-  }, [configured]);
-
-  return { signIn, buttonHostRef, ready, configured, loadError };
+  return { buttonHostRef, ready, configured, loadError };
 }

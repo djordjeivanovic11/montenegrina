@@ -15,8 +15,9 @@ interface AuthFormProps {
 
 export function AuthForm({ mode, locale = 'cnr', error, onGoogleLogin }: AuthFormProps) {
   const { t } = useI18n(locale);
-  const { signIn, buttonHostRef, ready, configured, loadError } = useGoogleSignIn(onGoogleLogin);
-  const displayError = error || (loadError ? t(`auth.${loadError}`) : '');
+  const { buttonHostRef, ready, configured, loadError } = useGoogleSignIn(onGoogleLogin);
+  const configurationError = !configured ? 'googleNotConfigured' : loadError;
+  const displayError = error || (configurationError ? t(`auth.${configurationError}`) : '');
 
   return (
     <div
@@ -43,16 +44,22 @@ export function AuthForm({ mode, locale = 'cnr', error, onGoogleLogin }: AuthFor
             </p>
           )}
 
-          <div ref={buttonHostRef} className="sr-only" aria-hidden="true" />
-          <button
-            type="button"
-            onClick={signIn}
-            disabled={configured && !ready}
-            className="btn-primary w-full flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <GoogleIcon />
-            {t('auth.google')}
-          </button>
+          <div className="relative min-h-[44px]">
+            <div
+              ref={buttonHostRef}
+              className={`flex min-h-[44px] justify-center ${ready ? '' : 'invisible'}`}
+            />
+            {!ready && (
+              <button
+                type="button"
+                disabled
+                className="btn-primary absolute inset-0 w-full flex items-center justify-center gap-3 opacity-60 cursor-not-allowed"
+              >
+                <GoogleIcon />
+                {t('auth.google')}
+              </button>
+            )}
+          </div>
 
           <p className="text-xs text-ink-3 mt-5 text-center">
             {t('auth.termsConsent')}{' '}
