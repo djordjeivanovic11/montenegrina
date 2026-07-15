@@ -13,7 +13,7 @@ North Europe virtual network, and public network access is disabled after provis
 
 ## External release inputs
 
-Before provisioning, configure the existing Google OAuth client for `https://voice.mne-mcp.com` and put its client ID in the ignored `.env.azure` file. Never commit or paste secret values into command output.
+Before provisioning, configure the existing Google OAuth client for `https://voice.mne-mcp.com` and put its client ID in the ignored `.env.azure` file. Azure production requires the existing LiveKit Cloud `wss://...livekit.cloud` endpoint and matching API credentials; local Docker LiveKit values are rejected. Never commit or paste secret values into command output.
 
 GoDaddy must receive the CNAME and `asuid` TXT records printed by the domain script. Domain binding must not run until those records resolve publicly.
 
