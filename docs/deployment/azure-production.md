@@ -6,6 +6,11 @@ Montenegrina is deployed independently from MNE-MCP into `rg-montenegrina-prod`.
 - API: `https://api.voice.mne-mcp.com`
 - Azure environment: `montenegrina-prod`
 
+The primary application stack runs in North Europe. Azure Managed Redis runs as an HA
+`Balanced_B0` cache in Sweden Central because the subscription currently receives terminal
+capacity failures for HA Managed Redis in North Europe. Its private endpoint remains in the
+North Europe virtual network, and public network access is disabled after provisioning.
+
 ## External release inputs
 
 Before provisioning, configure the existing Google OAuth client for `https://voice.mne-mcp.com` and put its client ID in the ignored `.env.azure` file. Never commit or paste secret values into command output.

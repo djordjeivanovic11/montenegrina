@@ -466,6 +466,7 @@ output registryName string = registry.name
 output registryEndpoint string = registry.properties.loginServer
 output keyVaultName string = vault.name
 output redisName string = redis.name
+output redisLocation string = redis.location
 output webName string = web.name
 output apiName string = api.name
 output workerName string = worker.name

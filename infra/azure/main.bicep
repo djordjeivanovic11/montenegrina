@@ -65,7 +65,7 @@ module redisLockdown 'redis-lockdown.bicep' = {
   scope: resourceGroup
   params: {
     redisName: resources.outputs.redisName
-    location: location
+    location: resources.outputs.redisLocation
     tags: mergedTags
   }
 }
