@@ -9,6 +9,7 @@ import { DeletionProcessor } from './deletion-processor.js';
 import { DocumentProcessor } from './document-processor.js';
 import { EvaluationProcessor } from './evaluation-processor.js';
 import { providersFromEnvironment } from './providers.js';
+import { queuePrefix } from './queue-config.js';
 import { RetentionProcessor } from './retention-processor.js';
 import { ObjectStorage } from './storage.js';
 import { WebhookDeliveryProcessor } from './webhook-delivery.js';
@@ -27,8 +28,9 @@ const webhookProcessor = new WebhookDeliveryProcessor(
   environment.WEBHOOKS_ENABLED,
 );
 const connection = { url: environment.REDIS_URL, maxRetriesPerRequest: null };
-const queue = new Queue('montenegrina-platform', { connection });
-const deadLetter = new Queue('montenegrina-dead-letter', { connection });
+const queueOptions = { connection, prefix: queuePrefix };
+const queue = new Queue('montenegrina-platform', queueOptions);
+const deadLetter = new Queue('montenegrina-dead-letter', queueOptions);
 let stopping = false;
 
 async function processJob(job: Job<Record<string, unknown>>): Promise<void> {
@@ -57,7 +59,7 @@ async function processJob(job: Job<Record<string, unknown>>): Promise<void> {
 }
 
 const worker = new Worker<Record<string, unknown>>('montenegrina-platform', processJob, {
-  connection,
+  ...queueOptions,
   concurrency: 5,
   lockDuration: 120_000,
 });
@@ -136,4 +138,3 @@ process.once('SIGTERM', () => void shutdown('SIGTERM'));
 process.once('SIGINT', () => void shutdown('SIGINT'));
 
 await dispatchOutbox();
-
