@@ -60,10 +60,20 @@ module resources 'resources.bicep' = {
   }
 }
 
+module redisLockdown 'redis-lockdown.bicep' = {
+  name: 'montenegrina-redis-lockdown'
+  scope: resourceGroup
+  params: {
+    redisName: resources.outputs.redisName
+    location: location
+    tags: mergedTags
+  }
+}
+
 module deletionLock 'lock.bicep' = {
   name: 'montenegrina-deletion-lock'
   scope: resourceGroup
-  dependsOn: [resources]
+  dependsOn: [redisLockdown]
 }
 
 output AZURE_LOCATION string = location

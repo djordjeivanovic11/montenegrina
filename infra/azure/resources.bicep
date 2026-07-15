@@ -128,7 +128,7 @@ resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   location: location
   tags: tags
   sku: { name: 'Balanced_B1' }
-  properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Disabled' }
+  properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Enabled' }
 }
 resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
   parent: redis
@@ -463,6 +463,7 @@ resource operationalAlerts 'Microsoft.Insights/scheduledQueryRules@2023-12-01' =
 output registryName string = registry.name
 output registryEndpoint string = registry.properties.loginServer
 output keyVaultName string = vault.name
+output redisName string = redis.name
 output webName string = web.name
 output apiName string = api.name
 output workerName string = worker.name
