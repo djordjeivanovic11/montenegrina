@@ -217,7 +217,7 @@ resource redisUrlSecret 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = {
 
 resource blobDns 'Microsoft.Network/privateDnsZones@2024-06-01' = { name: 'privatelink.blob.${environment().suffixes.storage}', location: 'global' }
 resource vaultDns 'Microsoft.Network/privateDnsZones@2024-06-01' = { name: 'privatelink.vaultcore.azure.net', location: 'global' }
-resource redisDns 'Microsoft.Network/privateDnsZones@2024-06-01' = { name: 'privatelink.redisenterprise.cache.azure.net', location: 'global' }
+resource redisDns 'Microsoft.Network/privateDnsZones@2024-06-01' = { name: 'privatelink.redis.azure.net', location: 'global' }
 resource blobDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
   parent: blobDns
   name: 'vnet-link'
