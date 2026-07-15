@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { fileTypeFromBuffer } from 'file-type';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -61,7 +61,10 @@ export class KnowledgeService {
             isNull(schema.documents.deletedAt),
             eq(schema.documents.knowledgeBaseId, knowledgeBaseId),
           )
-        : and(eq(schema.documents.organizationId, organizationId), isNull(schema.documents.deletedAt)),
+        : and(
+            eq(schema.documents.organizationId, organizationId),
+            isNull(schema.documents.deletedAt),
+          ),
       orderBy: [desc(schema.documents.createdAt)],
     });
     return { items: items.map((item) => this.format(item)) };
@@ -113,13 +116,21 @@ export class KnowledgeService {
     metadata?: DocumentMetadataInput;
     requestId: string;
   }) {
-    if (options.bytes.byteLength > 25 * 1024 * 1024) {
-      throw new ApiException({ code: 'DOCUMENT_TOO_LARGE', message: 'Documents may not exceed 25 MiB.', status: 413 });
+    if (options.bytes.byteLength > this.environment.KNOWLEDGE_MAX_DOCUMENT_MIB * 1024 * 1024) {
+      throw new ApiException({
+        code: 'DOCUMENT_TOO_LARGE',
+        message: `Documents may not exceed ${this.environment.KNOWLEDGE_MAX_DOCUMENT_MIB} MiB.`,
+        status: 413,
+      });
     }
     const detected = await fileTypeFromBuffer(options.bytes);
     const mediaType = detected?.mime ?? options.declaredMediaType.split(';')[0];
     if (!mediaType || !allowedMediaTypes.has(mediaType)) {
-      throw new ApiException({ code: 'DOCUMENT_TYPE_REJECTED', message: 'The document type is not supported.', status: 422 });
+      throw new ApiException({
+        code: 'DOCUMENT_TYPE_REJECTED',
+        message: 'The document type is not supported.',
+        status: 422,
+      });
     }
     return this.createDocument({
       ...options,
@@ -138,7 +149,10 @@ export class KnowledgeService {
     requestId: string;
   }) {
     if (!options.text && !options.sourceUrl) {
-      throw new ApiException({ code: 'DOCUMENT_CONTENT_REQUIRED', message: 'Text or a source URL is required.' });
+      throw new ApiException({
+        code: 'DOCUMENT_CONTENT_REQUIRED',
+        message: 'Text or a source URL is required.',
+      });
     }
     const fetched = options.sourceUrl ? await this.fetcher.fetchText(options.sourceUrl) : undefined;
     const text = options.text ?? fetched?.text ?? '';
@@ -169,6 +183,14 @@ export class KnowledgeService {
         code: 'BULK_UPLOAD_LIMIT',
         message: `At most ${this.environment.KNOWLEDGE_MAX_BULK_FILES} files may be uploaded at once.`,
         status: 422,
+      });
+    }
+    const totalBytes = options.files.reduce((total, file) => total + file.bytes.byteLength, 0);
+    if (totalBytes > this.environment.KNOWLEDGE_MAX_BULK_MIB * 1024 * 1024) {
+      throw new ApiException({
+        code: 'BULK_UPLOAD_TOO_LARGE',
+        message: `A bulk upload may not exceed ${this.environment.KNOWLEDGE_MAX_BULK_MIB} MiB.`,
+        status: 413,
       });
     }
     const organizationId = this.organization(options.actor);
@@ -203,7 +225,9 @@ export class KnowledgeService {
         ...(parsed.title ? { title: parsed.title } : {}),
         ...(parsed.documentType ? { documentType: parsed.documentType } : {}),
         ...(parsed.language ? { language: parsed.language } : {}),
-        ...(parsed.ministryDepartment !== undefined ? { ministryDepartment: parsed.ministryDepartment } : {}),
+        ...(parsed.ministryDepartment !== undefined
+          ? { ministryDepartment: parsed.ministryDepartment }
+          : {}),
         ...(parsed.publicationDate ? { publicationDate: new Date(parsed.publicationDate) } : {}),
         ...(parsed.effectiveFrom ? { effectiveFrom: new Date(parsed.effectiveFrom) } : {}),
         ...(parsed.effectiveTo ? { effectiveTo: new Date(parsed.effectiveTo) } : {}),
@@ -252,7 +276,12 @@ export class KnowledgeService {
         eq(schema.documentVersions.version, document.currentVersion),
       ),
     });
-    if (!version) throw new ApiException({ code: 'DOCUMENT_VERSION_NOT_FOUND', message: 'Document version was not found.', status: 404 });
+    if (!version)
+      throw new ApiException({
+        code: 'DOCUMENT_VERSION_NOT_FOUND',
+        message: 'Document version was not found.',
+        status: 404,
+      });
     const sections = await this.database.db.query.documentSections.findMany({
       where: eq(schema.documentSections.documentVersionId, version.id),
       orderBy: [asc(schema.documentSections.ordinal)],
@@ -283,7 +312,11 @@ export class KnowledgeService {
       ),
     });
     if (!version?.objectKey) {
-      throw new ApiException({ code: 'DOCUMENT_VERSION_NOT_FOUND', message: 'Document version was not found.', status: 404 });
+      throw new ApiException({
+        code: 'DOCUMENT_VERSION_NOT_FOUND',
+        message: 'Document version was not found.',
+        status: 404,
+      });
     }
     const object = await this.storage.get(version.objectKey);
     return { body: object.body, contentType: version.mediaType || object.contentType };
@@ -292,9 +325,17 @@ export class KnowledgeService {
   async getIngestionJob(actor: RequestActor, jobId: string) {
     const organizationId = this.organization(actor);
     const job = await this.database.db.query.ingestionJobs.findFirst({
-      where: and(eq(schema.ingestionJobs.organizationId, organizationId), eq(schema.ingestionJobs.id, jobId)),
+      where: and(
+        eq(schema.ingestionJobs.organizationId, organizationId),
+        eq(schema.ingestionJobs.id, jobId),
+      ),
     });
-    if (!job) throw new ApiException({ code: 'INGESTION_JOB_NOT_FOUND', message: 'Ingestion job was not found.', status: 404 });
+    if (!job)
+      throw new ApiException({
+        code: 'INGESTION_JOB_NOT_FOUND',
+        message: 'Ingestion job was not found.',
+        status: 404,
+      });
     return {
       id: job.id,
       documentId: job.documentId,
@@ -320,10 +361,31 @@ export class KnowledgeService {
       ),
     });
     if (!version?.objectKey) {
-      throw new ApiException({ code: 'DOCUMENT_VERSION_NOT_FOUND', message: 'Document version was not found.', status: 404 });
+      throw new ApiException({
+        code: 'DOCUMENT_VERSION_NOT_FOUND',
+        message: 'Document version was not found.',
+        status: 404,
+      });
     }
-    const ingestionJobId = uuidv7();
+    let ingestionJobId: string | undefined;
+    let existingJobId: string | undefined;
     await this.database.db.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${documentId}, 0))`,
+      );
+      const existingJob = await transaction.query.ingestionJobs.findFirst({
+        where: and(
+          eq(schema.ingestionJobs.documentId, documentId),
+          eq(schema.ingestionJobs.documentVersionId, version.id),
+          inArray(schema.ingestionJobs.status, ['QUEUED', 'RUNNING']),
+        ),
+        orderBy: [desc(schema.ingestionJobs.createdAt)],
+      });
+      if (existingJob) {
+        existingJobId = existingJob.id;
+        return;
+      }
+      ingestionJobId = uuidv7();
       await transaction
         .update(schema.documents)
         .set({ status: 'UPLOADED', errorCode: null, updatedAt: new Date() })
@@ -339,9 +401,24 @@ export class KnowledgeService {
         organizationId: document.organizationId,
         type: 'document.ingest',
         aggregateId: documentId,
-        payload: { documentId, documentVersionId: version.id, ingestionJobId, objectKey: version.objectKey },
+        payload: {
+          documentId,
+          documentVersionId: version.id,
+          ingestionJobId,
+          objectKey: version.objectKey,
+        },
       });
     });
+    if (existingJobId) {
+      return { ...(await this.getIngestionJob(actor, existingJobId)), deduplicated: true };
+    }
+    if (!ingestionJobId) {
+      throw new ApiException({
+        code: 'REINDEX_FAILED',
+        message: 'Could not queue document reindex.',
+        status: 500,
+      });
+    }
     await this.audit.record({
       actor,
       action: 'document.reindex_requested',
@@ -430,9 +507,15 @@ export class KnowledgeService {
         documentType: options.metadata?.documentType ?? 'general',
         language: options.metadata?.language ?? 'cnr',
         ministryDepartment: options.metadata?.ministryDepartment,
-        publicationDate: options.metadata?.publicationDate ? new Date(options.metadata.publicationDate) : undefined,
-        effectiveFrom: options.metadata?.effectiveFrom ? new Date(options.metadata.effectiveFrom) : undefined,
-        effectiveTo: options.metadata?.effectiveTo ? new Date(options.metadata.effectiveTo) : undefined,
+        publicationDate: options.metadata?.publicationDate
+          ? new Date(options.metadata.publicationDate)
+          : undefined,
+        effectiveFrom: options.metadata?.effectiveFrom
+          ? new Date(options.metadata.effectiveFrom)
+          : undefined,
+        effectiveTo: options.metadata?.effectiveTo
+          ? new Date(options.metadata.effectiveTo)
+          : undefined,
         sourceUrl: options.metadata?.sourceUrl,
         visibility: options.metadata?.visibility ?? 'ORG',
         minimumRole: options.metadata?.minimumRole,
@@ -488,7 +571,9 @@ export class KnowledgeService {
       requestId: options.requestId,
       after: { title: options.title, knowledgeBaseId: options.knowledgeBaseId },
     });
-    const document = await this.database.db.query.documents.findFirst({ where: eq(schema.documents.id, documentId) });
+    const document = await this.database.db.query.documents.findFirst({
+      where: eq(schema.documents.id, documentId),
+    });
     return { ...this.format(document as typeof schema.documents.$inferSelect), ingestionJobId };
   }
 
@@ -499,7 +584,12 @@ export class KnowledgeService {
         eq(schema.knowledgeBases.id, knowledgeBaseId),
       ),
     });
-    if (!base) throw new ApiException({ code: 'KNOWLEDGE_BASE_NOT_FOUND', message: 'Knowledge base was not found.', status: 404 });
+    if (!base)
+      throw new ApiException({
+        code: 'KNOWLEDGE_BASE_NOT_FOUND',
+        message: 'Knowledge base was not found.',
+        status: 404,
+      });
     return base;
   }
 
@@ -512,12 +602,22 @@ export class KnowledgeService {
         isNull(schema.documents.deletedAt),
       ),
     });
-    if (!document) throw new ApiException({ code: 'DOCUMENT_NOT_FOUND', message: 'Document was not found.', status: 404 });
+    if (!document)
+      throw new ApiException({
+        code: 'DOCUMENT_NOT_FOUND',
+        message: 'Document was not found.',
+        status: 404,
+      });
     return document;
   }
 
   private organization(actor: RequestActor): string {
-    if (!actor.organizationId) throw new ApiException({ code: 'ORGANIZATION_REQUIRED', message: 'Select an organization.', status: 400 });
+    if (!actor.organizationId)
+      throw new ApiException({
+        code: 'ORGANIZATION_REQUIRED',
+        message: 'Select an organization.',
+        status: 400,
+      });
     return actor.organizationId;
   }
 

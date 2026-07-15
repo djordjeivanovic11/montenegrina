@@ -9,8 +9,12 @@ import type { ProviderSet } from '@montenegrina/providers';
 import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
+import { batchValues } from './batching.js';
 import { KnowledgeParserClient } from './knowledge-parser.js';
 import type { ObjectStorage } from './storage.js';
+
+const SECTION_INSERT_BATCH_SIZE = 100;
+const CHUNK_INSERT_BATCH_SIZE = 25;
 
 export class DocumentProcessor {
   constructor(
@@ -110,6 +114,39 @@ export class DocumentProcessor {
 
       await updateJob('INDEXING', 85);
       const sectionIds = sections.map(() => uuidv7());
+      const sectionRows = sections.map((section, index) => ({
+        id: sectionIds[index] as string,
+        organizationId: document.organizationId,
+        documentId,
+        documentVersionId: versionId,
+        parentSectionId:
+          section.parentOrdinal === undefined ? null : (sectionIds[section.parentOrdinal] ?? null),
+        ordinal: section.ordinal,
+        heading: section.heading,
+        level: section.level,
+        pageStart: section.pageStart,
+        pageEnd: section.pageEnd,
+        articleNumber: section.articleNumber,
+        content: section.content,
+        metadata: section.metadata ?? {},
+      }));
+      const chunkRows = documentChunks.map((chunk, index) => ({
+        id: uuidv7(),
+        organizationId: document.organizationId,
+        documentId,
+        documentVersionId: versionId,
+        sectionId:
+          chunk.sectionOrdinal === undefined ? null : (sectionIds[chunk.sectionOrdinal] ?? null),
+        ordinal: chunk.ordinal,
+        page: chunk.page,
+        section: chunk.section,
+        articleNumber: chunk.articleNumber,
+        headingPath: chunk.headingPath,
+        content: chunk.content,
+        tokenCount: chunk.tokenCount,
+        embedding: vectors[index] as number[],
+        searchText: chunk.searchText,
+      }));
       await this.database.transaction(async (transaction) => {
         await transaction
           .delete(schema.documentSections)
@@ -117,49 +154,12 @@ export class DocumentProcessor {
         await transaction
           .delete(schema.documentChunks)
           .where(eq(schema.documentChunks.documentVersionId, versionId));
-        if (sections.length) {
-          await transaction.insert(schema.documentSections).values(
-            sections.map((section, index) => ({
-              id: sectionIds[index] as string,
-              organizationId: document.organizationId,
-              documentId,
-              documentVersionId: versionId,
-              parentSectionId:
-                section.parentOrdinal === undefined
-                  ? null
-                  : (sectionIds[section.parentOrdinal] ?? null),
-              ordinal: section.ordinal,
-              heading: section.heading,
-              level: section.level,
-              pageStart: section.pageStart,
-              pageEnd: section.pageEnd,
-              articleNumber: section.articleNumber,
-              content: section.content,
-              metadata: section.metadata ?? {},
-            })),
-          );
+        for (const batch of batchValues(sectionRows, SECTION_INSERT_BATCH_SIZE)) {
+          await transaction.insert(schema.documentSections).values(batch);
         }
-        await transaction.insert(schema.documentChunks).values(
-          documentChunks.map((chunk, index) => ({
-            id: uuidv7(),
-            organizationId: document.organizationId,
-            documentId,
-            documentVersionId: versionId,
-            sectionId:
-              chunk.sectionOrdinal === undefined
-                ? null
-                : (sectionIds[chunk.sectionOrdinal] ?? null),
-            ordinal: chunk.ordinal,
-            page: chunk.page,
-            section: chunk.section,
-            articleNumber: chunk.articleNumber,
-            headingPath: chunk.headingPath,
-            content: chunk.content,
-            tokenCount: chunk.tokenCount,
-            embedding: vectors[index] as number[],
-            searchText: chunk.searchText,
-          })),
-        );
+        for (const batch of batchValues(chunkRows, CHUNK_INSERT_BATCH_SIZE)) {
+          await transaction.insert(schema.documentChunks).values(batch);
+        }
         await transaction
           .update(schema.documentVersions)
           .set({

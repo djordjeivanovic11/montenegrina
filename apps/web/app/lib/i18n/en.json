@@ -97,7 +97,7 @@
     "step5": "Add knowledge",
     "step5Desc": "Upload PDF, Word, text, or Markdown files. Your agent will use them for more accurate answers.",
     "uploadPrompt": "Drag files here or click to browse",
-    "uploadHint": "PDF, DOCX, TXT, MD, and more — up to 25 MB per file",
+    "uploadHint": "PDF, DOCX, TXT, MD, and more — up to 50 MB per file",
     "uploading": "Uploading…",
     "uploadFailed": "Upload failed.",
     "docReady": "Ready",

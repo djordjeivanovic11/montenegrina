@@ -34,6 +34,9 @@ async def parse_bytes_endpoint(
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
     data = await file.read()
+    max_bytes = int(os.environ.get("KNOWLEDGE_MAX_DOCUMENT_MIB", "50")) * 1024 * 1024
+    if len(data) > max_bytes:
+        raise HTTPException(status_code=413, detail="DOCUMENT_TOO_LARGE")
     try:
         return parse_document(data, mediaType)
     except ValueError as error:

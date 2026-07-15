@@ -37,7 +37,11 @@ await application.register(
   environment.NODE_ENV === 'production' ? {} : { contentSecurityPolicy: false },
 );
 await application.register(multipart, {
-  limits: { fileSize: 25 * 1024 * 1024, files: 1, fields: 20 },
+  limits: {
+    fileSize: environment.KNOWLEDGE_MAX_DOCUMENT_MIB * 1024 * 1024,
+    files: environment.KNOWLEDGE_MAX_BULK_FILES,
+    fields: 20,
+  },
 });
 application.enableCors({
   origin: environment.CORS_ORIGINS,

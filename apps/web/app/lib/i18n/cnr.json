@@ -97,7 +97,7 @@
     "step5": "Dodajte znanje",
     "step5Desc": "Učitajte PDF, Word, tekst ili Markdown fajlove. Agent će ih koristiti za tačnije odgovore.",
     "uploadPrompt": "Prevucite fajlove ovdje ili kliknite za odabir",
-    "uploadHint": "PDF, DOCX, TXT, MD i slično — do 25 MB po fajlu",
+    "uploadHint": "PDF, DOCX, TXT, MD i slično — do 50 MB po fajlu",
     "uploading": "Učitavanje…",
     "uploadFailed": "Učitavanje nije uspjelo.",
     "docReady": "Spremno",

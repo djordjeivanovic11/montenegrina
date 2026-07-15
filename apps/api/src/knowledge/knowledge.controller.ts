@@ -1,8 +1,21 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
+import type { Environment } from '@montenegrina/config';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ApiException } from '../core/api-exception.js';
+import { ENVIRONMENT } from '../core/tokens.js';
 import type { RequestActor } from '../security/actor.js';
 import { CurrentActor } from '../security/current-actor.decorator.js';
 import { RequirePermissions } from '../security/permissions.decorator.js';
@@ -27,6 +40,7 @@ export class KnowledgeController {
     private readonly bases: KnowledgeBasesService,
     private readonly accessGroups: AccessGroupsService,
     private readonly retrieval: RetrievalService,
+    @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
   @Get('bases')
@@ -51,7 +65,8 @@ export class KnowledgeController {
     @CurrentActor() actor: RequestActor,
     @Req() request: FastifyRequest,
     @Param('knowledgeBaseId') id: string,
-    @Body() body: Partial<{ name: string; description: string; defaultLanguage: string; enabled: boolean }>,
+    @Body()
+    body: Partial<{ name: string; description: string; defaultLanguage: string; enabled: boolean }>,
   ) {
     return this.bases.update(actor, id, body, requestId(request));
   }
@@ -193,27 +208,53 @@ export class KnowledgeController {
   @RequirePermissions('knowledge:create')
   async bulkUpload(@CurrentActor() actor: RequestActor, @Req() request: FastifyRequest) {
     if (!request.isMultipart()) {
-      throw new ApiException({ code: 'MULTIPART_REQUIRED', message: 'Bulk upload requires multipart form data.' });
+      throw new ApiException({
+        code: 'MULTIPART_REQUIRED',
+        message: 'Bulk upload requires multipart form data.',
+      });
     }
-    const parts = request.files({ limits: { fileSize: 25 * 1024 * 1024, files: 20 } });
+    const parts = request.files({
+      limits: {
+        fileSize: this.environment.KNOWLEDGE_MAX_DOCUMENT_MIB * 1024 * 1024,
+        files: this.environment.KNOWLEDGE_MAX_BULK_FILES,
+      },
+    });
     const files: Array<{ title: string; bytes: Uint8Array; declaredMediaType: string }> = [];
     let knowledgeBaseId = '';
+    let totalBytes = 0;
     for await (const part of parts) {
       if (part.type === 'file') {
         const fields = part.fields as Record<string, unknown>;
         const title = fieldValue(fields, 'title') ?? part.filename ?? 'Dokument';
         if (!knowledgeBaseId) knowledgeBaseId = fieldValue(fields, 'knowledgeBaseId') ?? '';
+        const bytes = await part.toBuffer();
+        totalBytes += bytes.byteLength;
+        if (totalBytes > this.environment.KNOWLEDGE_MAX_BULK_MIB * 1024 * 1024) {
+          throw new ApiException({
+            code: 'BULK_UPLOAD_TOO_LARGE',
+            message: `A bulk upload may not exceed ${this.environment.KNOWLEDGE_MAX_BULK_MIB} MiB.`,
+            status: 413,
+          });
+        }
         files.push({
           title,
-          bytes: await part.toBuffer(),
+          bytes,
           declaredMediaType: part.mimetype,
         });
       }
     }
     if (!knowledgeBaseId) {
-      throw new ApiException({ code: 'KNOWLEDGE_BASE_REQUIRED', message: 'knowledgeBaseId is required.' });
+      throw new ApiException({
+        code: 'KNOWLEDGE_BASE_REQUIRED',
+        message: 'knowledgeBaseId is required.',
+      });
     }
-    return this.knowledge.bulkUpload({ actor, knowledgeBaseId, files, requestId: requestId(request) });
+    return this.knowledge.bulkUpload({
+      actor,
+      knowledgeBaseId,
+      files,
+      requestId: requestId(request),
+    });
   }
 
   @Post('documents')
@@ -221,13 +262,22 @@ export class KnowledgeController {
   async createDocument(@CurrentActor() actor: RequestActor, @Req() request: FastifyRequest) {
     const id = requestId(request);
     if (request.isMultipart()) {
-      const file = await request.file({ limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
-      if (!file) throw new ApiException({ code: 'DOCUMENT_REQUIRED', message: 'A document file is required.' });
+      const file = await request.file({
+        limits: { fileSize: this.environment.KNOWLEDGE_MAX_DOCUMENT_MIB * 1024 * 1024, files: 1 },
+      });
+      if (!file)
+        throw new ApiException({
+          code: 'DOCUMENT_REQUIRED',
+          message: 'A document file is required.',
+        });
       const fields = file.fields as Record<string, unknown>;
       const knowledgeBaseId = fieldValue(fields, 'knowledgeBaseId');
       const title = fieldValue(fields, 'title');
       if (!knowledgeBaseId || !title) {
-        throw new ApiException({ code: 'DOCUMENT_METADATA_REQUIRED', message: 'knowledgeBaseId and title are required.' });
+        throw new ApiException({
+          code: 'DOCUMENT_METADATA_REQUIRED',
+          message: 'knowledgeBaseId and title are required.',
+        });
       }
       return this.knowledge.createFile({
         actor,
@@ -245,7 +295,10 @@ export class KnowledgeController {
       sourceUrl?: string;
     };
     if (!body.knowledgeBaseId || !body.title) {
-      throw new ApiException({ code: 'DOCUMENT_METADATA_REQUIRED', message: 'knowledgeBaseId and title are required.' });
+      throw new ApiException({
+        code: 'DOCUMENT_METADATA_REQUIRED',
+        message: 'knowledgeBaseId and title are required.',
+      });
     }
     return this.knowledge.createText({
       actor,

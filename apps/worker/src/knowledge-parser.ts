@@ -29,7 +29,7 @@ export class KnowledgeParserClient {
     const response = await fetch(`${this.baseUrl}/v1/parse-bytes`, {
       method: 'POST',
       body: form,
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(environment.KNOWLEDGE_PARSER_TIMEOUT_SECONDS * 1_000),
     });
     if (!response.ok) {
       const detail = await response.text();

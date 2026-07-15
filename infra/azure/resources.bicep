@@ -297,6 +297,11 @@ var commonBackendEnv = [
   { name: 'MAX_CONCURRENT_SESSIONS', value: '25' }
   { name: 'RATE_LIMIT_AUTH_PER_MINUTE', value: '10' }
   { name: 'RATE_LIMIT_VOICE_SESSIONS_PER_HOUR', value: '3' }
+  { name: 'KNOWLEDGE_MAX_BULK_FILES', value: '20' }
+  { name: 'KNOWLEDGE_MAX_DOCUMENT_MIB', value: '50' }
+  { name: 'KNOWLEDGE_MAX_BULK_MIB', value: '100' }
+  { name: 'KNOWLEDGE_PARSER_TIMEOUT_SECONDS', value: '600' }
+  { name: 'KNOWLEDGE_WORKER_CONCURRENCY', value: '3' }
 ]
 
 resource parser 'Microsoft.App/containerApps@2025-01-01' = {
@@ -307,7 +312,7 @@ resource parser 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', ingress: { external: false, targetPort: 8090, transport: 'auto', allowInsecure: false }, registries: registryFrontend }
-    template: { containers: [{ name: 'parser', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: [{ name: 'KNOWLEDGE_PARSER_PORT', value: '8090' }], probes: [{ type: 'Liveness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 20, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 1, maxReplicas: 3, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
+    template: { containers: [{ name: 'parser', image: placeholderImage, resources: { cpu: json('2.0'), memory: '4Gi' }, env: [{ name: 'KNOWLEDGE_PARSER_PORT', value: '8090' }, { name: 'KNOWLEDGE_MAX_DOCUMENT_MIB', value: '50' }], probes: [{ type: 'Liveness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 20, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '1' } } }] } }
   }
   dependsOn: [frontendAcrPull]
 }
@@ -326,7 +331,7 @@ resource api 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Multiple', maxInactiveRevisions: 5, ingress: { external: true, targetPort: 3001, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: concat(commonBackendEnv, [{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }] } }
+    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, [{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
   }
   dependsOn: [backendAcrPull, backendBlobAccess, backendVaultAccess, vaultSecrets, databaseUrlSecret, redisUrlSecret, parser, blobDnsGroup, vaultDnsGroup, redisDnsGroup]
 }
@@ -352,7 +357,7 @@ resource worker 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'worker', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: concat(commonBackendEnv, [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]) }], scale: { minReplicas: 2, maxReplicas: 4, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
+    template: { containers: [{ name: 'worker', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]) }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
   }
   dependsOn: [api]
 }

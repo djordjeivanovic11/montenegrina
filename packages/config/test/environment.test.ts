@@ -23,7 +23,22 @@ const valid = {
 
 describe('environmentSchema', () => {
   it('loads the production provider configuration', () => {
-    expect(environmentSchema.parse(valid).OPENAI_MODEL).toBe('gpt-5.4-mini');
+    const environment = environmentSchema.parse(valid);
+
+    expect(environment.OPENAI_MODEL).toBe('gpt-5.4-mini');
+    expect(environment.KNOWLEDGE_MAX_DOCUMENT_MIB).toBe(50);
+    expect(environment.KNOWLEDGE_MAX_BULK_MIB).toBe(100);
+    expect(environment.KNOWLEDGE_PARSER_TIMEOUT_SECONDS).toBe(600);
+    expect(environment.KNOWLEDGE_WORKER_CONCURRENCY).toBe(3);
+  });
+
+  it('rejects unsafe knowledge ingestion limits', () => {
+    expect(() =>
+      environmentSchema.parse({ ...valid, KNOWLEDGE_MAX_DOCUMENT_MIB: '251' }),
+    ).toThrow();
+    expect(() =>
+      environmentSchema.parse({ ...valid, KNOWLEDGE_WORKER_CONCURRENCY: '0' }),
+    ).toThrow();
   });
 
   it('rejects missing provider credentials', () => {

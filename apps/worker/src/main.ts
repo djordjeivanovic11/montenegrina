@@ -60,8 +60,8 @@ async function processJob(job: Job<Record<string, unknown>>): Promise<void> {
 
 const worker = new Worker<Record<string, unknown>>('montenegrina-platform', processJob, {
   ...queueOptions,
-  concurrency: 5,
-  lockDuration: 120_000,
+  concurrency: environment.KNOWLEDGE_WORKER_CONCURRENCY,
+  lockDuration: Math.max(120_000, environment.KNOWLEDGE_PARSER_TIMEOUT_SECONDS * 1_000),
 });
 worker.on('failed', (job, error) => {
   if (job && job.attemptsMade >= Number(job.opts.attempts ?? 1)) {
