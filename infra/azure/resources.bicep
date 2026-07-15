@@ -185,7 +185,7 @@ resource backendBlobAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' 
 resource backendVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = { name: guid(vault.id, backendIdentity.id, 'secrets'), scope: vault, properties: { principalId: backendIdentity.properties.principalId, principalType: 'ServicePrincipal', roleDefinitionId: keyVaultSecretsUserRole } }
 
 var databaseUrl = 'postgresql://${postgresUser}:${uriComponent(postgresAdminPassword)}@${postgres.properties.fullyQualifiedDomainName}:5432/${postgresDatabase}?sslmode=require'
-var redisUrl = 'rediss://default:${uriComponent(redisDb.listKeys().primaryKey)}@${redis.properties.hostName}:10000'
+var redisUrl = 'rediss://:${uriComponent(redisDb.listKeys().primaryKey)}@${redis.properties.hostName}:10000'
 var staticKeyVaultValues = [
   { name: 'session-secret', value: sessionSecret }
   { name: 'internal-token-secret', value: internalTokenSecret }
