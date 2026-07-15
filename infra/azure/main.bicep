@@ -60,6 +60,12 @@ module resources 'resources.bicep' = {
   }
 }
 
+module deletionLock 'lock.bicep' = {
+  name: 'montenegrina-deletion-lock'
+  scope: resourceGroup
+  dependsOn: [resources]
+}
+
 output AZURE_LOCATION string = location
 output AZURE_RESOURCE_GROUP string = resourceGroup.name
 output AZURE_CONTAINER_REGISTRY_NAME string = resources.outputs.registryName

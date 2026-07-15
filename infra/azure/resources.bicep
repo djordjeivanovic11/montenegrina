@@ -46,16 +46,8 @@ var publicWebUrl = 'https://voice.mne-mcp.com'
 var publicApiUrl = 'https://api.voice.mne-mcp.com'
 var placeholderImage = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 var acrPullRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-var blobContributorRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453e-a403-e96b0029c9fe')
+var blobContributorRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var keyVaultSecretsUserRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
-
-resource deletionLock 'Microsoft.Authorization/locks@2020-05-01' = {
-  name: 'montenegrina-production-delete-lock'
-  properties: {
-    level: 'CanNotDelete'
-    notes: 'Protects the independent Montenegrina production resource group from accidental deletion.'
-  }
-}
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: 'log-${environmentName}'
@@ -138,7 +130,7 @@ resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   sku: { name: 'Balanced_B0' }
   properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Disabled' }
 }
-resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-07-01' = {
+resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
   parent: redis
   name: 'default'
   properties: { accessKeysAuthentication: 'Enabled', clientProtocol: 'Encrypted', clusteringPolicy: 'OSSCluster', evictionPolicy: 'NoEviction', modules: [], port: 10000 }
@@ -163,7 +155,7 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: registryName
   location: location
   tags: tags
-  sku: { name: 'Standard' }
+  sku: { name: 'Premium' }
   properties: { adminUserEnabled: false, publicNetworkAccess: 'Enabled', policies: { retentionPolicy: { days: 30, status: 'enabled' } } }
 }
 
@@ -463,6 +455,7 @@ resource operationalAlerts 'Microsoft.Insights/scheduledQueryRules@2023-12-01' =
       ]
     }
     autoMitigate: true
+    skipQueryValidation: true
     actions: { actionGroups: [] }
   }
 }]
