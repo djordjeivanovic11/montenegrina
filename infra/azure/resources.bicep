@@ -31,7 +31,8 @@ var registryName = take('crmont${replace(environmentName, '-', '')}${resourceTok
 var storageName = take('stmont${replace(environmentName, '-', '')}${resourceToken}', 24)
 var vaultName = take('kv-${environmentName}-${resourceToken}', 24)
 var postgresName = take('psql-${environmentName}-${resourceToken}', 63)
-var redisName = take('redis-${environmentName}-${resourceToken}', 60)
+// Keep the replacement name stable while avoiding Azure's retained failed-name state.
+var redisName = take('redis-${environmentName}-${resourceToken}-r2', 60)
 var environmentResourceName = 'cae-${environmentName}'
 var webName = take('ca-web-${environmentName}', 32)
 var apiName = take('ca-api-${environmentName}', 32)
