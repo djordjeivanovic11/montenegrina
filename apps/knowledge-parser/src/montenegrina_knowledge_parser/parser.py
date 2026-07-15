@@ -11,6 +11,8 @@ from openpyxl import load_workbook
 from pptx import Presentation
 from pypdf import PdfReader
 
+from .sanitization import sanitize_metadata, sanitize_text
+
 ARTICLE_PATTERN = re.compile(r"(?i)^(?:član|clan|article)\s+(\d+[a-z]?)\b")
 
 
@@ -33,16 +35,18 @@ def section(
     is_table: bool = False,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    clean_heading = sanitize_text(heading) if heading is not None else None
+    clean_content = sanitize_text(content).strip()
     return {
-        "heading": heading,
+        "heading": clean_heading,
         "level": level,
         "pageStart": page_start,
         "pageEnd": page_end,
-        "articleNumber": detect_article_number(heading, content),
-        "content": content.strip(),
+        "articleNumber": detect_article_number(clean_heading, clean_content),
+        "content": clean_content,
         "parentIndex": parent_index,
         "isTable": is_table,
-        "metadata": metadata or {},
+        "metadata": sanitize_metadata(metadata or {}),
     }
 
 
@@ -194,7 +198,7 @@ def parse_document(data: bytes, media_type: str) -> dict[str, Any]:
     )
     extracted_text = "\n\n".join(section["content"] for section in sections if section["content"])
     return {
-        "parserVersion": "montenegrina-knowledge-parser-0.1.0",
+        "parserVersion": "montenegrina-knowledge-parser-0.2.0",
         "pageCount": page_count or None,
         "extractedText": extracted_text,
         "sections": sections,

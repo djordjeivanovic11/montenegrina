@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { chunkSections } from '../src/chunking.js';
+import { chunkSections, flattenParserSections } from '../src/chunking.js';
 
 describe('structure-aware chunking', () => {
   it('keeps page provenance and bounded semantic chunks', () => {
@@ -32,5 +32,28 @@ describe('structure-aware chunking', () => {
     const chunks = chunkSections(sections);
     expect(chunks).toHaveLength(1);
     expect(chunks[0]?.content).toContain('Tabela');
+  });
+
+  it('removes PostgreSQL-incompatible NUL characters from parser output', () => {
+    const sections = flattenParserSections([
+      {
+        heading: 'Head\0ing',
+        content: 'Bo\0dy',
+        articleNumber: '1\0a',
+        metadata: { 'bad\0key': { value: 'bad\0value' } },
+      },
+    ]);
+
+    expect(sections).toEqual([
+      {
+        ordinal: 0,
+        level: 0,
+        heading: 'Heading',
+        content: 'Body',
+        articleNumber: '1a',
+        isTable: false,
+        metadata: { badkey: { value: 'badvalue' } },
+      },
+    ]);
   });
 });

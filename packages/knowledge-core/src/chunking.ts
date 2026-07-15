@@ -5,6 +5,24 @@ const MIN_TOKENS = 400;
 const MAX_TOKENS = 700;
 const OVERLAP_CHARS = 400;
 
+function sanitizePostgresText(value: string): string {
+  return value.replaceAll('\0', '');
+}
+
+function sanitizeMetadata(value: unknown): unknown {
+  if (typeof value === 'string') return sanitizePostgresText(value);
+  if (Array.isArray(value)) return value.map(sanitizeMetadata);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        sanitizePostgresText(key),
+        sanitizeMetadata(item),
+      ]),
+    );
+  }
+  return value;
+}
+
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
@@ -115,13 +133,17 @@ export function flattenParserSections(
   return sections.map((section, index) => ({
     ordinal: index,
     level: section.level ?? 0,
-    content: section.content,
+    content: sanitizePostgresText(section.content),
     isTable: section.isTable ?? false,
-    ...(section.heading ? { heading: section.heading } : {}),
+    ...(section.heading ? { heading: sanitizePostgresText(section.heading) } : {}),
     ...(section.pageStart != null ? { pageStart: section.pageStart } : {}),
     ...(section.pageEnd != null ? { pageEnd: section.pageEnd } : {}),
-    ...(section.articleNumber ? { articleNumber: section.articleNumber } : {}),
+    ...(section.articleNumber
+      ? { articleNumber: sanitizePostgresText(section.articleNumber) }
+      : {}),
     ...(section.parentIndex != null ? { parentOrdinal: section.parentIndex } : {}),
-    ...(section.metadata ? { metadata: section.metadata } : {}),
+    ...(section.metadata
+      ? { metadata: sanitizeMetadata(section.metadata) as Record<string, unknown> }
+      : {}),
   }));
 }
