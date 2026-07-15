@@ -312,7 +312,10 @@ resource parser 'Microsoft.App/containerApps@2025-01-01' = {
   dependsOn: [frontendAcrPull]
 }
 
-var parserUrl = 'https://${parserName}.${containerEnvironment.properties.defaultDomain}'
+// Internal-only Container Apps are published beneath the environment's
+// `.internal.` DNS namespace. Using the public-style hostname returns the
+// platform "Container App - Unavailable" page instead of reaching the parser.
+var parserUrl = 'https://${parserName}.internal.${containerEnvironment.properties.defaultDomain}'
 var apiInternalUrl = 'https://${apiName}.${containerEnvironment.properties.defaultDomain}'
 
 resource api 'Microsoft.App/containerApps@2025-01-01' = {
