@@ -37,7 +37,10 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
       `${this.#baseUrl}/embeddings`,
       {
         method: 'POST',
-        headers: { Authorization: `Bearer ${this.config.apiKey}`, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           model,
           input: request.texts,
@@ -67,7 +70,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     };
   }
 
-  async health(): Promise<{ healthy: boolean; reason?: string }> {
-    return this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' };
+  health(): Promise<{ healthy: boolean; reason?: string }> {
+    return Promise.resolve(
+      this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' },
+    );
   }
 }

@@ -18,6 +18,7 @@ import {
   checkedProviderFetch,
   normalizeProviderSocketError,
   providerAbortSignal,
+  providerString,
 } from '../provider-errors.js';
 
 export interface DeepgramSpeechToTextConfig {
@@ -102,7 +103,7 @@ class DeepgramStreamingSession implements StreamingSpeechToTextSession {
     private readonly socket: WebSocket,
     private readonly request: StreamingSpeechToTextRequest,
   ) {
-    socket.on('message', (message) => this.handleMessage(message.toString()));
+    socket.on('message', (message) => this.handleMessage(providerString(message)));
     socket.on('error', (error) => {
       this.#events.push({
         type: 'error',
@@ -194,7 +195,7 @@ class DeepgramStreamingSession implements StreamingSpeechToTextSession {
       this.#events.push({
         type: 'error',
         error: new ProviderError({
-          code: String(message.code ?? 'DEEPGRAM_STREAM_ERROR'),
+          code: providerString(message.code, 'DEEPGRAM_STREAM_ERROR'),
           message: 'Deepgram reported a streaming error.',
           provider: 'deepgram',
           failureClass: 'RETRYABLE',
@@ -244,7 +245,10 @@ export class DeepgramSpeechToTextProvider implements SpeechToTextProvider {
       `https://api.deepgram.com/v1/listen?${query.toString()}`,
       {
         method: 'POST',
-        headers: { Authorization: `Token ${this.config.apiKey}`, 'Content-Type': contentType(request.audioFormat) },
+        headers: {
+          Authorization: `Token ${this.config.apiKey}`,
+          'Content-Type': contentType(request.audioFormat),
+        },
         body: Buffer.from(request.audio),
       },
       context,
@@ -316,7 +320,9 @@ export class DeepgramSpeechToTextProvider implements SpeechToTextProvider {
     return new DeepgramStreamingSession(socket, request);
   }
 
-  async health(): Promise<{ healthy: boolean; reason?: string }> {
-    return this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' };
+  health(): Promise<{ healthy: boolean; reason?: string }> {
+    return Promise.resolve(
+      this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' },
+    );
   }
 }

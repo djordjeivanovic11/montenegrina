@@ -4,14 +4,12 @@ import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  type NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { loadEnvironment } from '@montenegrina/config';
 
 import { AppModule } from './app.module.js';
 import { ErrorFilter } from './core/error.filter.js';
+import { loggerRedaction } from './core/logger-redaction.js';
 import { registerRequestIdHook } from './core/request-id.hook.js';
 
 const environment = loadEnvironment();
@@ -26,17 +24,7 @@ const adapter = new FastifyAdapter({
   trustProxy: environment.NODE_ENV === 'production',
   logger: {
     level: environment.LOG_LEVEL,
-    redact: {
-      paths: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        'res.headers.set-cookie',
-        '*.password',
-        '*.apiKey',
-        '*.secret',
-      ],
-      censor: '[REDACTED]',
-    },
+    redact: loggerRedaction,
   },
 });
 const application = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {

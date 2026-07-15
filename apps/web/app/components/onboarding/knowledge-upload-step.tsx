@@ -94,7 +94,7 @@ export function KnowledgeUploadStep({ locale = 'cnr', agentId }: KnowledgeUpload
         credentials: 'include',
       });
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
+        const body: unknown = await response.json().catch(() => null);
         const parsed = parseApiError(body);
         if (parsed.code === 'QUOTA_EXCEEDED' && parsed.details) {
           setUploadError(
@@ -174,7 +174,10 @@ export function KnowledgeUploadStep({ locale = 'cnr', agentId }: KnowledgeUpload
       {documents.length > 0 && (
         <ul className="flex flex-col gap-2">
           {documents.map((doc) => (
-            <li key={doc.id} className="flex items-center justify-between text-sm rounded-lg px-3 py-2 bg-surface-2">
+            <li
+              key={doc.id}
+              className="flex items-center justify-between text-sm rounded-lg px-3 py-2 bg-surface-2"
+            >
               <span className="truncate text-ink">{doc.title}</span>
               <span className="text-xs text-ink-3 shrink-0 ml-2">{statusLabel(doc.status)}</span>
             </li>

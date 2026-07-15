@@ -97,7 +97,9 @@ function collectPatternSpans(
 }
 
 function removeOverlaps(spans: ProtectedSpan[]): ProtectedSpan[] {
-  const ordered = [...spans].sort((left, right) => left.start - right.start || right.end - left.end);
+  const ordered = [...spans].sort(
+    (left, right) => left.start - right.start || right.end - left.end,
+  );
   const result: ProtectedSpan[] = [];
   for (const span of ordered) {
     const previous = result.at(-1);
@@ -106,7 +108,10 @@ function removeOverlaps(spans: ProtectedSpan[]): ProtectedSpan[] {
   return result;
 }
 
-export function identifyProtectedSpans(text: string, profile: LanguageProfile = {}): ProtectedSpan[] {
+export function identifyProtectedSpans(
+  text: string,
+  profile: LanguageProfile = {},
+): ProtectedSpan[] {
   const spans = [
     ...collectPatternSpans(text, /https?:\/\/[^\s)\]}]+/giu, 'url'),
     ...collectPatternSpans(text, /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/gu, 'email'),
@@ -138,7 +143,8 @@ export function detectLanguageWarnings(text: string): LanguageWarning[] {
   if (ekavian.length > 0) {
     warnings.push({
       code: 'EKAVIAN_DRIFT',
-      message: 'Tekst vjerovatno sadrži ekavske oblike; potrebna je provjera bez automatske zamjene.',
+      message:
+        'Tekst vjerovatno sadrži ekavske oblike; potrebna je provjera bez automatske zamjene.',
       matches: ekavian,
     });
   }
@@ -186,7 +192,7 @@ export function normalizeCriticalValues(text: string): {
   const patterns: Array<{
     kind: NormalizedValue['kind'];
     expression: RegExp;
-    convert(value: string): { display: string; spoken: string };
+    convert: (value: string) => { display: string; spoken: string };
   }> = [
     {
       kind: 'currency',
@@ -223,7 +229,12 @@ export function normalizeCriticalValues(text: string): {
 
   for (const { kind, expression, convert } of patterns) {
     for (const match of text.matchAll(expression)) {
-      if (values.some((existing) => match.index < existing.end && match.index + match[0].length > existing.start)) {
+      if (
+        values.some(
+          (existing) =>
+            match.index < existing.end && match.index + match[0].length > existing.start,
+        )
+      ) {
         continue;
       }
       const converted = convert(match[0]);
@@ -258,16 +269,64 @@ const latinToCyrillic: ReadonlyArray<readonly [string, string]> = [
   ['lj', 'љ'],
   ['Nj', 'Њ'],
   ['nj', 'њ'],
-  ['A', 'А'], ['a', 'а'], ['B', 'Б'], ['b', 'б'], ['C', 'Ц'], ['c', 'ц'],
-  ['Č', 'Ч'], ['č', 'ч'], ['Ć', 'Ћ'], ['ć', 'ћ'], ['D', 'Д'], ['d', 'д'],
-  ['Đ', 'Ђ'], ['đ', 'ђ'], ['E', 'Е'], ['e', 'е'], ['F', 'Ф'], ['f', 'ф'],
-  ['G', 'Г'], ['g', 'г'], ['H', 'Х'], ['h', 'х'], ['I', 'И'], ['i', 'и'],
-  ['J', 'Ј'], ['j', 'ј'], ['K', 'К'], ['k', 'к'], ['L', 'Л'], ['l', 'л'],
-  ['M', 'М'], ['m', 'м'], ['N', 'Н'], ['n', 'н'], ['O', 'О'], ['o', 'о'],
-  ['P', 'П'], ['p', 'п'], ['R', 'Р'], ['r', 'р'], ['S', 'С'], ['s', 'с'],
-  ['Š', 'Ш'], ['š', 'ш'], ['T', 'Т'], ['t', 'т'], ['U', 'У'], ['u', 'у'],
-  ['V', 'В'], ['v', 'в'], ['Z', 'З'], ['z', 'з'], ['Ž', 'Ж'], ['ž', 'ж'],
-  ['Ś', 'С́'], ['ś', 'с́'], ['Ź', 'З́'], ['ź', 'з́'],
+  ['A', 'А'],
+  ['a', 'а'],
+  ['B', 'Б'],
+  ['b', 'б'],
+  ['C', 'Ц'],
+  ['c', 'ц'],
+  ['Č', 'Ч'],
+  ['č', 'ч'],
+  ['Ć', 'Ћ'],
+  ['ć', 'ћ'],
+  ['D', 'Д'],
+  ['d', 'д'],
+  ['Đ', 'Ђ'],
+  ['đ', 'ђ'],
+  ['E', 'Е'],
+  ['e', 'е'],
+  ['F', 'Ф'],
+  ['f', 'ф'],
+  ['G', 'Г'],
+  ['g', 'г'],
+  ['H', 'Х'],
+  ['h', 'х'],
+  ['I', 'И'],
+  ['i', 'и'],
+  ['J', 'Ј'],
+  ['j', 'ј'],
+  ['K', 'К'],
+  ['k', 'к'],
+  ['L', 'Л'],
+  ['l', 'л'],
+  ['M', 'М'],
+  ['m', 'м'],
+  ['N', 'Н'],
+  ['n', 'н'],
+  ['O', 'О'],
+  ['o', 'о'],
+  ['P', 'П'],
+  ['p', 'п'],
+  ['R', 'Р'],
+  ['r', 'р'],
+  ['S', 'С'],
+  ['s', 'с'],
+  ['Š', 'Ш'],
+  ['š', 'ш'],
+  ['T', 'Т'],
+  ['t', 'т'],
+  ['U', 'У'],
+  ['u', 'у'],
+  ['V', 'В'],
+  ['v', 'в'],
+  ['Z', 'З'],
+  ['z', 'з'],
+  ['Ž', 'Ж'],
+  ['ž', 'ж'],
+  ['Ś', 'С́'],
+  ['ś', 'с́'],
+  ['Ź', 'З́'],
+  ['ź', 'з́'],
 ];
 
 function transformOutsideSpans(
@@ -304,7 +363,10 @@ export function processMontenegrin(text: string, profile: LanguageProfile = {}):
   const originalText = text.normalize('NFC');
   const protectedSpans = identifyProtectedSpans(originalText, profile);
   const warnings = detectLanguageWarnings(originalText);
-  let correctedText = originalText.replace(/[ \t]+/gu, ' ').replace(/\s+([,.;:!?])/gu, '$1').trim();
+  let correctedText = originalText
+    .replace(/[ \t]+/gu, ' ')
+    .replace(/\s+([,.;:!?])/gu, '$1')
+    .trim();
 
   if (profile.outputScript === 'CYRILLIC') {
     correctedText = toCyrillic(correctedText, identifyProtectedSpans(correctedText, profile));

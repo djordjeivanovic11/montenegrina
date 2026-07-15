@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Inject, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { OAuth2Client } from 'google-auth-library';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 import { ENVIRONMENT } from '../core/tokens.js';
 import { ApiException } from '../core/api-exception.js';
@@ -12,6 +13,37 @@ import { Public } from './public.decorator.js';
 import { SessionService } from './session.service.js';
 import { CurrentActor } from './current-actor.decorator.js';
 import type { RequestActor } from './actor.js';
+
+const normalizedEmail = z
+  .email()
+  .max(320)
+  .transform((value) => value.trim().toLocaleLowerCase('en'));
+const registerSchema = z.object({
+  email: normalizedEmail,
+  password: z.string().min(12).max(256),
+  displayName: z.string().trim().min(2).max(100),
+  turnstileToken: z.string().min(1).max(4096).optional(),
+});
+const loginSchema = z.object({ email: normalizedEmail, password: z.string().min(1).max(256) });
+const tokenSchema = z.object({ token: z.string().min(32).max(256) });
+const emailSchema = z.object({ email: normalizedEmail });
+const resetPasswordSchema = z.object({
+  token: z.string().min(32).max(256),
+  password: z.string().min(12).max(256),
+});
+const googleCredentialSchema = z.object({ credential: z.string().min(1).max(16_384) });
+
+function parse<T>(schema: z.ZodType<T>, body: unknown): T {
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    throw new ApiException({
+      code: 'VALIDATION_FAILED',
+      message: 'The request body is invalid.',
+      status: 422,
+    });
+  }
+  return result.data;
+}
 
 @Controller('v1/auth')
 export class AuthController {
@@ -23,20 +55,43 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @HttpCode(202)
   register(
-    @Body() body: { email: string; password: string; displayName: string },
+    @Body() rawBody: unknown,
+    @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    return this.sessions.register(body.email, body.password, body.displayName, reply);
+    const body = parse(registerSchema, rawBody);
+    return this.sessions.register(
+      body.email,
+      body.password,
+      body.displayName,
+      body.turnstileToken,
+      request.ip,
+      reply,
+    );
   }
 
   @Public()
   @Post('login')
-  login(
-    @Body() body: { email: string; password: string },
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
+  login(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
+    const body = parse(loginSchema, rawBody);
     return this.sessions.login(body.email, body.password, reply);
+  }
+
+  @Public()
+  @Post('verify-email')
+  verifyEmail(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
+    const body = parse(tokenSchema, rawBody);
+    return this.sessions.verifyEmail(body.token, reply);
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(202)
+  resendVerification(@Body() rawBody: unknown) {
+    const body = parse(emailSchema, rawBody);
+    return this.sessions.resendEmailVerification(body.email);
   }
 
   @Post('logout')
@@ -73,7 +128,8 @@ export class AuthController {
                     ? {
                         currentStep: onboarding.currentStep,
                         completedAt: onboarding.completedAt?.toISOString() ?? null,
-                        isComplete: onboarding.currentStep === 'COMPLETED' || Boolean(onboarding.completedAt),
+                        isComplete:
+                          onboarding.currentStep === 'COMPLETED' || Boolean(onboarding.completedAt),
                       }
                     : { currentStep: 'COMPLETED', completedAt: null, isComplete: true },
                 }
@@ -90,22 +146,22 @@ export class AuthController {
 
   @Public()
   @Post('forgot-password')
-  forgotPassword(@Body() body: { email: string }) {
+  forgotPassword(@Body() rawBody: unknown) {
+    const body = parse(emailSchema, rawBody);
     return this.sessions.forgotPassword(body.email);
   }
 
   @Public()
   @Post('reset-password')
-  resetPassword(@Body() body: { token: string; password: string }) {
+  resetPassword(@Body() rawBody: unknown) {
+    const body = parse(resetPasswordSchema, rawBody);
     return this.sessions.resetPassword(body.token, body.password);
   }
 
   @Public()
   @Post('google')
-  async googleLogin(
-    @Body() body: { credential: string },
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
+  async googleLogin(@Body() rawBody: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
+    const body = parse(googleCredentialSchema, rawBody);
     const googleClientId = this.environment.GOOGLE_CLIENT_ID;
     let googleId: string;
     let email: string;
@@ -118,32 +174,56 @@ export class AuthController {
       try {
         ticket = await client.verifyIdToken({ idToken: body.credential, audience: googleClientId });
       } catch {
-        throw new ApiException({ code: 'AUTHENTICATION_FAILED', message: 'Invalid Google credential.', status: 401 });
+        throw new ApiException({
+          code: 'AUTHENTICATION_FAILED',
+          message: 'Invalid Google credential.',
+          status: 401,
+        });
       }
       const payload = ticket.getPayload();
       if (!payload?.sub || !payload.email) {
-        throw new ApiException({ code: 'AUTHENTICATION_FAILED', message: 'Invalid Google credential payload.', status: 401 });
+        throw new ApiException({
+          code: 'AUTHENTICATION_FAILED',
+          message: 'Invalid Google credential payload.',
+          status: 401,
+        });
       }
       googleId = payload.sub;
-      email = payload.email;
+      email = payload.email.trim().toLocaleLowerCase('en');
       displayName = payload.name ?? payload.email;
       avatarUrl = payload.picture;
     } else {
       const parts = body.credential.split('.');
       if (parts.length !== 3) {
-        throw new ApiException({ code: 'AUTHENTICATION_FAILED', message: 'Invalid credential format.', status: 401 });
+        throw new ApiException({
+          code: 'AUTHENTICATION_FAILED',
+          message: 'Invalid credential format.',
+          status: 401,
+        });
       }
       const payloadJson = Buffer.from(parts[1] ?? '', 'base64url').toString('utf8');
-      const payload = JSON.parse(payloadJson) as { sub?: string; email?: string; name?: string; picture?: string };
+      const payload = JSON.parse(payloadJson) as {
+        sub?: string;
+        email?: string;
+        name?: string;
+        picture?: string;
+      };
       if (!payload.sub || !payload.email) {
-        throw new ApiException({ code: 'AUTHENTICATION_FAILED', message: 'Invalid Google credential payload.', status: 401 });
+        throw new ApiException({
+          code: 'AUTHENTICATION_FAILED',
+          message: 'Invalid Google credential payload.',
+          status: 401,
+        });
       }
       googleId = payload.sub;
-      email = payload.email;
+      email = payload.email.trim().toLocaleLowerCase('en');
       displayName = payload.name ?? payload.email;
       avatarUrl = payload.picture;
     }
 
-    return this.sessions.loginWithGoogle({ googleId, email, displayName, ...(avatarUrl ? { avatarUrl } : {}) }, reply);
+    return this.sessions.loginWithGoogle(
+      { googleId, email, displayName, ...(avatarUrl ? { avatarUrl } : {}) },
+      reply,
+    );
   }
 }

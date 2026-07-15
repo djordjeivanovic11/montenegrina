@@ -53,9 +53,7 @@ function removeMessage(messages: Message[], id: string): Message[] {
 
 function userMessagesSinceLastAssistant(messages: Message[]): Message[] {
   const lastAssistantIndex = messages.map((message) => message.role).lastIndexOf('assistant');
-  return messages
-    .slice(lastAssistantIndex + 1)
-    .filter((message) => message.role === 'user');
+  return messages.slice(lastAssistantIndex + 1).filter((message) => message.role === 'user');
 }
 
 function mergeUserTurnMessages(
@@ -71,15 +69,10 @@ function mergeUserTurnMessages(
     return upsertMessage(messages, draftId, 'user', finalText, false, draftTs);
   }
 
-  const keepId = priorUsers[0].id;
-  const merged = trimDisplay(
-    priorUsers.map((message) => message.content).join(' '),
-    finalText,
-  );
+  const keepId = priorUsers[0]!.id;
+  const merged = trimDisplay(priorUsers.map((message) => message.content).join(' '), finalText);
   const removeIds = new Set(
-    [...priorUsers.slice(1).map((message) => message.id), draftId].filter(
-      (id) => id !== keepId,
-    ),
+    [...priorUsers.slice(1).map((message) => message.id), draftId].filter((id) => id !== keepId),
   );
   const kept = messages.find((message) => message.id === keepId);
   const withoutRemoved = messages.filter((message) => !removeIds.has(message.id));
@@ -167,12 +160,7 @@ function applyVoiceEvent(
         userDraftId: null,
         userCommitted: '',
         userLivePartial: '',
-        messages: mergeUserTurnMessages(
-          state.messages,
-          userDraftId,
-          finalText,
-          existing?.ts,
-        ),
+        messages: mergeUserTurnMessages(state.messages, userDraftId, finalText, existing?.ts),
       };
     }
 
@@ -230,14 +218,16 @@ function applyVoiceEvent(
       const id = draft?.id ?? crypto.randomUUID();
       const content = finalText || draft?.content || '';
       if (!content) {
-        const { [resolvedSpeechId]: _removed, ...restDrafts } = state.assistantDrafts;
+        const restDrafts = { ...state.assistantDrafts };
+        delete restDrafts[resolvedSpeechId];
         return {
           ...state,
           assistantDrafts: restDrafts,
           messages: draft?.id ? removeMessage(state.messages, draft.id) : state.messages,
         };
       }
-      const { [resolvedSpeechId]: _removed, ...restDrafts } = state.assistantDrafts;
+      const restDrafts = { ...state.assistantDrafts };
+      delete restDrafts[resolvedSpeechId];
       return {
         ...state,
         assistantDrafts: restDrafts,

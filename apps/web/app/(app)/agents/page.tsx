@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { Badge, Card, EmptyState, PageHeader } from '../../components/ui/page-shell';
-import { archiveAgent, publishAgentVersion, uniqueAgentSlug, type AgentRecord } from '../../lib/agent-actions';
+import {
+  archiveAgent,
+  publishAgentVersion,
+  uniqueAgentSlug,
+  type AgentRecord,
+} from '../../lib/agent-actions';
 import { api, parseApiError, quotaErrorKey } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
@@ -22,7 +27,7 @@ export default function AgentsPage() {
 
   async function loadAgents(): Promise<void> {
     const res = await api.GET('/v1/agents');
-    if (res.data) setAgents(res.data.items as AgentRecord[]);
+    if (res.data) setAgents(res.data.items);
     setLoading(false);
   }
 
@@ -96,7 +101,11 @@ export default function AgentsPage() {
         title={t('nav.agents')}
         description={t('agents.pageDesc')}
         actions={
-          <button type="button" onClick={() => setShowCreate((value) => !value)} className="btn-primary text-sm">
+          <button
+            type="button"
+            onClick={() => setShowCreate((value) => !value)}
+            className="btn-primary text-sm"
+          >
             {t('agents.newAgent')}
           </button>
         }
@@ -108,7 +117,12 @@ export default function AgentsPage() {
           <form onSubmit={(e) => void createAgent(e)} className="mt-4 space-y-4">
             <label className="field-label block">
               {t('agents.name')}
-              <input value={name} onChange={(e) => setName(e.target.value)} className="input-field mt-1" required />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-field mt-1"
+                required
+              />
             </label>
             <label className="field-label block">
               {t('agents.instructions')}
@@ -125,7 +139,12 @@ export default function AgentsPage() {
               <button type="submit" className="btn-primary text-sm" disabled={creating}>
                 {creating ? t('agents.creating') : t('agents.create')}
               </button>
-              <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary text-sm" disabled={creating}>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="btn-secondary text-sm"
+                disabled={creating}
+              >
                 {t('app.cancel')}
               </button>
             </div>
@@ -140,7 +159,11 @@ export default function AgentsPage() {
           title={t('agents.emptyTitle')}
           description={t('agents.emptyDesc')}
           action={
-            <button type="button" onClick={() => setShowCreate(true)} className="btn-primary text-sm">
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="btn-primary text-sm"
+            >
               {t('agents.newAgent')}
             </button>
           }
@@ -150,7 +173,10 @@ export default function AgentsPage() {
           {agents.map((agent) => (
             <Card key={agent.id} className="p-4">
               <div className="flex items-start justify-between gap-4">
-                <Link href={`/agents/${agent.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                <Link
+                  href={`/agents/${agent.id}`}
+                  className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                >
                   <p className="text-sm font-medium text-ink">{agent.name}</p>
                   <p className="text-xs text-ink-3 mt-0.5">{agent.slug}</p>
                 </Link>

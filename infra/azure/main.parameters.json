@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "location": { "value": "${AZURE_LOCATION}" },
+    "postgresAdminPassword": { "value": "${POSTGRES_ADMIN_PASSWORD}" },
+    "sessionSecret": { "value": "${SESSION_SECRET}" },
+    "internalTokenSecret": { "value": "${INTERNAL_TOKEN_SECRET}" },
+    "voiceAgentServiceSecret": { "value": "${VOICE_AGENT_SERVICE_SECRET}" },
+    "livekitUrl": { "value": "${LIVEKIT_URL}" },
+    "livekitApiKey": { "value": "${LIVEKIT_API_KEY}" },
+    "livekitApiSecret": { "value": "${LIVEKIT_API_SECRET}" },
+    "openaiApiKey": { "value": "${OPENAI_API_KEY}" },
+    "deepgramApiKey": { "value": "${DEEPGRAM_API_KEY}" },
+    "elevenlabsApiKey": { "value": "${ELEVENLABS_API_KEY}" },
+    "elevenlabsVoiceId": { "value": "${ELEVENLABS_MONTENEGRIN_VOICE_ID}" },
+    "googleClientId": { "value": "${GOOGLE_CLIENT_ID}" },
+    "resendApiKey": { "value": "${RESEND_API_KEY}" },
+    "turnstileSecretKey": { "value": "${TURNSTILE_SECRET_KEY}" },
+    "turnstileSiteKey": { "value": "${PUBLIC_TURNSTILE_SITE_KEY}" }
+  }
+}

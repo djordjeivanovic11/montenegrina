@@ -6,7 +6,13 @@ import { Badge, Card, PageHeader } from '../../components/ui/page-shell';
 import { API_URL, apiHeaders, parseApiError, quotaErrorKey } from '../../lib/api-client';
 import { useI18n } from '../../lib/i18n/index';
 
-type Member = { userId: string; email?: string; displayName?: string; role: string; joinedAt: string };
+type Member = {
+  userId: string;
+  email?: string;
+  displayName?: string;
+  role: string;
+  joinedAt: string;
+};
 type Invitation = { id: string; email: string; role: string; status: string };
 
 export default function TeamPage() {
@@ -34,7 +40,9 @@ export default function TeamPage() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   async function invite(event: FormEvent) {
     event.preventDefault();
@@ -47,7 +55,7 @@ export default function TeamPage() {
       body: JSON.stringify({ email, role }),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body: unknown = await res.json().catch(() => null);
       const parsed = parseApiError(body);
       if (parsed.code === 'QUOTA_EXCEEDED' && parsed.details) {
         setError(
@@ -75,17 +83,29 @@ export default function TeamPage() {
         <form onSubmit={(e) => void invite(e)} className="flex flex-wrap gap-3 items-end">
           <label className="field-label flex-1 min-w-[200px]">
             {t('team.email')}
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="input-field" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="input-field"
+            />
           </label>
           <label className="field-label">
             {t('team.role')}
-            <select value={role} onChange={(e) => setRole(e.target.value as typeof role)} className="input-field">
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as typeof role)}
+              className="input-field"
+            >
               <option value="ADMIN">Admin</option>
               <option value="DEVELOPER">Developer</option>
               <option value="VIEWER">Viewer</option>
             </select>
           </label>
-          <button type="submit" className="btn-primary">{t('team.sendInvite')}</button>
+          <button type="submit" className="btn-primary">
+            {t('team.sendInvite')}
+          </button>
         </form>
         {error && <p className="text-error text-sm mt-2">{error}</p>}
         {success && <p className="text-sm text-ink-2 mt-2">{success}</p>}
@@ -108,12 +128,14 @@ export default function TeamPage() {
         <>
           <h2 className="text-sm font-semibold mt-8 mb-3">Pending invitations</h2>
           <div className="grid gap-2">
-            {invitations.filter((i) => i.status === 'PENDING').map((inv) => (
-              <Card key={inv.id} className="p-4 flex items-center justify-between">
-                <span className="text-sm">{inv.email}</span>
-                <Badge variant="muted">{inv.role}</Badge>
-              </Card>
-            ))}
+            {invitations
+              .filter((i) => i.status === 'PENDING')
+              .map((inv) => (
+                <Card key={inv.id} className="p-4 flex items-center justify-between">
+                  <span className="text-sm">{inv.email}</span>
+                  <Badge variant="muted">{inv.role}</Badge>
+                </Card>
+              ))}
           </div>
         </>
       )}

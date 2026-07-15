@@ -124,11 +124,7 @@ function DocumentPreviewPanel({
           <button type="button" className="btn-secondary text-sm" onClick={onReindex}>
             Ponovo indeksiraj
           </button>
-          <button
-            type="button"
-            className="btn-secondary text-sm text-red-600"
-            onClick={onDelete}
-          >
+          <button type="button" className="btn-secondary text-sm text-red-600" onClick={onDelete}>
             Obriši
           </button>
         </div>
@@ -196,26 +192,35 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadBases = useCallback(async () => {
-    const response = await fetch(`${apiUrl}/v1/knowledge/bases`, { headers: headers(), credentials: 'include' });
+    const response = await fetch(`${apiUrl}/v1/knowledge/bases`, {
+      headers: headers(),
+      credentials: 'include',
+    });
     if (!response.ok) return;
     const data = (await response.json()) as { items: KnowledgeBase[] };
     setBases(data.items);
     if (!selectedBaseId && data.items[0]) setSelectedBaseId(data.items[0].id);
   }, [apiUrl, headers, selectedBaseId]);
 
-  const loadDocuments = useCallback(async (knowledgeBaseId: string) => {
-    const response = await fetch(`${apiUrl}/v1/knowledge/documents?knowledgeBaseId=${knowledgeBaseId}`, {
-      headers: headers(),
-      credentials: 'include',
-    });
-    if (!response.ok) return;
-    const data = (await response.json()) as { items: KnowledgeDocument[] };
-    setDocuments(data.items);
-    setSelectedDocumentId((current) => {
-      if (current && data.items.some((doc) => doc.id === current)) return current;
-      return data.items[0]?.id ?? null;
-    });
-  }, [apiUrl, headers]);
+  const loadDocuments = useCallback(
+    async (knowledgeBaseId: string) => {
+      const response = await fetch(
+        `${apiUrl}/v1/knowledge/documents?knowledgeBaseId=${knowledgeBaseId}`,
+        {
+          headers: headers(),
+          credentials: 'include',
+        },
+      );
+      if (!response.ok) return;
+      const data = (await response.json()) as { items: KnowledgeDocument[] };
+      setDocuments(data.items);
+      setSelectedDocumentId((current) => {
+        if (current && data.items.some((doc) => doc.id === current)) return current;
+        return data.items[0]?.id ?? null;
+      });
+    },
+    [apiUrl, headers],
+  );
 
   const loadPreview = useCallback(
     async (documentId: string) => {
@@ -244,13 +249,16 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
     if (selectedBaseId) void loadDocuments(selectedBaseId);
   }, [selectedBaseId, loadDocuments]);
 
-  const pollIngestionJob = useCallback(async (jobId: string) => {
-    const response = await fetch(`${apiUrl}/v1/knowledge/ingestion-jobs/${jobId}`, {
-      headers: headers(),
-      credentials: 'include',
-    });
-    if (response.ok) setIngestionJob((await response.json()) as Record<string, unknown>);
-  }, [apiUrl, headers]);
+  const pollIngestionJob = useCallback(
+    async (jobId: string) => {
+      const response = await fetch(`${apiUrl}/v1/knowledge/ingestion-jobs/${jobId}`, {
+        headers: headers(),
+        credentials: 'include',
+      });
+      if (response.ok) setIngestionJob((await response.json()) as Record<string, unknown>);
+    },
+    [apiUrl, headers],
+  );
 
   useEffect(() => {
     if (!selectedDocumentId || view !== 'library') return;
@@ -293,7 +301,7 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
         credentials: 'include',
       });
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
+        const body: unknown = await response.json().catch(() => null);
         const parsed = parseApiError(body);
         if (parsed.code === 'QUOTA_EXCEEDED' && parsed.details) {
           setUploadError(
@@ -498,8 +506,12 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
               ))}
               {labContext && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-ink-3 mb-2">Kontekst za model</p>
-                  <pre className="card p-3 text-xs overflow-auto whitespace-pre-wrap">{labContext}</pre>
+                  <p className="text-xs uppercase tracking-wide text-ink-3 mb-2">
+                    Kontekst za model
+                  </p>
+                  <pre className="card p-3 text-xs overflow-auto whitespace-pre-wrap">
+                    {labContext}
+                  </pre>
                 </div>
               )}
             </div>
@@ -542,7 +554,9 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
                 >
                   <DocumentThumbnail title={document.title} status={document.status} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-ink leading-snug break-words">{document.title}</p>
+                    <p className="text-xs font-medium text-ink leading-snug break-words">
+                      {document.title}
+                    </p>
                     <p className="text-[10px] text-ink-3 mt-1">{statusLabel(document.status)}</p>
                   </div>
                   <button
@@ -567,7 +581,9 @@ export function KnowledgeSection({ apiUrl, headers, agentId }: KnowledgeSectionP
                 <div className="knowledge-a4-page max-w-[12rem] opacity-40 mb-4" aria-hidden>
                   <p className="text-xs text-ink-3 text-center m-auto">A4</p>
                 </div>
-                <h3 className="text-sm font-medium text-ink">{selectedBase?.name ?? 'Baza znanja'}</h3>
+                <h3 className="text-sm font-medium text-ink">
+                  {selectedBase?.name ?? 'Baza znanja'}
+                </h3>
                 <p className="text-sm text-ink-3 mt-1 max-w-sm">
                   {selectedBase?.description || 'Odaberite dokument s lijeve strane za pregled.'}
                 </p>

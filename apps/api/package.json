@@ -25,6 +25,7 @@
     "@montenegrina/email": "workspace:*",
     "@montenegrina/knowledge-core": "workspace:*",
     "@montenegrina/language-cnr": "workspace:*",
+    "@montenegrina/object-storage": "workspace:*",
     "@montenegrina/provider-core": "workspace:*",
     "@montenegrina/providers": "workspace:*",
     "@nestjs/common": "^11.1.0",
@@ -49,7 +50,8 @@
     "stripe": "^18.4.0",
     "@sentry/node": "^9.46.0",
     "uuid": "^13.0.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",

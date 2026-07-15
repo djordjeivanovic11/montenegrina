@@ -2,7 +2,7 @@ import type { Database } from '@montenegrina/database';
 import { schema } from '@montenegrina/database';
 import { eq } from 'drizzle-orm';
 
-import { ObjectStorage } from './storage.js';
+import type { ObjectStorage } from './storage.js';
 
 export class DeletionProcessor {
   constructor(
@@ -27,10 +27,14 @@ export class DeletionProcessor {
         await this.database.delete(schema.documents).where(eq(schema.documents.id, job.resourceId));
         counts.documents = 1;
       } else if (job.resourceType === 'conversation') {
-        await this.database.delete(schema.conversations).where(eq(schema.conversations.id, job.resourceId));
+        await this.database
+          .delete(schema.conversations)
+          .where(eq(schema.conversations.id, job.resourceId));
         counts.conversations = 1;
       } else if (job.resourceType === 'organization') {
-        await this.database.delete(schema.organizations).where(eq(schema.organizations.id, job.resourceId));
+        await this.database
+          .delete(schema.organizations)
+          .where(eq(schema.organizations.id, job.resourceId));
         counts.organizations = 1;
       }
       await this.database
@@ -56,4 +60,3 @@ export class DeletionProcessor {
     }
   }
 }
-

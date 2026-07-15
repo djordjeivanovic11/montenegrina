@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/azure-lib.sh"
+azure_load_env
+"$ROOT/scripts/azure-validate-env.sh"
+azure_assert_login
+[[ -z "${AZURE_SUBSCRIPTION_ID:-}" ]] || az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+if azd env list 2>/dev/null | awk 'NR>1 {print $1}' | grep -qx "$AZURE_ENV_NAME"; then azd env select "$AZURE_ENV_NAME"; else azd env new "$AZURE_ENV_NAME"; fi
+for key in AZURE_LOCATION AZURE_ENV_NAME POSTGRES_ADMIN_PASSWORD SESSION_SECRET INTERNAL_TOKEN_SECRET VOICE_AGENT_SERVICE_SECRET LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID GOOGLE_CLIENT_ID RESEND_API_KEY TURNSTILE_SECRET_KEY PUBLIC_TURNSTILE_SITE_KEY; do
+  azd env set "$key" "${!key}"
+done
+azd env set AZURE_SUBSCRIPTION_ID "$(az account show --query id -o tsv)"
+azd provision --no-prompt

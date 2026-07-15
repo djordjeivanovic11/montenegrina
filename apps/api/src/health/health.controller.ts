@@ -1,4 +1,5 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Res } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import type { Environment } from '@montenegrina/config';
 import type { Redis } from 'ioredis';
 
@@ -24,7 +25,7 @@ export class HealthController {
 
   @Public()
   @Get('ready')
-  async ready() {
+  async ready(@Res({ passthrough: true }) reply: FastifyReply) {
     const postgres = await this.database.pool.query('select 1').then(
       () => 'ok' as const,
       () => 'failed' as const,
@@ -36,6 +37,7 @@ export class HealthController {
     const storage = await this.storage.ping();
     const checks = { postgres, redis, storage };
     const ok = postgres === 'ok' && redis === 'ok' && storage === 'ok';
+    if (!ok) reply.status(503);
     return {
       ok,
       status: ok ? 'ok' : postgres === 'failed' ? 'failed' : 'degraded',

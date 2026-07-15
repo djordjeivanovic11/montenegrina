@@ -29,7 +29,7 @@ function InviteAcceptForm() {
         body: JSON.stringify({ token }),
       });
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
+        const body: unknown = await response.json().catch(() => null);
         setError(errorMessage(body) || t('auth.inviteAcceptInvalid'));
         return;
       }
@@ -61,10 +61,16 @@ function InviteAcceptForm() {
         <p className="text-sm text-ink-2 mb-4">{t('auth.inviteAcceptDesc')}</p>
         <p className="text-sm text-ink-2 mb-4">{t('auth.inviteAcceptMismatch')}</p>
         <div className="flex flex-col gap-2">
-          <Link href={`/login?returnUrl=${encodeURIComponent(returnUrl)}`} className="btn-primary text-center">
+          <Link
+            href={`/login?returnUrl=${encodeURIComponent(returnUrl)}`}
+            className="btn-primary text-center"
+          >
             {t('auth.loginLink')}
           </Link>
-          <Link href={`/signup?returnUrl=${encodeURIComponent(returnUrl)}`} className="btn-secondary text-center">
+          <Link
+            href={`/signup?returnUrl=${encodeURIComponent(returnUrl)}`}
+            className="btn-secondary text-center"
+          >
             {t('auth.signupLink')}
           </Link>
         </div>
@@ -89,7 +95,10 @@ function InviteAcceptForm() {
 
 function AuthShell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
       <div className="w-full max-w-[400px]">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-3 mb-3">
@@ -108,7 +117,9 @@ function AuthShell({ title, children }: { title: string; children: ReactNode }) 
 
 export default function InviteAcceptPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+    <Suspense
+      fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}
+    >
       <InviteAcceptForm />
     </Suspense>
   );

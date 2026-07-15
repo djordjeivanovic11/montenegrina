@@ -52,9 +52,21 @@ export class LiveKitVoiceService {
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {
     this.#httpUrl = environment.LIVEKIT_URL.replace(/^ws/u, 'http');
-    this.#rooms = new RoomServiceClient(this.#httpUrl, environment.LIVEKIT_API_KEY, environment.LIVEKIT_API_SECRET);
-    this.#sip = new SipClient(this.#httpUrl, environment.LIVEKIT_API_KEY, environment.LIVEKIT_API_SECRET);
-    this.#egress = new EgressClient(this.#httpUrl, environment.LIVEKIT_API_KEY, environment.LIVEKIT_API_SECRET);
+    this.#rooms = new RoomServiceClient(
+      this.#httpUrl,
+      environment.LIVEKIT_API_KEY,
+      environment.LIVEKIT_API_SECRET,
+    );
+    this.#sip = new SipClient(
+      this.#httpUrl,
+      environment.LIVEKIT_API_KEY,
+      environment.LIVEKIT_API_SECRET,
+    );
+    this.#egress = new EgressClient(
+      this.#httpUrl,
+      environment.LIVEKIT_API_KEY,
+      environment.LIVEKIT_API_SECRET,
+    );
   }
 
   assertOutboundConfigured(): void {
@@ -135,7 +147,9 @@ export class LiveKitVoiceService {
     });
     const roomName =
       options?.roomPrefix ??
-      (channel === 'SIP' ? `call-${conversationId}` : `cnr-${organizationId.slice(0, 8)}-${conversationId}`);
+      (channel === 'SIP'
+        ? `call-${conversationId}`
+        : `cnr-${organizationId.slice(0, 8)}-${conversationId}`);
     const runtimeToken = await this.internalTokens.issue({
       organizationId,
       agentId,
@@ -183,13 +197,23 @@ export class LiveKitVoiceService {
     participantName?: string,
   ): Promise<{ participantToken: string; expiresAt: string }> {
     const expiresAt = new Date(Date.now() + 5 * 60_000);
-    const token = new AccessToken(this.environment.LIVEKIT_API_KEY, this.environment.LIVEKIT_API_SECRET, {
-      identity: `user-${actor.actorId}-${uuidv7()}`,
-      name: participantName ?? 'Korisnik',
-      ttl: 300,
-      metadata: JSON.stringify({ conversationId, language: 'cnr' }),
+    const token = new AccessToken(
+      this.environment.LIVEKIT_API_KEY,
+      this.environment.LIVEKIT_API_SECRET,
+      {
+        identity: `user-${actor.actorId}-${uuidv7()}`,
+        name: participantName ?? 'Korisnik',
+        ttl: 300,
+        metadata: JSON.stringify({ conversationId, language: 'cnr' }),
+      },
+    );
+    token.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
     });
-    token.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true, canPublishData: true });
     return { participantToken: await token.toJwt(), expiresAt: expiresAt.toISOString() };
   }
 
@@ -230,7 +254,10 @@ export class LiveKitVoiceService {
     const callerE164 = normalizeE164(input.callerNumber);
     let phoneNumber = input.phoneNumberId
       ? await this.database.db.query.phoneNumbers.findFirst({
-          where: and(eq(schema.phoneNumbers.id, input.phoneNumberId), eq(schema.phoneNumbers.enabled, true)),
+          where: and(
+            eq(schema.phoneNumbers.id, input.phoneNumberId),
+            eq(schema.phoneNumbers.enabled, true),
+          ),
         })
       : undefined;
     if (!phoneNumber) {
@@ -282,7 +309,12 @@ export class LiveKitVoiceService {
       agentVersionId: version.id,
       conversationId,
     });
-    await this.startRoomEgressIfEnabled(input.roomName, organizationId, conversationId, version.config);
+    await this.startRoomEgressIfEnabled(
+      input.roomName,
+      organizationId,
+      conversationId,
+      version.config,
+    );
     return { runtimeToken, conversationId };
   }
 
@@ -292,7 +324,7 @@ export class LiveKitVoiceService {
     conversationId: string,
     config: AgentConfigurationSnapshot,
   ): Promise<void> {
-    if (!config.retention.recordAudio) return;
+    if (!this.environment.RECORDINGS_ENABLED || !config.retention.recordAudio) return;
     const accessKey =
       this.environment.LIVEKIT_EGRESS_S3_ACCESS_KEY_ID ?? this.environment.S3_ACCESS_KEY_ID;
     const secretKey =

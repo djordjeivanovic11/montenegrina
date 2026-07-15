@@ -1,13 +1,7 @@
 'use client';
 
 import { createApiClient, type components } from '@montenegrina/sdk-typescript';
-import {
-  Room,
-  RoomEvent,
-  Track,
-  type RemoteTrack,
-  type RemoteParticipant,
-} from 'livekit-client';
+import { Room, RoomEvent, Track, type RemoteTrack, type RemoteParticipant } from 'livekit-client';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { Composer } from '../composer';
@@ -18,10 +12,7 @@ import { TopBar } from '../top-bar';
 import { API_URL, apiHeaders, errorMessage } from '../../lib/api-client';
 import { useSession } from '../../lib/hooks/use-session';
 import { useWorkspace } from '../../lib/hooks/use-workspace';
-import {
-  initialVoiceTranscriptState,
-  voiceTranscriptReducer,
-} from '../../lib/voice-transcript';
+import { initialVoiceTranscriptState, voiceTranscriptReducer } from '../../lib/voice-transcript';
 
 type Agent = components['schemas']['Agent'];
 type RealtimeSession = components['schemas']['RealtimeSession'];
@@ -46,16 +37,29 @@ export function PlaygroundView() {
   const [events, setEvents] = useState<string[]>([]);
   const [activeSection, setActiveSection] = useState<'chat' | 'knowledge'>('chat');
   const [phoneTo, setPhoneTo] = useState('');
-  const [phoneCallState, setPhoneCallState] = useState<'idle' | 'dialing' | 'done' | 'error'>('idle');
+  const [phoneCallState, setPhoneCallState] = useState<'idle' | 'dialing' | 'done' | 'error'>(
+    'idle',
+  );
   const [sipConfigured, setSipConfigured] = useState(false);
-  const [conversations, setConversations] = useState<Array<{ id: string; startedAt: string; preview?: string }>>([]);
+  const [, setConversations] = useState<
+    Array<{
+      id: string;
+      startedAt: string;
+      preview?: string;
+    }>
+  >([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   const [voiceUiActive, setVoiceUiActive] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const api = useMemo(() => createApiClient(API_URL), []);
 
-  useEffect(() => () => { void roomRef.current?.disconnect(); }, []);
+  useEffect(
+    () => () => {
+      void roomRef.current?.disconnect();
+    },
+    [],
+  );
 
   const headers = (): Record<string, string> => apiHeaders();
 
@@ -72,7 +76,9 @@ export function PlaygroundView() {
         credentials: 'include',
       });
       if (convResponse.ok) {
-        const convData = (await convResponse.json()) as { items: Array<{ id: string; startedAt: string; preview?: string }> };
+        const convData = (await convResponse.json()) as {
+          items: Array<{ id: string; startedAt: string; preview?: string }>;
+        };
         setConversations(convData.items ?? []);
       }
       const channelsRes = await fetch(`${API_URL}/v1/integrations/channels`, {
@@ -80,7 +86,9 @@ export function PlaygroundView() {
         credentials: 'include',
       });
       if (channelsRes.ok) {
-        const channels = (await channelsRes.json()) as { items: Array<{ sipConfigured?: boolean }> };
+        const channels = (await channelsRes.json()) as {
+          items: Array<{ sipConfigured?: boolean }>;
+        };
         setSipConfigured(Boolean(channels.items[0]?.sipConfigured));
       }
     })();
@@ -88,14 +96,24 @@ export function PlaygroundView() {
 
   async function sendText(): Promise<void> {
     if (!agentId || !input.trim()) return;
-    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: input.trim(), ts: Date.now() };
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: input.trim(),
+      ts: Date.now(),
+    };
     dispatchTranscript({ type: 'message.add', message: userMsg });
     const sentInput = input.trim();
     setInput('');
 
     const response = await api.POST('/v1/responses', {
       headers: headers(),
-      body: { agentId, input: sentInput, stream: false, ...(activeConversationId ? { conversationId: activeConversationId } : {}) },
+      body: {
+        agentId,
+        input: sentInput,
+        stream: false,
+        ...(activeConversationId ? { conversationId: activeConversationId } : {}),
+      },
     });
     if (response.error) {
       setError(errorMessage(response.error));
@@ -103,16 +121,28 @@ export function PlaygroundView() {
     }
     dispatchTranscript({
       type: 'message.add',
-      message: { id: crypto.randomUUID(), role: 'assistant', content: response.data.text, ts: Date.now() },
+      message: {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response.data.text,
+        ts: Date.now(),
+      },
     });
     const returnedConvId = (response.data as unknown as { conversationId?: string }).conversationId;
     if (!activeConversationId && returnedConvId) {
       setActiveConversationId(returnedConvId);
-      setConversations((prev) => [{ id: returnedConvId, startedAt: new Date().toISOString(), preview: sentInput.slice(0, 40) }, ...prev]);
+      setConversations((prev) => [
+        {
+          id: returnedConvId,
+          startedAt: new Date().toISOString(),
+          preview: sentInput.slice(0, 40),
+        },
+        ...prev,
+      ]);
     }
   }
 
-    async function startVoice(): Promise<void> {
+  async function startVoice(): Promise<void> {
     if (!agentId) return;
     await roomRef.current?.disconnect();
     dispatchTranscript({ type: 'session.reset' });
@@ -132,7 +162,15 @@ export function PlaygroundView() {
   }
 
   async function connectRoom(session: RealtimeSession): Promise<void> {
-    const room = new Room({ adaptiveStream: true, dynacast: true, audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const room = new Room({
+      adaptiveStream: true,
+      dynacast: true,
+      audioCaptureDefaults: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach();
@@ -147,24 +185,37 @@ export function PlaygroundView() {
         });
       }
     });
-    room.on(RoomEvent.DataReceived, (bytes: Uint8Array, _p: RemoteParticipant | undefined, _k: unknown, topic: string | undefined) => {
-      if (topic !== 'montenegrina.events') return;
-      const evt = JSON.parse(new TextDecoder().decode(bytes)) as { type: string; payload: Record<string, unknown> };
-      setEvents((current) => [`${evt.type}: ${JSON.stringify(evt.payload)}`, ...current].slice(0, 40));
-      const handled = new Set([
-        'transcription.partial',
-        'transcription.final',
-        'user.turn.completed',
-        'turn.started',
-        'assistant.audio.started',
-        'assistant.text.delta',
-        'assistant.text.completed',
-        'assistant.interrupted',
-        'assistant.audio.completed',
-      ]);
-      if (!handled.has(evt.type)) return;
-      dispatchTranscript({ type: 'voice.event', event: evt });
-    });
+    room.on(
+      RoomEvent.DataReceived,
+      (
+        bytes: Uint8Array,
+        _p: RemoteParticipant | undefined,
+        _k: unknown,
+        topic: string | undefined,
+      ) => {
+        if (topic !== 'montenegrina.events') return;
+        const evt = JSON.parse(new TextDecoder().decode(bytes)) as {
+          type: string;
+          payload: Record<string, unknown>;
+        };
+        setEvents((current) =>
+          [`${evt.type}: ${JSON.stringify(evt.payload)}`, ...current].slice(0, 40),
+        );
+        const handled = new Set([
+          'transcription.partial',
+          'transcription.final',
+          'user.turn.completed',
+          'turn.started',
+          'assistant.audio.started',
+          'assistant.text.delta',
+          'assistant.text.completed',
+          'assistant.interrupted',
+          'assistant.audio.completed',
+        ]);
+        if (!handled.has(evt.type)) return;
+        dispatchTranscript({ type: 'voice.event', event: evt });
+      },
+    );
     room.on(RoomEvent.Disconnected, () => setVoiceState('idle'));
     await room.connect(session.livekitUrl, session.participantToken, { autoSubscribe: true });
     await room.localParticipant.setMicrophoneEnabled(true);
@@ -256,7 +307,11 @@ export function PlaygroundView() {
                 placeholder="+38267123456"
                 value={phoneTo}
                 disabled={!sipConfigured}
-                title={sipConfigured ? undefined : 'Configure LIVEKIT_SIP_OUTBOUND_TRUNK_ID for outbound calls'}
+                title={
+                  sipConfigured
+                    ? undefined
+                    : 'Configure LIVEKIT_SIP_OUTBOUND_TRUNK_ID for outbound calls'
+                }
                 onChange={(event) => setPhoneTo(event.target.value)}
               />
               <button
@@ -265,7 +320,13 @@ export function PlaygroundView() {
                 disabled={!sipConfigured || !agentId || phoneCallState === 'dialing'}
                 onClick={() => void startPhoneCall()}
               >
-                {phoneCallState === 'dialing' ? 'Dialing…' : phoneCallState === 'done' ? 'Call started' : phoneCallState === 'error' ? 'Call failed' : 'Call'}
+                {phoneCallState === 'dialing'
+                  ? 'Dialing…'
+                  : phoneCallState === 'done'
+                    ? 'Call started'
+                    : phoneCallState === 'error'
+                      ? 'Call failed'
+                      : 'Call'}
               </button>
             </div>
           </div>

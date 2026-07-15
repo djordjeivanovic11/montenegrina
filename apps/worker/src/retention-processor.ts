@@ -1,7 +1,7 @@
 import type { Environment } from '@montenegrina/config';
 import type { Database } from '@montenegrina/database';
 import { schema } from '@montenegrina/database';
-import { and, eq, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, lt } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 export class RetentionProcessor {
@@ -63,4 +63,3 @@ export class RetentionProcessor {
       );
   }
 }
-

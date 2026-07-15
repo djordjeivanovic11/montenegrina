@@ -13,7 +13,11 @@ import {
 import WebSocket from 'ws';
 
 import { AsyncEventQueue } from '../async-event-queue.js';
-import { normalizeProviderSocketError, providerAbortSignal } from '../provider-errors.js';
+import {
+  normalizeProviderSocketError,
+  providerAbortSignal,
+  providerString,
+} from '../provider-errors.js';
 
 export interface OpenAIRealtimeConfig {
   apiKey: string;
@@ -51,9 +55,12 @@ class OpenAIRealtimeSession implements RealtimeSpeechSession {
     private readonly inputFormat: AudioFormat,
     private readonly outputFormat: AudioFormat,
   ) {
-    socket.on('message', (message) => this.handleMessage(message.toString()));
+    socket.on('message', (message) => this.handleMessage(providerString(message)));
     socket.on('error', (error) =>
-      this.#events.push({ type: 'error', error: normalizeProviderSocketError('openai-realtime', error) }),
+      this.#events.push({
+        type: 'error',
+        error: normalizeProviderSocketError('openai-realtime', error),
+      }),
     );
     socket.on('close', () => {
       this.#closed = true;
@@ -82,7 +89,10 @@ class OpenAIRealtimeSession implements RealtimeSpeechSession {
         failureClass: 'NON_RETRYABLE',
       });
     }
-    await this.send({ type: 'input_audio_buffer.append', audio: Buffer.from(frame.bytes).toString('base64') });
+    await this.send({
+      type: 'input_audio_buffer.append',
+      audio: Buffer.from(frame.bytes).toString('base64'),
+    });
   }
 
   events(): AsyncIterable<RealtimeProviderEvent> {
@@ -133,7 +143,7 @@ class OpenAIRealtimeSession implements RealtimeSpeechSession {
       });
       return;
     }
-    const type = String(event.type ?? '');
+    const type = providerString(event.type);
     switch (type) {
       case 'input_audio_buffer.speech_started':
         this.#events.push({ type: 'speech.started' });
@@ -142,29 +152,29 @@ class OpenAIRealtimeSession implements RealtimeSpeechSession {
         this.#events.push({ type: 'speech.stopped' });
         break;
       case 'conversation.item.input_audio_transcription.delta':
-        this.#events.push({ type: 'transcription.partial', text: String(event.delta ?? '') });
+        this.#events.push({ type: 'transcription.partial', text: providerString(event.delta) });
         break;
       case 'conversation.item.input_audio_transcription.completed':
-        this.#events.push({ type: 'transcription.final', text: String(event.transcript ?? '') });
+        this.#events.push({ type: 'transcription.final', text: providerString(event.transcript) });
         break;
       case 'response.output_audio_transcript.delta':
       case 'response.audio_transcript.delta':
-        this.#events.push({ type: 'response.text.delta', delta: String(event.delta ?? '') });
+        this.#events.push({ type: 'response.text.delta', delta: providerString(event.delta) });
         break;
       case 'response.output_audio.delta':
       case 'response.audio.delta':
         this.#events.push({
           type: 'response.audio.delta',
-          bytes: Buffer.from(String(event.delta ?? ''), 'base64'),
+          bytes: Buffer.from(providerString(event.delta), 'base64'),
           format: this.outputFormat,
         });
         break;
       case 'response.function_call_arguments.done': {
         try {
           const call: ToolCall = {
-            id: String(event.call_id ?? crypto.randomUUID()),
-            name: String(event.name ?? ''),
-            arguments: JSON.parse(String(event.arguments ?? '{}')) as Record<string, unknown>,
+            id: providerString(event.call_id, crypto.randomUUID()),
+            name: providerString(event.name),
+            arguments: JSON.parse(providerString(event.arguments, '{}')) as Record<string, unknown>,
           };
           this.#events.push({ type: 'tool.call', call });
         } catch (error) {
@@ -281,8 +291,9 @@ export class OpenAIRealtimeSpeechProvider implements RealtimeSpeechProvider {
     return new OpenAIRealtimeSession(socket, request.inputFormat, request.outputFormat);
   }
 
-  async health(): Promise<{ healthy: boolean; reason?: string }> {
-    return this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' };
+  health(): Promise<{ healthy: boolean; reason?: string }> {
+    return Promise.resolve(
+      this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' },
+    );
   }
 }
-

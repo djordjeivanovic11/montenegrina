@@ -28,7 +28,10 @@ function elevenOutputFormat(format: AudioFormat): string {
     });
   }
   if (format.encoding === 'mulaw' && format.sampleRate === 8_000) return 'ulaw_8000';
-  if ((format.encoding === 'pcm_s16le' || format.encoding === 'wav') && [16_000, 22_050, 24_000, 44_100].includes(format.sampleRate)) {
+  if (
+    (format.encoding === 'pcm_s16le' || format.encoding === 'wav') &&
+    [16_000, 22_050, 24_000, 44_100].includes(format.sampleRate)
+  ) {
     return `pcm_${format.sampleRate}`;
   }
   if (format.encoding === 'mp3') return 'mp3_44100_128';
@@ -46,7 +49,8 @@ function wavHeader(dataLength: number, format: AudioFormat): Uint8Array {
   const buffer = new ArrayBuffer(44);
   const view = new DataView(buffer);
   const write = (offset: number, value: string): void => {
-    for (let index = 0; index < value.length; index += 1) view.setUint8(offset + index, value.charCodeAt(index));
+    for (let index = 0; index < value.length; index += 1)
+      view.setUint8(offset + index, value.charCodeAt(index));
   };
   write(0, 'RIFF');
   view.setUint32(4, dataLength + 36, true);
@@ -178,10 +182,12 @@ export class ElevenLabsTextToSpeechProvider implements TextToSpeechProvider {
     }
   }
 
-  async health(): Promise<{ healthy: boolean; reason?: string }> {
-    return this.config.apiKey && this.config.voiceId
-      ? { healthy: true }
-      : { healthy: false, reason: 'missing credential or Montenegrin voice ID' };
+  health(): Promise<{ healthy: boolean; reason?: string }> {
+    return Promise.resolve(
+      this.config.apiKey && this.config.voiceId
+        ? { healthy: true }
+        : { healthy: false, reason: 'missing credential or Montenegrin voice ID' },
+    );
   }
 
   private async request(
@@ -217,4 +223,3 @@ export class ElevenLabsTextToSpeechProvider implements TextToSpeechProvider {
     );
   }
 }
-

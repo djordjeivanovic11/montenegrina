@@ -1,5 +1,18 @@
 import { ProviderError, type ProviderRequestContext } from '@montenegrina/provider-core';
 
+export function providerString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (value instanceof Uint8Array) return Buffer.from(value).toString('utf8');
+  if (value instanceof ArrayBuffer) return Buffer.from(value).toString('utf8');
+  if (Array.isArray(value) && value.every((item) => item instanceof Uint8Array)) {
+    return Buffer.concat(value).toString('utf8');
+  }
+  return fallback;
+}
+
 export function providerAbortSignal(context: ProviderRequestContext): AbortSignal {
   return AbortSignal.any(
     [context.signal, AbortSignal.timeout(context.timeoutMs)].filter(
@@ -17,7 +30,8 @@ export async function checkedProviderFetch(
   try {
     const response = await fetch(url, { ...init, signal: providerAbortSignal(context) });
     if (!response.ok) {
-      const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+      const retryable =
+        response.status === 408 || response.status === 429 || response.status >= 500;
       throw new ProviderError({
         code: `${provider.toUpperCase()}_HTTP_${response.status}`,
         message: `${provider} request failed.`,
@@ -31,7 +45,9 @@ export async function checkedProviderFetch(
     if (error instanceof ProviderError) throw error;
     const timeout = error instanceof DOMException && error.name === 'TimeoutError';
     throw new ProviderError({
-      code: timeout ? `${provider.toUpperCase()}_TIMEOUT` : `${provider.toUpperCase()}_NETWORK_ERROR`,
+      code: timeout
+        ? `${provider.toUpperCase()}_TIMEOUT`
+        : `${provider.toUpperCase()}_NETWORK_ERROR`,
       message: timeout ? `${provider} timed out.` : `${provider} could not be reached.`,
       provider,
       failureClass: 'RETRYABLE',
@@ -51,4 +67,3 @@ export function normalizeProviderSocketError(provider: string, error: unknown): 
         cause: error,
       });
 }
-

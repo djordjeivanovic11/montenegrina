@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 !.env.deploy.example
+!.env.azure.example
+.azure/
 node_modules/
 dist/
 .next/

@@ -1,4 +1,5 @@
 import type { EmailService } from '../types.js';
+import { emailVerificationTemplate } from '../templates/email-verification.js';
 import { passwordResetTemplate } from '../templates/password-reset.js';
 import { teamInvitationTemplate } from '../templates/team-invitation.js';
 import { welcomeTemplate } from '../templates/welcome.js';
@@ -8,6 +9,11 @@ export class ResendEmailProvider implements EmailService {
     private readonly apiKey: string,
     private readonly from: string,
   ) {}
+
+  async sendEmailVerification(to: string, verificationUrl: string): Promise<void> {
+    const message = emailVerificationTemplate(verificationUrl);
+    await this.send(to, message.subject, message.html, message.text);
+  }
 
   async sendPasswordReset(to: string, resetUrl: string): Promise<void> {
     const message = passwordResetTemplate(resetUrl);

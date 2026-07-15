@@ -18,6 +18,10 @@ export class EmailServiceWrapper {
     return this.service.sendPasswordReset(to, resetUrl);
   }
 
+  sendEmailVerification(to: string, verificationUrl: string): Promise<void> {
+    return this.service.sendEmailVerification(to, verificationUrl);
+  }
+
   sendTeamInvitation(to: string, inviteUrl: string, organizationName: string): Promise<void> {
     return this.service.sendTeamInvitation(to, inviteUrl, organizationName);
   }

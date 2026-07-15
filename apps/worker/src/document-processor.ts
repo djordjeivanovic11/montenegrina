@@ -10,7 +10,7 @@ import { and, eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
 import { KnowledgeParserClient } from './knowledge-parser.js';
-import { ObjectStorage } from './storage.js';
+import type { ObjectStorage } from './storage.js';
 
 export class DocumentProcessor {
   constructor(
@@ -23,7 +23,10 @@ export class DocumentProcessor {
   async process(data: Record<string, unknown>): Promise<void> {
     const documentId = String(data.documentId);
     const versionId = String(data.documentVersionId);
-    const ingestionJobId = data.ingestionJobId ? String(data.ingestionJobId) : undefined;
+    const ingestionJobId =
+      typeof data.ingestionJobId === 'string' && data.ingestionJobId.length > 0
+        ? data.ingestionJobId
+        : undefined;
     const version = await this.database.query.documentVersions.findFirst({
       where: and(
         eq(schema.documentVersions.id, versionId),
@@ -50,7 +53,9 @@ export class DocumentProcessor {
           status,
           workerId: hostname(),
           ...(status === 'RUNNING' && progressPercent <= 5 ? { startedAt: new Date() } : {}),
-          ...(status === 'COMPLETED' ? { completedAt: new Date(), errorCode: null, errorDetails: null } : {}),
+          ...(status === 'COMPLETED'
+            ? { completedAt: new Date(), errorCode: null, errorDetails: null }
+            : {}),
           ...(status === 'FAILED'
             ? {
                 completedAt: new Date(),

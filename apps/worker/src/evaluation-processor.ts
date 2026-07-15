@@ -16,7 +16,7 @@ import type { ProviderSet } from '@montenegrina/providers';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-import { ObjectStorage } from './storage.js';
+import type { ObjectStorage } from './storage.js';
 
 interface Variant {
   name: string;
@@ -64,16 +64,12 @@ export class EvaluationProcessor {
             ...(item.expectedIntent ? { expectedIntent: item.expectedIntent } : {}),
             ...(Object.keys(item.responseConstraints).length
               ? {
-                  expectedResponse: item.responseConstraints as NonNullable<
-                    EvaluationCaseManifest['expectedResponse']
-                  >,
+                  expectedResponse: item.responseConstraints,
                 }
               : {}),
             ...(Object.keys(item.languageExpectations).length
               ? {
-                  language: item.languageExpectations as NonNullable<
-                    EvaluationCaseManifest['language']
-                  >,
+                  language: item.languageExpectations,
                 }
               : {}),
             ...(Object.keys(item.speakerMetadata).length
@@ -87,7 +83,9 @@ export class EvaluationProcessor {
                 }
               : {}),
           };
-          metrics.push(evaluateCase(testCase, await this.observe(run.organizationId, item, variant)));
+          metrics.push(
+            evaluateCase(testCase, await this.observe(run.organizationId, item, variant)),
+          );
         }
         reports[variant.name] = createReport(
           metrics,
@@ -107,7 +105,11 @@ export class EvaluationProcessor {
         variants: reports,
       };
       await Promise.all([
-        this.storage.put(`${base}/report.json`, JSON.stringify(combined, null, 2), 'application/json'),
+        this.storage.put(
+          `${base}/report.json`,
+          JSON.stringify(combined, null, 2),
+          'application/json',
+        ),
         ...Object.entries(reports).flatMap(([name, report]) => [
           this.storage.put(`${base}/${name}.csv`, reportCsv(report), 'text/csv'),
           this.storage.put(`${base}/${name}.md`, reportMarkdown(report), 'text/markdown'),

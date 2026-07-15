@@ -1,0 +1,29 @@
+{
+  "name": "@montenegrina/object-storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0",
+    "@azure/identity": "^4.13.0",
+    "@azure/storage-blob": "^12.29.0",
+    "@montenegrina/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0"
+  }
+}

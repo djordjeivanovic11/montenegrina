@@ -23,7 +23,12 @@ export const environmentName = pgEnum('environment_name', ['development', 'stagi
 export const agentVersionStatus = pgEnum('agent_version_status', ['DRAFT', 'PUBLISHED', 'RETIRED']);
 export const scriptPreference = pgEnum('script_preference', ['LATIN', 'CYRILLIC']);
 export const providerKind = pgEnum('provider_kind', ['STT', 'LLM', 'TTS', 'REALTIME', 'EMBEDDING']);
-export const conversationChannel = pgEnum('conversation_channel', ['TEXT', 'BROWSER', 'SIP', 'BATCH']);
+export const conversationChannel = pgEnum('conversation_channel', [
+  'TEXT',
+  'BROWSER',
+  'SIP',
+  'BATCH',
+]);
 export const conversationState = pgEnum('conversation_state', [
   'INITIALIZING',
   'LISTENING',
@@ -61,7 +66,12 @@ export const toolInvocationStatus = pgEnum('tool_invocation_status', [
   'REJECTED',
   'FAILED',
 ]);
-export const handoffStatus = pgEnum('handoff_status', ['REQUESTED', 'ACCEPTED', 'COMPLETED', 'FAILED']);
+export const handoffStatus = pgEnum('handoff_status', [
+  'REQUESTED',
+  'ACCEPTED',
+  'COMPLETED',
+  'FAILED',
+]);
 export const jobStatus = pgEnum('job_status', ['QUEUED', 'RUNNING', 'COMPLETED', 'FAILED']);
 export const documentVisibility = pgEnum('document_visibility', [
   'ORG',
@@ -99,9 +109,25 @@ export const onboardingStep = pgEnum('onboarding_step', [
   'PUBLISH_AGENT',
   'COMPLETED',
 ]);
-export const invitationStatus = pgEnum('invitation_status', ['PENDING', 'ACCEPTED', 'REVOKED', 'EXPIRED']);
-export const subscriptionStatus = pgEnum('subscription_status', ['ACTIVE', 'CANCELED', 'PAST_DUE', 'TRIALING']);
-export const channelType = pgEnum('channel_type', ['BROWSER', 'SIP', 'TWILIO', 'TELNYX', 'TELECOM']);
+export const invitationStatus = pgEnum('invitation_status', [
+  'PENDING',
+  'ACCEPTED',
+  'REVOKED',
+  'EXPIRED',
+]);
+export const subscriptionStatus = pgEnum('subscription_status', [
+  'ACTIVE',
+  'CANCELED',
+  'PAST_DUE',
+  'TRIALING',
+]);
+export const channelType = pgEnum('channel_type', [
+  'BROWSER',
+  'SIP',
+  'TWILIO',
+  'TELNYX',
+  'TELECOM',
+]);
 export const channelStatus = pgEnum('channel_status', ['ACTIVE', 'INACTIVE', 'COMING_SOON']);
 export const planMetric = pgEnum('plan_metric', [
   'AGENTS',
@@ -132,17 +158,14 @@ export const organizations = pgTable(
   (table) => [uniqueIndex('organizations_slug_uq').on(table.slug)],
 );
 
-export const organizationOnboarding = pgTable(
-  'organization_onboarding',
-  {
-    organizationId: uuid('organization_id')
-      .primaryKey()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    currentStep: onboardingStep('current_step').notNull().default('NAME_WORKSPACE'),
-    completedAt: timestamp('completed_at', { withTimezone: true }),
-    ...timestamps,
-  },
-);
+export const organizationOnboarding = pgTable('organization_onboarding', {
+  organizationId: uuid('organization_id')
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  currentStep: onboardingStep('current_step').notNull().default('NAME_WORKSPACE'),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  ...timestamps,
+});
 
 export const plans = pgTable(
   'plans',
@@ -172,22 +195,21 @@ export const planEntitlements = pgTable(
   (table) => [uniqueIndex('plan_entitlements_plan_metric_uq').on(table.planId, table.metric)],
 );
 
-export const organizationSubscriptions = pgTable(
-  'organization_subscriptions',
-  {
-    organizationId: uuid('organization_id')
-      .primaryKey()
-      .references(() => organizations.id, { onDelete: 'cascade' }),
-    planId: uuid('plan_id')
-      .notNull()
-      .references(() => plans.id),
-    status: subscriptionStatus('status').notNull().default('ACTIVE'),
-    externalCustomerId: text('external_customer_id'),
-    currentPeriodStart: timestamp('current_period_start', { withTimezone: true }).notNull().defaultNow(),
-    currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
-    ...timestamps,
-  },
-);
+export const organizationSubscriptions = pgTable('organization_subscriptions', {
+  organizationId: uuid('organization_id')
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  planId: uuid('plan_id')
+    .notNull()
+    .references(() => plans.id),
+  status: subscriptionStatus('status').notNull().default('ACTIVE'),
+  externalCustomerId: text('external_customer_id'),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  ...timestamps,
+});
 
 export const communicationChannels = pgTable(
   'communication_channels',
@@ -215,7 +237,9 @@ export const phoneNumbers = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
-    channelId: uuid('channel_id').references(() => communicationChannels.id, { onDelete: 'set null' }),
+    channelId: uuid('channel_id').references(() => communicationChannels.id, {
+      onDelete: 'set null',
+    }),
     e164: text('e164').notNull(),
     label: text('label').notNull().default(''),
     inboundAgentId: uuid('inbound_agent_id'),
@@ -273,6 +297,7 @@ export const users = pgTable(
     passwordHash: text('password_hash'),
     googleId: text('google_id'),
     avatarUrl: text('avatar_url'),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -294,7 +319,10 @@ export const memberships = pgTable(
     role: membershipRole('role').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.organizationId, table.userId] }), index('memberships_user_idx').on(table.userId)],
+  (table) => [
+    primaryKey({ columns: [table.organizationId, table.userId] }),
+    index('memberships_user_idx').on(table.userId),
+  ],
 );
 
 export const invitations = pgTable(
@@ -332,6 +360,24 @@ export const passwordResetTokens = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('password_reset_tokens_user_idx').on(table.userId)],
+);
+
+export const emailVerificationTokens = pgTable(
+  'email_verification_tokens',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('email_verification_tokens_hash_uq').on(table.tokenHash),
+    index('email_verification_tokens_user_idx').on(table.userId),
+  ],
 );
 
 export const apiKeys = pgTable(
@@ -392,7 +438,11 @@ export const promptVersions = pgTable(
   },
   (table) => [
     uniqueIndex('prompt_versions_org_id_uq').on(table.organizationId, table.id),
-    uniqueIndex('prompt_versions_name_version_uq').on(table.organizationId, table.name, table.version),
+    uniqueIndex('prompt_versions_name_version_uq').on(
+      table.organizationId,
+      table.name,
+      table.version,
+    ),
   ],
 );
 
@@ -427,7 +477,10 @@ export const pronunciationEntries = pgTable(
     grapheme: text('grapheme').notNull(),
     phoneme: text('phoneme').notNull(),
     alphabet: text('alphabet').notNull().default('ipa'),
-    providerOverrides: jsonb('provider_overrides').$type<Record<string, unknown>>().notNull().default({}),
+    providerOverrides: jsonb('provider_overrides')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     ...timestamps,
   },
   (table) => [
@@ -482,7 +535,9 @@ export const routingPolicies = pgTable(
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
     ...timestamps,
   },
-  (table) => [uniqueIndex('routing_policy_name_uq').on(table.organizationId, table.environment, table.name)],
+  (table) => [
+    uniqueIndex('routing_policy_name_uq').on(table.organizationId, table.environment, table.name),
+  ],
 );
 
 export const rateCards = pgTable(
@@ -496,7 +551,9 @@ export const rateCards = pgTable(
     rates: jsonb('rates').$type<Record<string, number>>().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('rate_cards_version_uq').on(table.provider, table.model, table.effectiveFrom)],
+  (table) => [
+    uniqueIndex('rate_cards_version_uq').on(table.provider, table.model, table.effectiveFrom),
+  ],
 );
 
 export const deploymentEnvironments = pgTable(
@@ -1159,7 +1216,11 @@ export const evaluationDatasets = pgTable(
   },
   (table) => [
     uniqueIndex('evaluation_datasets_org_id_uq').on(table.organizationId, table.id),
-    uniqueIndex('evaluation_datasets_version_uq').on(table.organizationId, table.name, table.version),
+    uniqueIndex('evaluation_datasets_version_uq').on(
+      table.organizationId,
+      table.name,
+      table.version,
+    ),
   ],
 );
 
@@ -1172,11 +1233,23 @@ export const evaluationCases = pgTable(
     externalId: text('external_id').notNull(),
     audioObjectKey: text('audio_object_key'),
     expectedTranscript: text('expected_transcript'),
-    criticalEntities: jsonb('critical_entities').$type<Array<Record<string, unknown>>>().notNull().default([]),
+    criticalEntities: jsonb('critical_entities')
+      .$type<Array<Record<string, unknown>>>()
+      .notNull()
+      .default([]),
     expectedIntent: text('expected_intent'),
-    responseConstraints: jsonb('response_constraints').$type<Record<string, unknown>>().notNull().default({}),
-    languageExpectations: jsonb('language_expectations').$type<Record<string, unknown>>().notNull().default({}),
-    speakerMetadata: jsonb('speaker_metadata').$type<Record<string, unknown>>().notNull().default({}),
+    responseConstraints: jsonb('response_constraints')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    languageExpectations: jsonb('language_expectations')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    speakerMetadata: jsonb('speaker_metadata')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     audioMetadata: jsonb('audio_metadata').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1220,7 +1293,9 @@ export const auditEvents = pgTable(
   'audit_events',
   {
     id: uuid('id').primaryKey(),
-    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
     actorType: text('actor_type').notNull(),
     actorId: text('actor_id'),
     action: text('action').notNull(),

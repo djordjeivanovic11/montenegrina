@@ -14,10 +14,7 @@ import {
   ElevenLabsTextToSpeechProvider,
   type ElevenLabsTextToSpeechConfig,
 } from './elevenlabs/elevenlabs-tts.provider.js';
-import {
-  OpenAIEmbeddingProvider,
-  type OpenAIEmbeddingConfig,
-} from './openai/openai-embedding.provider.js';
+import { OpenAIEmbeddingProvider } from './openai/openai-embedding.provider.js';
 import {
   OpenAIRealtimeSpeechProvider,
   type OpenAIRealtimeConfig,
@@ -57,9 +54,7 @@ export function createProviderRegistry(config: ProviderConfig): ProviderSet {
     llm: new OpenAILanguageModelProvider({
       apiKey: config.openai.apiKey,
       ...(config.openai.languageModel ? { model: config.openai.languageModel } : {}),
-      ...(config.openai.reasoningEffort
-        ? { reasoningEffort: config.openai.reasoningEffort }
-        : {}),
+      ...(config.openai.reasoningEffort ? { reasoningEffort: config.openai.reasoningEffort } : {}),
       ...(config.openai.baseUrl ? { baseUrl: config.openai.baseUrl } : {}),
     }),
     tts: new ElevenLabsTextToSpeechProvider(config.elevenLabs),

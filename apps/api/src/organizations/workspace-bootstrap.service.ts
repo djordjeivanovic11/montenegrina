@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
+import { defaultMontenegrinSystemInstruction } from '@montenegrina/language-cnr';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -52,6 +53,16 @@ export class WorkspaceBootstrapService {
       where: eq(schema.plans.slug, 'free'),
     });
 
+    const starterAgentId = uuidv7();
+    const starterVersionId = uuidv7();
+    const promptVersionId = uuidv7();
+    const languageProfileId = uuidv7();
+    const routingPolicyId = uuidv7();
+    const knowledgeBaseId = uuidv7();
+    const runtimeEnvironment =
+      this.environment.NODE_ENV === 'production' ? 'production' : 'development';
+    const now = new Date();
+
     await this.database.db.transaction(async (transaction) => {
       await transaction.insert(schema.organizations).values({
         id: organizationId,
@@ -66,7 +77,8 @@ export class WorkspaceBootstrapService {
       });
       await transaction.insert(schema.organizationOnboarding).values({
         organizationId,
-        currentStep: 'NAME_WORKSPACE',
+        currentStep: 'COMPLETED',
+        completedAt: now,
       });
       if (freePlan) {
         await transaction.insert(schema.organizationSubscriptions).values({
@@ -75,13 +87,103 @@ export class WorkspaceBootstrapService {
           status: 'ACTIVE',
         });
       }
-      const kbId = uuidv7();
       await transaction.insert(schema.knowledgeBases).values({
-        id: kbId,
+        id: knowledgeBaseId,
         organizationId,
         name: 'Default knowledge',
         slug: 'default',
         description: 'Default knowledge base for your workspace',
+      });
+      await transaction.insert(schema.languageProfiles).values({
+        id: languageProfileId,
+        organizationId,
+        name: 'Default Montenegrin',
+        version: 1,
+        script: 'LATIN',
+        preferIjekavian: true,
+        immutable: true,
+      });
+      await transaction.insert(schema.promptVersions).values({
+        id: promptVersionId,
+        organizationId,
+        name: 'Starter voice assistant',
+        version: 1,
+        systemInstruction: defaultMontenegrinSystemInstruction,
+        immutable: true,
+      });
+      await transaction.insert(schema.routingPolicies).values({
+        id: routingPolicyId,
+        organizationId,
+        name: 'Starter controlled pipeline',
+        environment: runtimeEnvironment,
+        domain: 'BROWSER',
+        candidateConfigurationIds: [],
+        allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
+        allowedRegions: ['global'],
+        allowFallback: true,
+        sttLanguage: 'sr',
+        settings: { pipelineMode: 'controlled' },
+      });
+      await transaction.insert(schema.deploymentEnvironments).values({
+        id: uuidv7(),
+        organizationId,
+        name: runtimeEnvironment,
+        routingPolicyId,
+        maximumConcurrentSessions: 1,
+        maximumConversationMinutes: Math.min(this.environment.MAX_CONVERSATION_MINUTES, 5),
+      });
+      await transaction.insert(schema.agents).values({
+        id: starterAgentId,
+        organizationId,
+        name: 'Montenegrina asistent',
+        slug: 'montenegrina-asistent',
+        description: 'Spreman glasovni asistent za probni razgovor na crnogorskom jeziku.',
+      });
+      await transaction.insert(schema.agentVersions).values({
+        id: starterVersionId,
+        organizationId,
+        agentId: starterAgentId,
+        version: 1,
+        status: 'PUBLISHED',
+        promptVersionId,
+        languageProfileId,
+        routingPolicyId,
+        createdBy: userId,
+        publishedAt: now,
+        config: {
+          systemPrompt: defaultMontenegrinSystemInstruction,
+          languageProfile: {
+            script: 'LATIN',
+            ijekavian: true,
+            glossaryIds: [],
+            pronunciationIds: [],
+          },
+          routingPolicy: {
+            mode: 'real',
+            pipelineMode: 'controlled',
+            sttLanguage: 'sr',
+            fallbackAllowed: true,
+            allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
+            allowedRegions: ['global'],
+          },
+          retention: {
+            transcriptDays: this.environment.TRANSCRIPT_RETENTION_DAYS,
+            recordAudio: false,
+            audioDays: 0,
+          },
+          toolIds: [],
+          knowledgeBaseIds: [knowledgeBaseId],
+          sensitiveWritesEnabled: false,
+        },
+      });
+      await transaction
+        .update(schema.agents)
+        .set({ publishedVersionId: starterVersionId, updatedAt: now })
+        .where(eq(schema.agents.id, starterAgentId));
+      await transaction.insert(schema.agentKnowledgeBaseAssignments).values({
+        organizationId,
+        agentId: starterAgentId,
+        knowledgeBaseId,
       });
       type ChannelSeed = {
         type: 'BROWSER' | 'SIP' | 'TWILIO' | 'TELNYX' | 'TELECOM';

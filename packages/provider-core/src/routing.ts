@@ -29,21 +29,22 @@ export class MemoryCircuitBreaker implements CircuitBreaker {
     private readonly openDurationMs = 60_000,
   ) {}
 
-  async canAttempt(key: string): Promise<boolean> {
+  canAttempt(key: string): Promise<boolean> {
     const now = Date.now();
     const state = this.#states.get(key);
-    if (!state?.openedAt) return true;
-    if (now - state.openedAt < this.openDurationMs) return false;
-    if (state.halfOpenAttempted) return false;
+    if (!state?.openedAt) return Promise.resolve(true);
+    if (now - state.openedAt < this.openDurationMs) return Promise.resolve(false);
+    if (state.halfOpenAttempted) return Promise.resolve(false);
     state.halfOpenAttempted = true;
-    return true;
+    return Promise.resolve(true);
   }
 
-  async recordSuccess(key: string): Promise<void> {
+  recordSuccess(key: string): Promise<void> {
     this.#states.delete(key);
+    return Promise.resolve();
   }
 
-  async recordFailure(key: string): Promise<void> {
+  recordFailure(key: string): Promise<void> {
     const now = Date.now();
     const state = this.#states.get(key) ?? { failures: [] };
     state.failures = state.failures.filter((failure) => now - failure <= this.rollingWindowMs);
@@ -53,6 +54,7 @@ export class MemoryCircuitBreaker implements CircuitBreaker {
       state.halfOpenAttempted = false;
     }
     this.#states.set(key, state);
+    return Promise.resolve();
   }
 }
 
@@ -111,7 +113,11 @@ export async function executeWithFallback<TProvider, TResult>(options: {
               cause: error,
             });
       await options.circuitBreaker.recordFailure(key);
-      failures.push({ provider: candidate.id, code: normalized.code, retryable: normalized.retryable });
+      failures.push({
+        provider: candidate.id,
+        code: normalized.code,
+        retryable: normalized.retryable,
+      });
       if (!normalized.retryable) throw normalized;
     }
   }
@@ -124,4 +130,3 @@ export async function executeWithFallback<TProvider, TResult>(options: {
     safeDetails: { failures },
   });
 }
-

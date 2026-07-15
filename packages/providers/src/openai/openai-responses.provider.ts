@@ -10,7 +10,7 @@ import {
   type ToolCall,
 } from '@montenegrina/provider-core';
 
-import { checkedProviderFetch } from '../provider-errors.js';
+import { checkedProviderFetch, providerString } from '../provider-errors.js';
 
 export interface OpenAILanguageModelConfig {
   apiKey: string;
@@ -39,7 +39,8 @@ function parseArguments(provider: string, value: string | undefined): Record<str
   if (!value) return {};
   try {
     const parsed = JSON.parse(value) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+      throw new Error('not an object');
     return parsed as Record<string, unknown>;
   } catch (error) {
     throw new ProviderError({
@@ -82,7 +83,9 @@ function createMetadata(
     latencyMs: Date.now() - startedAt,
     usage: {
       ...(body.usage?.input_tokens === undefined ? {} : { inputTokens: body.usage.input_tokens }),
-      ...(body.usage?.output_tokens === undefined ? {} : { outputTokens: body.usage.output_tokens }),
+      ...(body.usage?.output_tokens === undefined
+        ? {}
+        : { outputTokens: body.usage.output_tokens }),
     },
     attributes: { api: 'responses' },
     ...(requestId || body.id ? { requestId: requestId ?? body.id } : {}),
@@ -105,7 +108,10 @@ function toOpenAiInput(request: LanguageModelRequest): Array<Record<string, unkn
     return {
       role: message.role,
       content: [
-        { type: message.role === 'assistant' ? 'output_text' : 'input_text', text: message.content },
+        {
+          type: message.role === 'assistant' ? 'output_text' : 'input_text',
+          text: message.content,
+        },
       ],
     };
   });
@@ -192,7 +198,12 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
     const body = (await response.json()) as OpenAiResponseBody;
     return {
       data: parseResult(body),
-      metadata: createMetadata(body, model, startedAt, response.headers.get('x-request-id') ?? undefined),
+      metadata: createMetadata(
+        body,
+        model,
+        startedAt,
+        response.headers.get('x-request-id') ?? undefined,
+      ),
     };
   }
 
@@ -222,9 +233,9 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
     const toolCalls: ToolCall[] = [];
     let finalBody: OpenAiResponseBody = { model };
     for await (const event of readServerSentEvents(response)) {
-      const type = String(event.type ?? '');
+      const type = providerString(event.type);
       if (type === 'response.output_text.delta') {
-        const delta = String(event.delta ?? '');
+        const delta = providerString(event.delta);
         text += delta;
         yield { type: 'text.delta', delta };
       } else if (type === 'response.output_item.done') {
@@ -242,7 +253,10 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
         finalBody = (event.response as OpenAiResponseBody | undefined) ?? finalBody;
       } else if (type === 'error') {
         throw new ProviderError({
-          code: String((event.error as { code?: string } | undefined)?.code ?? 'OPENAI_STREAM_ERROR'),
+          code: providerString(
+            (event.error as { code?: unknown } | undefined)?.code,
+            'OPENAI_STREAM_ERROR',
+          ),
           message: 'OpenAI reported a streaming error.',
           provider: this.id,
           failureClass: 'RETRYABLE',
@@ -263,11 +277,17 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
     };
   }
 
-  async health(): Promise<{ healthy: boolean; reason?: string }> {
-    return this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' };
+  health(): Promise<{ healthy: boolean; reason?: string }> {
+    return Promise.resolve(
+      this.config.apiKey ? { healthy: true } : { healthy: false, reason: 'missing credential' },
+    );
   }
 
-  private requestBody(request: LanguageModelRequest, model: string, stream: boolean): Record<string, unknown> {
+  private requestBody(
+    request: LanguageModelRequest,
+    model: string,
+    stream: boolean,
+  ): Record<string, unknown> {
     return {
       model,
       instructions: request.system,
@@ -286,4 +306,3 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
     };
   }
 }
-

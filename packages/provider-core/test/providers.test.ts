@@ -27,7 +27,7 @@ describe('routing', () => {
       ],
       context,
       circuitBreaker: new MemoryCircuitBreaker(),
-      async operation(provider) {
+      operation(provider) {
         if (provider === 'primary') {
           throw new ProviderError({
             code: 'PRIMARY_TIMEOUT',
@@ -36,10 +36,10 @@ describe('routing', () => {
             failureClass: 'RETRYABLE',
           });
         }
-        return {
+        return Promise.resolve({
           data: 'ok',
           metadata: { provider, model: 'test', latencyMs: 1, usage: {}, attributes: {} },
-        };
+        });
       },
     });
     expect(result.data).toBe('ok');
@@ -56,8 +56,8 @@ describe('routing', () => {
         ],
         context,
         circuitBreaker: new MemoryCircuitBreaker(),
-        async operation() {
-          throw new Error('must not execute');
+        operation() {
+          return Promise.reject(new Error('must not execute'));
         },
       }),
     ).rejects.toMatchObject({ code: 'PROVIDER_POLICY_NO_ELIGIBLE_CANDIDATE' });

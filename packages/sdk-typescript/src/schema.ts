@@ -4,2385 +4,2584 @@
  */
 
 export interface paths {
-    "/health/live": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getLiveness"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  '/health/live': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/health/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getReadiness"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getLiveness'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/health/ready': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getReadiness'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["logout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['login'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/register': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getCurrentUser"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['register'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/verify-email': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/organizations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listOrganizations"];
-        put?: never;
-        post: operations["createOrganization"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['verifyEmail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/resend-verification': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/organizations/{organizationId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deleteOrganization"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['resendVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/logout': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/organizations/{organizationId}/memberships": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listMemberships"];
-        put?: never;
-        post: operations["createMembership"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['logout'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/auth/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createApiKey"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getCurrentUser'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/organizations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listAgents"];
-        put?: never;
-        post: operations["createAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listOrganizations'];
+    put?: never;
+    post: operations['createOrganization'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/organizations/{organizationId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents/{agentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getAgent"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["updateAgent"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['deleteOrganization'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/organizations/{organizationId}/memberships': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents/{agentId}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createAgentVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listMemberships'];
+    put?: never;
+    post: operations['createMembership'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/api-keys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents/{agentId}/publish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["publishAgent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createApiKey'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/transcriptions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createTranscription"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listAgents'];
+    put?: never;
+    post: operations['createAgent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents/{agentId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/responses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createResponse"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getAgent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['updateAgent'];
+    trace?: never;
+  };
+  '/v1/agents/{agentId}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/speech": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createSpeech"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createAgentVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents/{agentId}/publish': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createConversation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['publishAgent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents/{agentId}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getConversation"];
-        put?: never;
-        post?: never;
-        delete: operations["deleteConversation"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['archiveAgent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/transcriptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}/transcript": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getTranscript"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createTranscription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/responses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}/recording": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getConversationRecording"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createResponse'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/speech': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["streamConversationEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createSpeech'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}/handoff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["requestHandoff"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createConversation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/conversations/{conversationId}/tool-invocations/{invocationId}/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["confirmToolInvocation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getConversation'];
+    put?: never;
+    post?: never;
+    delete: operations['deleteConversation'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}/transcript': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents/{agentId}/realtime-sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createRealtimeSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getTranscript'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}/recording': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/agents/{agentId}/calls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createCall"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getConversationRecording'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/bases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listKnowledgeBases"];
-        put?: never;
-        post: operations["createKnowledgeBase"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['streamConversationEvents'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}/handoff': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/bases/{knowledgeBaseId}/assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listKnowledgeBaseAssignments"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['requestHandoff'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/conversations/{conversationId}/tool-invocations/{invocationId}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/retrieve/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["testKnowledgeRetrieval"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['confirmToolInvocation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents/{agentId}/realtime-sessions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/ingestion-jobs/{jobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getIngestionJob"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createRealtimeSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/agents/{agentId}/calls': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/documents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listKnowledgeDocuments"];
-        put?: never;
-        post: operations["createKnowledgeDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createCall'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/bases': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/knowledge/documents/{documentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deleteKnowledgeDocument"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listKnowledgeBases'];
+    put?: never;
+    post: operations['createKnowledgeBase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/bases/{knowledgeBaseId}/assignments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listTools"];
-        put?: never;
-        post: operations["createTool"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listKnowledgeBaseAssignments'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/retrieve/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/tools/{toolId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["updateTool"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['testKnowledgeRetrieval'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/ingestion-jobs/{jobId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/evaluations/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createEvaluationRun"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getIngestionJob'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/documents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/evaluations/runs/{runId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEvaluationRun"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listKnowledgeDocuments'];
+    put?: never;
+    post: operations['createKnowledgeDocument'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/knowledge/documents/{documentId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getUsage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['deleteKnowledgeDocument'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/tools': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/integrations/channels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listIntegrationChannels"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listTools'];
+    put?: never;
+    post: operations['createTool'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/tools/{toolId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/integrations/phone-numbers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listPhoneNumbers"];
-        put?: never;
-        post: operations["createPhoneNumber"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['updateTool'];
+    trace?: never;
+  };
+  '/v1/evaluations/runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/integrations/phone-numbers/{phoneNumberId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deletePhoneNumber"];
-        options?: never;
-        head?: never;
-        patch: operations["updatePhoneNumber"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations['createEvaluationRun'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/evaluations/runs/{runId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/billing/plans": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listBillingPlans"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getEvaluationRun'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/usage': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/billing/checkout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createBillingCheckout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['getUsage'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/integrations/channels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/billing/portal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createBillingPortal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listIntegrationChannels'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/integrations/phone-numbers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/billing/stripe/webhook": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["stripeWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations['listPhoneNumbers'];
+    put?: never;
+    post: operations['createPhoneNumber'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/integrations/phone-numbers/{phoneNumberId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations['deletePhoneNumber'];
+    options?: never;
+    head?: never;
+    patch: operations['updatePhoneNumber'];
+    trace?: never;
+  };
+  '/v1/billing/plans': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['listBillingPlans'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/billing/checkout': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['createBillingCheckout'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/billing/portal': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['createBillingPortal'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/billing/stripe/webhook': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['stripeWebhook'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        ErrorEnvelope: {
-            error: {
-                code: string;
-                message: string;
-                requestId: string;
-                retryable: boolean;
-                details?: {
-                    [key: string]: unknown;
-                };
-            };
+  schemas: {
+    ErrorEnvelope: {
+      error: {
+        code: string;
+        message: string;
+        requestId: string;
+        retryable: boolean;
+        details?: {
+          [key: string]: unknown;
         };
-        /** @constant */
-        Language: "cnr";
-        /** @enum {string} */
-        MembershipRole: "OWNER" | "ADMIN" | "DEVELOPER" | "VIEWER";
-        /** @enum {string} */
-        SttLanguage: "sr" | "hr" | "bs" | "multi";
-        LoginRequest: {
-            /** Format: email */
-            email: string;
-            password: string;
-        };
-        Session: {
-            user: components["schemas"]["User"];
-            csrfToken: string;
-        };
-        User: {
-            /** Format: uuid */
-            id: string;
-            /** Format: email */
-            email: string;
-            displayName?: string;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        Organization: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            slug: string;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        CreateOrganizationRequest: {
-            name: string;
-            slug: string;
-        };
-        Membership: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            organizationId: string;
-            /** Format: uuid */
-            userId: string;
-            role: components["schemas"]["MembershipRole"];
-        };
-        CreateApiKeyRequest: {
-            name: string;
-            /** @enum {string} */
-            environment: "development" | "staging" | "production";
-            permissions: string[];
-        };
-        ApiKeyCreated: {
-            /** Format: uuid */
-            id: string;
-            prefix: string;
-            /** @description Returned once and never stored verbatim. */
-            key: string;
-        };
-        Agent: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            organizationId: string;
-            name: string;
-            slug: string;
-            description?: string;
-            language: components["schemas"]["Language"];
-            /** Format: uuid */
-            publishedVersionId?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        CreateAgentRequest: {
-            name: string;
-            slug: string;
-            description?: string;
-        };
-        UpdateAgentRequest: {
-            name?: string;
-            description?: string;
-        };
-        AgentVersion: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            agentId: string;
-            version: number;
-            /** @enum {string} */
-            status: "DRAFT" | "PUBLISHED" | "RETIRED";
-            config: components["schemas"]["AgentConfiguration"];
-            /** Format: date-time */
-            createdAt: string;
-        };
-        CreateAgentVersionRequest: {
-            config: components["schemas"]["AgentConfiguration"];
-        };
-        AgentConfiguration: {
-            systemPrompt: string;
-            languageProfile: {
-                /** @enum {string} */
-                script: "LATIN" | "CYRILLIC";
-                ijekavian: boolean;
-                glossaryIds?: string[];
-                pronunciationIds?: string[];
-            };
-            routingPolicy: {
-                /** @enum {string} */
-                mode: "real";
-                /** @enum {string} */
-                pipelineMode: "controlled" | "direct_realtime";
-                sttLanguage?: components["schemas"]["SttLanguage"];
-                llmModel?: string;
-                ttsModel?: string;
-                realtimeModel?: string;
-                /** @default true */
-                fallbackAllowed: boolean;
-                allowedProviders?: string[];
-                allowedRegions?: string[];
-            };
-            retention: {
-                transcriptDays: number;
-                recordAudio: boolean;
-                audioDays?: number;
-            };
-            toolIds?: string[];
-            knowledgeSourceIds?: string[];
-            knowledgeBaseIds?: string[];
-            /** @default false */
-            sensitiveWritesEnabled: boolean;
-            telephony?: {
-                recordingNotice?: string;
-                outboundCallerId?: string;
-            };
-        };
-        Transcription: {
-            language: components["schemas"]["Language"];
-            originalText: string;
-            normalizedText: string;
-            warnings: string[];
-            provider: components["schemas"]["ProviderSummary"];
-        };
-        CreateResponseRequest: {
-            /** Format: uuid */
-            agentId: string;
-            /** Format: uuid */
-            conversationId?: string;
-            input: string;
-            /** @default false */
-            stream: boolean;
-        };
-        GeneratedResponse: {
-            language: components["schemas"]["Language"];
-            text: string;
-            originalText: string;
-            warnings: string[];
-            citations: components["schemas"]["Citation"][];
-            provider: components["schemas"]["ProviderSummary"];
-        };
-        CreateSpeechRequest: {
-            /** Format: uuid */
-            agentId: string;
-            text: string;
-            /**
-             * @default wav
-             * @enum {string}
-             */
-            format: "wav" | "pcm";
-        };
-        ProviderSummary: {
-            provider: string;
-            model: string;
-            latencyMs: number;
-            usage: components["schemas"]["Usage"];
-            fallbackHistory?: {
-                provider: string;
-                code: string;
-                retryable?: boolean;
-            }[];
-        };
-        Usage: {
-            provider?: string;
-            operation?: string;
-            inputTokens?: number;
-            outputTokens?: number;
-            audioInputSeconds?: number;
-            audioOutputSeconds?: number;
-            characters?: number;
-            estimatedCostUsd?: number;
-        };
-        Conversation: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            organizationId: string;
-            /** Format: uuid */
-            agentId: string;
-            /** @enum {string} */
-            channel: "TEXT" | "BROWSER" | "SIP" | "BATCH";
-            state: components["schemas"]["ConversationState"];
-            language: components["schemas"]["Language"];
-            /** Format: date-time */
-            startedAt: string;
-            /** Format: date-time */
-            completedAt?: string | null;
-            calledE164?: string | null;
-            callerE164?: string | null;
-            recordingObjectKey?: string | null;
-        };
-        /** @enum {string} */
-        ConversationState: "INITIALIZING" | "LISTENING" | "TRANSCRIBING" | "THINKING" | "TOOL_PENDING" | "SPEAKING" | "INTERRUPTED" | "HANDOFF_PENDING" | "HANDED_OFF" | "COMPLETED" | "FAILED";
-        TranscriptSegment: {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            speaker: "USER" | "ASSISTANT" | "HUMAN";
-            originalText: string;
-            normalizedText: string;
-            startedAtMs: number;
-            endedAtMs?: number;
-            final: boolean;
-        };
-        RealtimeSession: {
-            /** Format: uuid */
-            conversationId: string;
-            roomName: string;
-            participantToken: string;
-            livekitUrl: string;
-            /** Format: date-time */
-            expiresAt: string;
-            language: components["schemas"]["Language"];
-        };
-        CommunicationChannel: {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            type: "BROWSER" | "SIP" | "TWILIO" | "TELNYX" | "TELECOM";
-            name: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE" | "COMING_SOON";
-            phoneIntegrationsEnabled?: boolean;
-            sipConfigured?: boolean;
-            inboundConfigured?: boolean;
-        };
-        PhoneNumber: {
-            /** Format: uuid */
-            id: string;
-            e164: string;
-            label: string;
-            /** Format: uuid */
-            inboundAgentId?: string | null;
-            enabled: boolean;
-            callerIdE164?: string | null;
-            livekitDispatchRuleId?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        PhoneNumberList: {
-            items: components["schemas"]["PhoneNumber"][];
-            sipConfigured: boolean;
-            inboundConfigured: boolean;
-            phoneIntegrationsEnabled: boolean;
-        };
-        CreatePhoneNumberRequest: {
-            e164: string;
-            label?: string;
-            /** Format: uuid */
-            inboundAgentId?: string;
-            /** @default false */
-            enabled: boolean;
-            callerIdE164?: string;
-        };
-        UpdatePhoneNumberRequest: {
-            label?: string;
-            /** Format: uuid */
-            inboundAgentId?: string | null;
-            enabled?: boolean;
-            callerIdE164?: string | null;
-        };
-        Citation: {
-            /** Format: uuid */
-            documentId: string;
-            /** Format: uuid */
-            documentVersionId: string;
-            /** Format: uuid */
-            chunkId: string;
-            title: string;
-            page?: number;
-            section?: string;
-            score?: number;
-        };
-        Document: {
-            /** Format: uuid */
-            id: string;
-            title: string;
-            /** @enum {string} */
-            status: "UPLOADED" | "SCANNING" | "PROCESSING" | "READY" | "FAILED" | "QUARANTINED" | "DELETING";
-            version: number;
-            errorCode?: string;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        ToolDefinition: {
-            name: string;
-            version: number;
-            description: string;
-            /** @enum {string} */
-            riskClass: "READ_PUBLIC" | "READ_CUSTOMER" | "WRITE_REVERSIBLE" | "WRITE_SENSITIVE";
-            /** @enum {string} */
-            handler: "sandbox.product_lookup" | "sandbox.appointment_availability" | "sandbox.appointment_create" | "sandbox.request_status" | "sandbox.handoff" | "fixed_https";
-            inputSchema: {
-                [key: string]: unknown;
-            };
-            outputSchema?: {
-                [key: string]: unknown;
-            };
-            connectorConfig?: {
-                [key: string]: unknown;
-            };
-            /** @default true */
-            enabled: boolean;
-        };
-        Tool: components["schemas"]["ToolDefinition"] & {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            organizationId: string;
-        };
-        ToolInvocation: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            conversationId: string;
-            /** Format: uuid */
-            toolId: string;
-            /** @enum {string} */
-            status: "PROPOSED" | "AWAITING_CONFIRMATION" | "RUNNING" | "COMPLETED" | "REJECTED" | "FAILED";
-            input: {
-                [key: string]: unknown;
-            };
-            result?: {
-                [key: string]: unknown;
-            };
-            errorCode?: string;
-        };
-        Handoff: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            conversationId: string;
-            /** @enum {string} */
-            status: "REQUESTED" | "ACCEPTED" | "COMPLETED" | "FAILED";
-            /** Format: date-time */
-            requestedAt: string;
-        };
-        Deletion: {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
-        };
-        CreateEvaluationRunRequest: {
-            /** Format: uuid */
-            datasetId: string;
-            variants: {
-                name: string;
-                /** @enum {string} */
-                pipeline: "text" | "realtime";
-                sttLanguage?: components["schemas"]["SttLanguage"];
-                /** Format: uuid */
-                promptVersionId?: string;
-                voiceId?: string;
-                endpointing?: {
-                    [key: string]: unknown;
-                };
-            }[];
-        };
-        EvaluationRun: {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
-            /** Format: uri */
-            reportUrl?: string;
-            metrics?: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            createdAt: string;
-        };
+      };
     };
-    responses: {
-        /** @description Typed error */
-        Error: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description Health status */
-        Health: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    status: "ok" | "degraded";
-                    /** Format: date-time */
-                    timestamp: string;
-                    checks?: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        /** @description Browser session */
-        Session: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Session"];
-            };
-        };
-        /** @description Organization */
-        Organization: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Organization"];
-            };
-        };
-        /** @description Organizations */
-        OrganizationList: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    items: components["schemas"]["Organization"][];
-                };
-            };
-        };
-        /** @description Agent */
-        Agent: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Agent"];
-            };
-        };
-        /** @description Agents */
-        AgentList: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    items: components["schemas"]["Agent"][];
-                    nextCursor?: string;
-                };
-            };
-        };
-        /** @description Immutable agent version */
-        AgentVersion: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AgentVersion"];
-            };
-        };
-        /** @description Normalized transcription */
-        Transcription: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Transcription"];
-            };
-        };
-        /** @description Montenegrin response */
-        GeneratedResponse: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["GeneratedResponse"];
-            };
-        };
-        /** @description Conversation */
-        Conversation: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Conversation"];
-            };
-        };
-        /** @description Knowledge document */
-        Document: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Document"];
-            };
-        };
-        /** @description Knowledge documents */
-        DocumentList: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    items: components["schemas"]["Document"][];
-                };
-            };
-        };
-        /** @description Tool definition */
-        Tool: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Tool"];
-            };
-        };
-        /** @description Tool definitions */
-        ToolList: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": {
-                    items: components["schemas"]["Tool"][];
-                };
-            };
-        };
-        /** @description Tool invocation */
-        ToolInvocation: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ToolInvocation"];
-            };
-        };
-        /** @description Handoff */
-        Handoff: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Handoff"];
-            };
-        };
-        /** @description Asynchronous deletion */
-        Deletion: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Deletion"];
-            };
-        };
-        /** @description Evaluation run */
-        EvaluationRun: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["EvaluationRun"];
-            };
-        };
+    /** @constant */
+    Language: 'cnr';
+    /** @enum {string} */
+    MembershipRole: 'OWNER' | 'ADMIN' | 'DEVELOPER' | 'VIEWER';
+    /** @enum {string} */
+    SttLanguage: 'sr' | 'hr' | 'bs' | 'multi';
+    LoginRequest: {
+      /** Format: email */
+      email: string;
+      password: string;
     };
-    parameters: {
-        AgentId: string;
-        ConversationId: string;
-        OrganizationId: string;
-        IdempotencyKey: string;
-        Cursor: string;
-        Limit: number;
+    RegisterRequest: {
+      /** Format: email */
+      email: string;
+      password: string;
+      displayName: string;
+      turnstileToken: string;
     };
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    VerificationTokenRequest: {
+      token: string;
+    };
+    EmailRequest: {
+      /** Format: email */
+      email: string;
+    };
+    AcceptedResponse: {
+      /** @constant */
+      accepted: true;
+    };
+    PendingVerification: {
+      /** @constant */
+      accepted: true;
+      /** @constant */
+      verificationRequired: true;
+    };
+    Session: {
+      user: components['schemas']['User'];
+      csrfToken: string;
+    };
+    User: {
+      /** Format: uuid */
+      id: string;
+      /** Format: email */
+      email: string;
+      displayName?: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    Organization: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      slug: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CreateOrganizationRequest: {
+      name: string;
+      slug: string;
+    };
+    Membership: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      organizationId: string;
+      /** Format: uuid */
+      userId: string;
+      role: components['schemas']['MembershipRole'];
+    };
+    CreateApiKeyRequest: {
+      name: string;
+      /** @enum {string} */
+      environment: 'development' | 'staging' | 'production';
+      permissions: string[];
+    };
+    ApiKeyCreated: {
+      /** Format: uuid */
+      id: string;
+      prefix: string;
+      /** @description Returned once and never stored verbatim. */
+      key: string;
+    };
+    Agent: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      organizationId: string;
+      name: string;
+      slug: string;
+      description?: string;
+      language: components['schemas']['Language'];
+      /** Format: uuid */
+      publishedVersionId?: string | null;
+      /** Format: date-time */
+      archivedAt?: string | null;
+      config?: components['schemas']['AgentConfiguration'];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CreateAgentRequest: {
+      name: string;
+      slug: string;
+      description?: string;
+    };
+    UpdateAgentRequest: {
+      name?: string;
+      description?: string;
+    };
+    AgentVersion: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      agentId: string;
+      version: number;
+      /** @enum {string} */
+      status: 'DRAFT' | 'PUBLISHED' | 'RETIRED';
+      config: components['schemas']['AgentConfiguration'];
+      /** Format: date-time */
+      createdAt: string;
+    };
+    CreateAgentVersionRequest: {
+      config: components['schemas']['AgentConfiguration'];
+    };
+    AgentConfiguration: {
+      systemPrompt: string;
+      languageProfile: {
+        /** @enum {string} */
+        script: 'LATIN' | 'CYRILLIC';
+        ijekavian: boolean;
+        glossaryIds?: string[];
+        pronunciationIds?: string[];
+      };
+      routingPolicy: {
+        /** @enum {string} */
+        mode: 'real';
+        /** @enum {string} */
+        pipelineMode: 'controlled' | 'direct_realtime';
+        sttLanguage?: components['schemas']['SttLanguage'];
+        llmModel?: string;
+        ttsModel?: string;
+        realtimeModel?: string;
+        /** @default true */
+        fallbackAllowed: boolean;
+        allowedProviders?: string[];
+        allowedRegions?: string[];
+      };
+      retention: {
+        transcriptDays: number;
+        recordAudio: boolean;
+        audioDays?: number;
+      };
+      toolIds?: string[];
+      knowledgeSourceIds?: string[];
+      knowledgeBaseIds?: string[];
+      /** @default false */
+      sensitiveWritesEnabled: boolean;
+      telephony?: {
+        recordingNotice?: string;
+        outboundCallerId?: string;
+      };
+    };
+    Transcription: {
+      language: components['schemas']['Language'];
+      originalText: string;
+      normalizedText: string;
+      warnings: string[];
+      provider: components['schemas']['ProviderSummary'];
+    };
+    CreateResponseRequest: {
+      /** Format: uuid */
+      agentId: string;
+      /** Format: uuid */
+      conversationId?: string;
+      input: string;
+      /** @default false */
+      stream: boolean;
+    };
+    GeneratedResponse: {
+      language: components['schemas']['Language'];
+      text: string;
+      originalText: string;
+      warnings: string[];
+      citations: components['schemas']['Citation'][];
+      provider: components['schemas']['ProviderSummary'];
+    };
+    CreateSpeechRequest: {
+      /** Format: uuid */
+      agentId: string;
+      text: string;
+      /**
+       * @default wav
+       * @enum {string}
+       */
+      format: 'wav' | 'pcm';
+    };
+    ProviderSummary: {
+      provider: string;
+      model: string;
+      latencyMs: number;
+      usage: components['schemas']['Usage'];
+      fallbackHistory?: {
+        provider: string;
+        code: string;
+        retryable?: boolean;
+      }[];
+    };
+    Usage: {
+      provider?: string;
+      operation?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      audioInputSeconds?: number;
+      audioOutputSeconds?: number;
+      characters?: number;
+      estimatedCostUsd?: number;
+    };
+    Conversation: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      organizationId: string;
+      /** Format: uuid */
+      agentId: string;
+      /** @enum {string} */
+      channel: 'TEXT' | 'BROWSER' | 'SIP' | 'BATCH';
+      state: components['schemas']['ConversationState'];
+      language: components['schemas']['Language'];
+      /** Format: date-time */
+      startedAt: string;
+      /** Format: date-time */
+      completedAt?: string | null;
+      calledE164?: string | null;
+      callerE164?: string | null;
+      recordingObjectKey?: string | null;
+    };
+    /** @enum {string} */
+    ConversationState:
+      | 'INITIALIZING'
+      | 'LISTENING'
+      | 'TRANSCRIBING'
+      | 'THINKING'
+      | 'TOOL_PENDING'
+      | 'SPEAKING'
+      | 'INTERRUPTED'
+      | 'HANDOFF_PENDING'
+      | 'HANDED_OFF'
+      | 'COMPLETED'
+      | 'FAILED';
+    TranscriptSegment: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      speaker: 'USER' | 'ASSISTANT' | 'HUMAN';
+      originalText: string;
+      normalizedText: string;
+      startedAtMs: number;
+      endedAtMs?: number;
+      final: boolean;
+    };
+    RealtimeSession: {
+      /** Format: uuid */
+      conversationId: string;
+      roomName: string;
+      participantToken: string;
+      livekitUrl: string;
+      /** Format: date-time */
+      expiresAt: string;
+      language: components['schemas']['Language'];
+    };
+    CommunicationChannel: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      type: 'BROWSER' | 'SIP' | 'TWILIO' | 'TELNYX' | 'TELECOM';
+      name: string;
+      /** @enum {string} */
+      status: 'ACTIVE' | 'INACTIVE' | 'COMING_SOON';
+      phoneIntegrationsEnabled?: boolean;
+      sipConfigured?: boolean;
+      inboundConfigured?: boolean;
+    };
+    PhoneNumber: {
+      /** Format: uuid */
+      id: string;
+      e164: string;
+      label: string;
+      /** Format: uuid */
+      inboundAgentId?: string | null;
+      enabled: boolean;
+      callerIdE164?: string | null;
+      livekitDispatchRuleId?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    PhoneNumberList: {
+      items: components['schemas']['PhoneNumber'][];
+      sipConfigured: boolean;
+      inboundConfigured: boolean;
+      phoneIntegrationsEnabled: boolean;
+    };
+    CreatePhoneNumberRequest: {
+      e164: string;
+      label?: string;
+      /** Format: uuid */
+      inboundAgentId?: string;
+      /** @default false */
+      enabled: boolean;
+      callerIdE164?: string;
+    };
+    UpdatePhoneNumberRequest: {
+      label?: string;
+      /** Format: uuid */
+      inboundAgentId?: string | null;
+      enabled?: boolean;
+      callerIdE164?: string | null;
+    };
+    Citation: {
+      /** Format: uuid */
+      documentId: string;
+      /** Format: uuid */
+      documentVersionId: string;
+      /** Format: uuid */
+      chunkId: string;
+      title: string;
+      page?: number;
+      section?: string;
+      score?: number;
+    };
+    Document: {
+      /** Format: uuid */
+      id: string;
+      title: string;
+      /** @enum {string} */
+      status:
+        'UPLOADED' | 'SCANNING' | 'PROCESSING' | 'READY' | 'FAILED' | 'QUARANTINED' | 'DELETING';
+      version: number;
+      errorCode?: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    ToolDefinition: {
+      name: string;
+      version: number;
+      description: string;
+      /** @enum {string} */
+      riskClass: 'READ_PUBLIC' | 'READ_CUSTOMER' | 'WRITE_REVERSIBLE' | 'WRITE_SENSITIVE';
+      /** @enum {string} */
+      handler:
+        | 'sandbox.product_lookup'
+        | 'sandbox.appointment_availability'
+        | 'sandbox.appointment_create'
+        | 'sandbox.request_status'
+        | 'sandbox.handoff'
+        | 'fixed_https';
+      inputSchema: {
+        [key: string]: unknown;
+      };
+      outputSchema?: {
+        [key: string]: unknown;
+      };
+      connectorConfig?: {
+        [key: string]: unknown;
+      };
+      /** @default true */
+      enabled: boolean;
+    };
+    Tool: components['schemas']['ToolDefinition'] & {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      organizationId: string;
+    };
+    ToolInvocation: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      conversationId: string;
+      /** Format: uuid */
+      toolId: string;
+      /** @enum {string} */
+      status:
+        'PROPOSED' | 'AWAITING_CONFIRMATION' | 'RUNNING' | 'COMPLETED' | 'REJECTED' | 'FAILED';
+      input: {
+        [key: string]: unknown;
+      };
+      result?: {
+        [key: string]: unknown;
+      };
+      errorCode?: string;
+    };
+    Handoff: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      conversationId: string;
+      /** @enum {string} */
+      status: 'REQUESTED' | 'ACCEPTED' | 'COMPLETED' | 'FAILED';
+      /** Format: date-time */
+      requestedAt: string;
+    };
+    Deletion: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+    };
+    CreateEvaluationRunRequest: {
+      /** Format: uuid */
+      datasetId: string;
+      variants: {
+        name: string;
+        /** @enum {string} */
+        pipeline: 'text' | 'realtime';
+        sttLanguage?: components['schemas']['SttLanguage'];
+        /** Format: uuid */
+        promptVersionId?: string;
+        voiceId?: string;
+        endpointing?: {
+          [key: string]: unknown;
+        };
+      }[];
+    };
+    EvaluationRun: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+      /** Format: uri */
+      reportUrl?: string;
+      metrics?: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      createdAt: string;
+    };
+  };
+  responses: {
+    /** @description Typed error */
+    Error: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorEnvelope'];
+      };
+    };
+    /** @description Health status */
+    Health: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          status: 'ok' | 'degraded' | 'failed';
+          /** Format: date-time */
+          timestamp: string;
+          checks?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    /** @description Browser session */
+    Session: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Session'];
+      };
+    };
+    /** @description Organization */
+    Organization: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Organization'];
+      };
+    };
+    /** @description Organizations */
+    OrganizationList: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': {
+          items: components['schemas']['Organization'][];
+        };
+      };
+    };
+    /** @description Agent */
+    Agent: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Agent'];
+      };
+    };
+    /** @description Agents */
+    AgentList: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': {
+          items: components['schemas']['Agent'][];
+          nextCursor?: string;
+        };
+      };
+    };
+    /** @description Immutable agent version */
+    AgentVersion: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['AgentVersion'];
+      };
+    };
+    /** @description Normalized transcription */
+    Transcription: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Transcription'];
+      };
+    };
+    /** @description Montenegrin response */
+    GeneratedResponse: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['GeneratedResponse'];
+      };
+    };
+    /** @description Conversation */
+    Conversation: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Conversation'];
+      };
+    };
+    /** @description Knowledge document */
+    Document: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Document'];
+      };
+    };
+    /** @description Knowledge documents */
+    DocumentList: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': {
+          items: components['schemas']['Document'][];
+        };
+      };
+    };
+    /** @description Tool definition */
+    Tool: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Tool'];
+      };
+    };
+    /** @description Tool definitions */
+    ToolList: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': {
+          items: components['schemas']['Tool'][];
+        };
+      };
+    };
+    /** @description Tool invocation */
+    ToolInvocation: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ToolInvocation'];
+      };
+    };
+    /** @description Handoff */
+    Handoff: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Handoff'];
+      };
+    };
+    /** @description Asynchronous deletion */
+    Deletion: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['Deletion'];
+      };
+    };
+    /** @description Evaluation run */
+    EvaluationRun: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['EvaluationRun'];
+      };
+    };
+  };
+  parameters: {
+    AgentId: string;
+    ConversationId: string;
+    OrganizationId: string;
+    IdempotencyKey: string;
+    Cursor: string;
+    Limit: number;
+  };
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getLiveness: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Health"];
-        };
+  getLiveness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getReadiness: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Health"];
-            503: components["responses"]["Error"];
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Health'];
     };
-    login: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            200: components["responses"]["Session"];
-            401: components["responses"]["Error"];
-        };
+  };
+  getReadiness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    logout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Session removed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Health'];
+      503: components['responses']['Error'];
     };
-    getCurrentUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Session"];
-            401: components["responses"]["Error"];
-        };
+  };
+  login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    listOrganizations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["OrganizationList"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LoginRequest'];
+      };
     };
-    createOrganization: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOrganizationRequest"];
-            };
-        };
-        responses: {
-            201: components["responses"]["Organization"];
-            409: components["responses"]["Error"];
-        };
+    responses: {
+      200: components['responses']['Session'];
+      401: components['responses']['Error'];
     };
-    deleteOrganization: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                organizationId: components["parameters"]["OrganizationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            202: components["responses"]["Deletion"];
-            403: components["responses"]["Error"];
-        };
+  };
+  register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    listMemberships: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationId: components["parameters"]["OrganizationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Memberships */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Membership"][];
-                    };
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterRequest'];
+      };
     };
-    createMembership: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                organizationId: components["parameters"]["OrganizationId"];
-            };
-            cookie?: never;
+    responses: {
+      /** @description Registration accepted pending email verification */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: email */
-                    email: string;
-                    role: components["schemas"]["MembershipRole"];
-                };
-            };
+        content: {
+          'application/json': components['schemas']['PendingVerification'];
         };
-        responses: {
-            /** @description Membership created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Membership"];
-                };
-            };
-        };
+      };
+      409: components['responses']['Error'];
+      422: components['responses']['Error'];
+      429: components['responses']['Error'];
+      503: components['responses']['Error'];
     };
-    createApiKey: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateApiKeyRequest"];
-            };
-        };
-        responses: {
-            /** @description API key shown once */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyCreated"];
-                };
-            };
-        };
+  };
+  verifyEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    listAgents: {
-        parameters: {
-            query?: {
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["AgentList"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['VerificationTokenRequest'];
+      };
     };
-    createAgent: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateAgentRequest"];
-            };
-        };
-        responses: {
-            201: components["responses"]["Agent"];
-            400: components["responses"]["Error"];
-        };
+    responses: {
+      200: components['responses']['Session'];
+      400: components['responses']['Error'];
+      429: components['responses']['Error'];
     };
-    getAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Agent"];
-            404: components["responses"]["Error"];
-        };
+  };
+  resendVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    updateAgent: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateAgentRequest"];
-            };
-        };
-        responses: {
-            200: components["responses"]["Agent"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmailRequest'];
+      };
     };
-    createAgentVersion: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
+    responses: {
+      /** @description Verification delivery accepted without disclosing account existence */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateAgentVersionRequest"];
-            };
+        content: {
+          'application/json': components['schemas']['AcceptedResponse'];
         };
-        responses: {
-            201: components["responses"]["AgentVersion"];
-        };
+      };
+      429: components['responses']['Error'];
     };
-    publishAgent: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    versionId: string;
-                };
-            };
-        };
-        responses: {
-            200: components["responses"]["Agent"];
-            422: components["responses"]["Error"];
-        };
+  };
+  logout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createTranscription: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Session removed */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    audio: string;
-                    /** Format: uuid */
-                    agentId?: string;
-                    sttLanguage?: components["schemas"]["SttLanguage"];
-                };
-            };
-        };
-        responses: {
-            200: components["responses"]["Transcription"];
-        };
+        content?: never;
+      };
     };
-    createResponse: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateResponseRequest"];
-            };
-        };
-        responses: {
-            200: components["responses"]["GeneratedResponse"];
-            400: components["responses"]["Error"];
-        };
+  };
+  getCurrentUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createSpeech: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSpeechRequest"];
-            };
-        };
-        responses: {
-            /** @description Streamed audio */
-            200: {
-                headers: {
-                    "X-Request-Id"?: string;
-                    "X-Provider"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "audio/wav": string;
-                    "audio/pcm": string;
-                };
-            };
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Session'];
+      401: components['responses']['Error'];
     };
-    createConversation: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    agentId: string;
-                    /** @enum {string} */
-                    channel: "TEXT" | "BROWSER" | "SIP" | "BATCH";
-                };
-            };
-        };
-        responses: {
-            201: components["responses"]["Conversation"];
-        };
+  };
+  listOrganizations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getConversation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Conversation"];
-            404: components["responses"]["Error"];
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['OrganizationList'];
     };
-    deleteConversation: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            202: components["responses"]["Deletion"];
-        };
+  };
+  createOrganization: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
     };
-    getTranscript: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Ordered transcript */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        language: "cnr";
-                        segments: components["schemas"]["TranscriptSegment"][];
-                    };
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateOrganizationRequest'];
+      };
     };
-    getConversationRecording: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Presigned recording download URL */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uri */
-                        url: string;
-                        /** Format: date-time */
-                        expiresAt: string;
-                        objectKey: string;
-                    };
-                };
-            };
-        };
+    responses: {
+      201: components['responses']['Organization'];
+      409: components['responses']['Error'];
     };
-    streamConversationEvents: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Last-Event-ID"?: string;
-            };
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Resumable normalized event stream */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": string;
-                };
-            };
-        };
+  };
+  deleteOrganization: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        organizationId: components['parameters']['OrganizationId'];
+      };
+      cookie?: never;
     };
-    requestHandoff: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            202: components["responses"]["Handoff"];
-        };
+    requestBody?: never;
+    responses: {
+      202: components['responses']['Deletion'];
+      403: components['responses']['Error'];
     };
-    confirmToolInvocation: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                conversationId: components["parameters"]["ConversationId"];
-                invocationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirmed: boolean;
-                    confirmationText: string;
-                };
-            };
-        };
-        responses: {
-            200: components["responses"]["ToolInvocation"];
-        };
+  };
+  listMemberships: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationId: components['parameters']['OrganizationId'];
+      };
+      cookie?: never;
     };
-    createRealtimeSession: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Memberships */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    participantName?: string;
-                };
-            };
+        content: {
+          'application/json': {
+            items: components['schemas']['Membership'][];
+          };
         };
-        responses: {
-            /** @description LiveKit session credentials */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RealtimeSession"];
-                };
-            };
-        };
+      };
     };
-    createCall: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                agentId: components["parameters"]["AgentId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    to: string;
-                };
-            };
-        };
-        responses: {
-            202: components["responses"]["Conversation"];
-        };
+  };
+  createMembership: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        organizationId: components['parameters']['OrganizationId'];
+      };
+      cookie?: never;
     };
-    listKnowledgeBases: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: email */
+          email: string;
+          role: components['schemas']['MembershipRole'];
         };
-        requestBody?: never;
-        responses: {
-            /** @description Knowledge bases */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    createKnowledgeBase: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Membership created */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Created knowledge base */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          'application/json': components['schemas']['Membership'];
         };
+      };
     };
-    listKnowledgeBaseAssignments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                knowledgeBaseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Agent assignments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  createApiKey: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
     };
-    testKnowledgeRetrieval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Retrieval test results */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateApiKeyRequest'];
+      };
     };
-    getIngestionJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description API key shown once */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Ingestion job status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          'application/json': components['schemas']['ApiKeyCreated'];
         };
+      };
     };
-    listKnowledgeDocuments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["DocumentList"];
-        };
+  };
+  listAgents: {
+    parameters: {
+      query?: {
+        cursor?: components['parameters']['Cursor'];
+        limit?: components['parameters']['Limit'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createKnowledgeDocument: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: uuid */
-                    knowledgeBaseId: string;
-                    /** Format: uuid */
-                    agentId?: string;
-                    title: string;
-                    /** Format: binary */
-                    file: string;
-                };
-                "application/json": {
-                    /** Format: uuid */
-                    agentId: string;
-                    title: string;
-                    text: string;
-                    /** Format: uri */
-                    sourceUrl?: string;
-                };
-            };
-        };
-        responses: {
-            202: components["responses"]["Document"];
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['AgentList'];
     };
-    deleteKnowledgeDocument: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                documentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            202: components["responses"]["Deletion"];
-        };
+  };
+  createAgent: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
     };
-    listTools: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["ToolList"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAgentRequest'];
+      };
     };
-    createTool: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ToolDefinition"];
-            };
-        };
-        responses: {
-            201: components["responses"]["Tool"];
-        };
+    responses: {
+      201: components['responses']['Agent'];
+      400: components['responses']['Error'];
     };
-    updateTool: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                toolId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ToolDefinition"];
-            };
-        };
-        responses: {
-            200: components["responses"]["Tool"];
-        };
+  };
+  getAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
     };
-    createEvaluationRun: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateEvaluationRunRequest"];
-            };
-        };
-        responses: {
-            202: components["responses"]["EvaluationRun"];
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Agent'];
+      404: components['responses']['Error'];
     };
-    getEvaluationRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                runId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["EvaluationRun"];
-        };
+  };
+  updateAgent: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
     };
-    getUsage: {
-        parameters: {
-            query?: {
-                from?: string;
-                to?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Usage grouped by provider and operation */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["Usage"][];
-                    };
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAgentRequest'];
+      };
     };
-    listIntegrationChannels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Communication channels */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["CommunicationChannel"][];
-                    };
-                };
-            };
-        };
+    responses: {
+      200: components['responses']['Agent'];
     };
-    listPhoneNumbers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Organization phone numbers */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhoneNumberList"];
-                };
-            };
-        };
+  };
+  createAgentVersion: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
     };
-    createPhoneNumber: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePhoneNumberRequest"];
-            };
-        };
-        responses: {
-            /** @description Created phone number */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhoneNumber"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAgentVersionRequest'];
+      };
     };
-    deletePhoneNumber: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                phoneNumberId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted phone number */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    responses: {
+      201: components['responses']['AgentVersion'];
     };
-    updatePhoneNumber: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                phoneNumberId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdatePhoneNumberRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated phone number */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhoneNumber"];
-                };
-            };
-        };
+  };
+  publishAgent: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
     };
-    listBillingPlans: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          versionId: string;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Public plan catalog */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        billingEnabled?: boolean;
-                        items?: Record<string, never>[];
-                    };
-                };
-            };
-        };
+      };
     };
-    createBillingCheckout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    planSlug: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Stripe checkout session URL */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uri */
-                        url?: string;
-                    };
-                };
-            };
-        };
+    responses: {
+      200: components['responses']['Agent'];
+      422: components['responses']['Error'];
     };
-    createBillingPortal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Stripe customer portal URL */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uri */
-                        url?: string;
-                    };
-                };
-            };
-        };
+  };
+  archiveAgent: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
     };
-    stripeWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Webhook accepted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Agent'];
+      404: components['responses']['Error'];
+      409: components['responses']['Error'];
     };
+  };
+  createTranscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          audio: string;
+          /** Format: uuid */
+          agentId?: string;
+          sttLanguage?: components['schemas']['SttLanguage'];
+        };
+      };
+    };
+    responses: {
+      200: components['responses']['Transcription'];
+    };
+  };
+  createResponse: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateResponseRequest'];
+      };
+    };
+    responses: {
+      200: components['responses']['GeneratedResponse'];
+      400: components['responses']['Error'];
+    };
+  };
+  createSpeech: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSpeechRequest'];
+      };
+    };
+    responses: {
+      /** @description Streamed audio */
+      200: {
+        headers: {
+          'X-Request-Id'?: string;
+          'X-Provider'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'audio/wav': string;
+          'audio/pcm': string;
+        };
+      };
+    };
+  };
+  createConversation: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          agentId: string;
+          /** @enum {string} */
+          channel: 'TEXT' | 'BROWSER' | 'SIP' | 'BATCH';
+        };
+      };
+    };
+    responses: {
+      201: components['responses']['Conversation'];
+    };
+  };
+  getConversation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['Conversation'];
+      404: components['responses']['Error'];
+    };
+  };
+  deleteConversation: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: components['responses']['Deletion'];
+    };
+  };
+  getTranscript: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ordered transcript */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @constant */
+            language: 'cnr';
+            segments: components['schemas']['TranscriptSegment'][];
+          };
+        };
+      };
+    };
+  };
+  getConversationRecording: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presigned recording download URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            expiresAt: string;
+            objectKey: string;
+          };
+        };
+      };
+    };
+  };
+  streamConversationEvents: {
+    parameters: {
+      query?: never;
+      header?: {
+        'Last-Event-ID'?: string;
+      };
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resumable normalized event stream */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'text/event-stream': string;
+        };
+      };
+    };
+  };
+  requestHandoff: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      202: components['responses']['Handoff'];
+    };
+  };
+  confirmToolInvocation: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        conversationId: components['parameters']['ConversationId'];
+        invocationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          confirmed: boolean;
+          confirmationText: string;
+        };
+      };
+    };
+    responses: {
+      200: components['responses']['ToolInvocation'];
+    };
+  };
+  createRealtimeSession: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': {
+          participantName?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description LiveKit session credentials */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RealtimeSession'];
+        };
+      };
+    };
+  };
+  createCall: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        agentId: components['parameters']['AgentId'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          to: string;
+        };
+      };
+    };
+    responses: {
+      202: components['responses']['Conversation'];
+    };
+  };
+  listKnowledgeBases: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Knowledge bases */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  createKnowledgeBase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Created knowledge base */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listKnowledgeBaseAssignments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        knowledgeBaseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Agent assignments */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  testKnowledgeRetrieval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Retrieval test results */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getIngestionJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ingestion job status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listKnowledgeDocuments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['DocumentList'];
+    };
+  };
+  createKnowledgeDocument: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: uuid */
+          knowledgeBaseId: string;
+          /** Format: uuid */
+          agentId?: string;
+          title: string;
+          /** Format: binary */
+          file: string;
+        };
+        'application/json': {
+          /** Format: uuid */
+          agentId: string;
+          title: string;
+          text: string;
+          /** Format: uri */
+          sourceUrl?: string;
+        };
+      };
+    };
+    responses: {
+      202: components['responses']['Document'];
+    };
+  };
+  deleteKnowledgeDocument: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        documentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: components['responses']['Deletion'];
+    };
+  };
+  listTools: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['ToolList'];
+    };
+  };
+  createTool: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ToolDefinition'];
+      };
+    };
+    responses: {
+      201: components['responses']['Tool'];
+    };
+  };
+  updateTool: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path: {
+        toolId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ToolDefinition'];
+      };
+    };
+    responses: {
+      200: components['responses']['Tool'];
+    };
+  };
+  createEvaluationRun: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': components['parameters']['IdempotencyKey'];
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateEvaluationRunRequest'];
+      };
+    };
+    responses: {
+      202: components['responses']['EvaluationRun'];
+    };
+  };
+  getEvaluationRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components['responses']['EvaluationRun'];
+    };
+  };
+  getUsage: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Usage grouped by provider and operation */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: components['schemas']['Usage'][];
+          };
+        };
+      };
+    };
+  };
+  listIntegrationChannels: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Communication channels */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: components['schemas']['CommunicationChannel'][];
+          };
+        };
+      };
+    };
+  };
+  listPhoneNumbers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Organization phone numbers */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhoneNumberList'];
+        };
+      };
+    };
+  };
+  createPhoneNumber: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePhoneNumberRequest'];
+      };
+    };
+    responses: {
+      /** @description Created phone number */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhoneNumber'];
+        };
+      };
+    };
+  };
+  deletePhoneNumber: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        phoneNumberId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted phone number */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  updatePhoneNumber: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        phoneNumberId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePhoneNumberRequest'];
+      };
+    };
+    responses: {
+      /** @description Updated phone number */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhoneNumber'];
+        };
+      };
+    };
+  };
+  listBillingPlans: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Public plan catalog */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            billingEnabled?: boolean;
+            items?: Record<string, never>[];
+          };
+        };
+      };
+    };
+  };
+  createBillingCheckout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          planSlug: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Stripe checkout session URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uri */
+            url?: string;
+          };
+        };
+      };
+    };
+  };
+  createBillingPortal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stripe customer portal URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uri */
+            url?: string;
+          };
+        };
+      };
+    };
+  };
+  stripeWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Webhook accepted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }

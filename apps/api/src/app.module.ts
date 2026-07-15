@@ -151,8 +151,8 @@ const environment = loadEnvironment();
     VoiceAgentServiceGuard,
     ToolsService,
     EvaluationsService,
-    { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
   ],
 })
 export class AppModule {}

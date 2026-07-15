@@ -4,7 +4,10 @@ info:
   version: 0.1.0
   description: Provider-independent Montenegrin conversational-AI control and data plane.
 servers:
+  - url: https://api.voice.mne-mcp.com
+    description: Production
   - url: http://localhost:3001
+    description: Local development
 security:
   - apiKey: []
   - sessionCookie: []
@@ -48,6 +51,57 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Session' }
         '401': { $ref: '#/components/responses/Error' }
+  /v1/auth/register:
+    post:
+      operationId: register
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '202':
+          description: Registration accepted pending email verification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PendingVerification' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /v1/auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationTokenRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/Session' }
+        '400': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /v1/auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailRequest' }
+      responses:
+        '202':
+          description: Verification delivery accepted without disclosing account existence
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AcceptedResponse' }
+        '429': { $ref: '#/components/responses/Error' }
   /v1/auth/logout:
     post:
       operationId: logout
@@ -814,6 +868,40 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 12, maxLength: 200 }
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, displayName, turnstileToken]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        password: { type: string, minLength: 12, maxLength: 256 }
+        displayName: { type: string, minLength: 2, maxLength: 100 }
+        turnstileToken: { type: string, minLength: 1, maxLength: 4096 }
+    VerificationTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 256 }
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+    AcceptedResponse:
+      type: object
+      additionalProperties: false
+      required: [accepted]
+      properties:
+        accepted: { type: boolean, const: true }
+    PendingVerification:
+      type: object
+      additionalProperties: false
+      required: [accepted, verificationRequired]
+      properties:
+        accepted: { type: boolean, const: true }
+        verificationRequired: { type: boolean, const: true }
     Session:
       type: object
       additionalProperties: false
@@ -1055,7 +1143,20 @@ components:
         recordingObjectKey: { type: [string, 'null'] }
     ConversationState:
       type: string
-      enum: [INITIALIZING, LISTENING, TRANSCRIBING, THINKING, TOOL_PENDING, SPEAKING, INTERRUPTED, HANDOFF_PENDING, HANDED_OFF, COMPLETED, FAILED]
+      enum:
+        [
+          INITIALIZING,
+          LISTENING,
+          TRANSCRIBING,
+          THINKING,
+          TOOL_PENDING,
+          SPEAKING,
+          INTERRUPTED,
+          HANDOFF_PENDING,
+          HANDED_OFF,
+          COMPLETED,
+          FAILED,
+        ]
     TranscriptSegment:
       type: object
       additionalProperties: false
@@ -1153,7 +1254,11 @@ components:
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
-        status: { type: string, enum: [UPLOADED, SCANNING, PROCESSING, READY, FAILED, QUARANTINED, DELETING] }
+        status:
+          {
+            type: string,
+            enum: [UPLOADED, SCANNING, PROCESSING, READY, FAILED, QUARANTINED, DELETING],
+          }
         version: { type: integer, minimum: 1 }
         errorCode: { type: string }
         createdAt: { type: string, format: date-time }
@@ -1165,8 +1270,21 @@ components:
         name: { type: string, pattern: '^[a-z][a-z0-9_]{1,62}$' }
         version: { type: integer, minimum: 1 }
         description: { type: string, minLength: 1, maxLength: 500 }
-        riskClass: { type: string, enum: [READ_PUBLIC, READ_CUSTOMER, WRITE_REVERSIBLE, WRITE_SENSITIVE] }
-        handler: { type: string, enum: [sandbox.product_lookup, sandbox.appointment_availability, sandbox.appointment_create, sandbox.request_status, sandbox.handoff, fixed_https] }
+        riskClass:
+          { type: string, enum: [READ_PUBLIC, READ_CUSTOMER, WRITE_REVERSIBLE, WRITE_SENSITIVE] }
+        handler:
+          {
+            type: string,
+            enum:
+              [
+                sandbox.product_lookup,
+                sandbox.appointment_availability,
+                sandbox.appointment_create,
+                sandbox.request_status,
+                sandbox.handoff,
+                fixed_https,
+              ],
+          }
         inputSchema: { type: object, additionalProperties: true }
         outputSchema: { type: object, additionalProperties: true }
         connectorConfig: { type: object, additionalProperties: true }
@@ -1187,7 +1305,11 @@ components:
         id: { type: string, format: uuid }
         conversationId: { type: string, format: uuid }
         toolId: { type: string, format: uuid }
-        status: { type: string, enum: [PROPOSED, AWAITING_CONFIRMATION, RUNNING, COMPLETED, REJECTED, FAILED] }
+        status:
+          {
+            type: string,
+            enum: [PROPOSED, AWAITING_CONFIRMATION, RUNNING, COMPLETED, REJECTED, FAILED],
+          }
         input: { type: object, additionalProperties: true }
         result: { type: object, additionalProperties: true }
         errorCode: { type: string }
@@ -1250,7 +1372,7 @@ components:
             type: object
             required: [status, timestamp]
             properties:
-              status: { type: string, enum: [ok, degraded] }
+              status: { type: string, enum: [ok, degraded, failed] }
               timestamp: { type: string, format: date-time }
               checks: { type: object, additionalProperties: { type: string } }
     Session:

@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import addFormatsModule, { type FormatsPlugin } from 'ajv-formats';
@@ -9,13 +8,14 @@ import YAML from 'yaml';
 
 import { canTransition, transition } from '../src/index.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..');
+const root = process.cwd();
 const addFormats = addFormatsModule as unknown as FormatsPlugin;
 
 describe('canonical contracts', () => {
   it('loads the OpenAPI 3.1 document', () => {
-    const document = YAML.parse(fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf8')) as {
+    const document = YAML.parse(
+      fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf8'),
+    ) as {
       openapi: string;
       paths: Record<string, unknown>;
     };

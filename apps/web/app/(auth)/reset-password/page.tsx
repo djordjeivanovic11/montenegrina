@@ -31,7 +31,7 @@ function ResetPasswordForm() {
       body: JSON.stringify({ token, password }),
     });
     if (!response.ok) {
-      const body = await response.json().catch(() => null);
+      const body: unknown = await response.json().catch(() => null);
       setError(errorMessage(body) || t('auth.resetPasswordInvalid'));
       return;
     }
@@ -40,7 +40,10 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
       <div className="w-full max-w-[400px]">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-3 mb-3">
@@ -88,7 +91,9 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+    <Suspense
+      fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}
+    >
       <ResetPasswordForm />
     </Suspense>
   );

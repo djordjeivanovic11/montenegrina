@@ -10,6 +10,8 @@ export function reciprocalRankFusion(
   vectorScore = 0,
   lexicalScore = 0,
 ): number {
+  void vectorScore;
+  void lexicalScore;
   return 1 / (RRF_K + vectorRank) + 1 / (RRF_K + lexicalRank);
 }
 

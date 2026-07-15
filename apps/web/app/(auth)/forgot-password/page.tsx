@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       body: JSON.stringify({ email }),
     });
     if (!response.ok) {
-      const body = await response.json().catch(() => null);
+      const body: unknown = await response.json().catch(() => null);
       setError(errorMessage(body));
       return;
     }
@@ -31,7 +31,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
       <div className="w-full max-w-[400px]">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-3 mb-3">

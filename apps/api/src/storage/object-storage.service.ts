@@ -1,72 +1,34 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Environment } from '@montenegrina/config';
-import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { ObjectStorageClient } from '@montenegrina/object-storage';
 
 import { ENVIRONMENT } from '../core/tokens.js';
 
 @Injectable()
 export class ObjectStorageService {
-  readonly #client: S3Client;
+  readonly #client: ObjectStorageClient;
 
   constructor(@Inject(ENVIRONMENT) private readonly environment: Environment) {
-    this.#client = new S3Client({
-      region: environment.S3_REGION,
-      ...(environment.S3_ENDPOINT
-        ? { endpoint: environment.S3_ENDPOINT, forcePathStyle: true }
-        : {}),
-      ...(environment.S3_ACCESS_KEY_ID && environment.S3_SECRET_ACCESS_KEY
-        ? {
-            credentials: {
-              accessKeyId: environment.S3_ACCESS_KEY_ID,
-              secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
-            },
-          }
-        : {}),
-    });
+    this.#client = new ObjectStorageClient(environment);
   }
 
   async put(key: string, body: Uint8Array, contentType: string): Promise<void> {
-    await this.#client.send(
-      new PutObjectCommand({
-        Bucket: this.environment.S3_BUCKET,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-        ServerSideEncryption: this.environment.NODE_ENV === 'production' ? 'aws:kms' : undefined,
-      }),
-    );
+    await this.#client.put(key, body, contentType);
   }
 
   async delete(key: string): Promise<void> {
-    await this.#client.send(new DeleteObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }));
+    await this.#client.delete(key);
   }
 
   async get(key: string): Promise<{ body: Uint8Array; contentType: string }> {
-    const response = await this.#client.send(
-      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
-    );
-    if (!response.Body) throw new Error(`Object is empty: ${key}`);
-    return {
-      body: await response.Body.transformToByteArray(),
-      contentType: response.ContentType ?? 'application/octet-stream',
-    };
+    return this.#client.get(key);
   }
 
   async presignedGetUrl(key: string, expiresInSeconds = 900): Promise<string> {
-    return getSignedUrl(
-      this.#client,
-      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
-      { expiresIn: expiresInSeconds },
-    );
+    return this.#client.signedGetUrl(key, expiresInSeconds);
   }
 
   async ping(): Promise<'ok' | 'failed'> {
-    try {
-      await this.#client.send(new HeadBucketCommand({ Bucket: this.environment.S3_BUCKET }));
-      return 'ok';
-    } catch {
-      return 'failed';
-    }
+    return this.#client.ping();
   }
 }

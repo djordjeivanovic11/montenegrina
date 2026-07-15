@@ -5,7 +5,10 @@ const booleanFromString = z
   .default('false')
   .transform((value) => value === 'true');
 
-const optionalSecret = z.string().optional().transform((value) => value || undefined);
+const optionalSecret = z
+  .string()
+  .optional()
+  .transform((value) => value || undefined);
 
 export const environmentSchema = z
   .object({
@@ -18,6 +21,15 @@ export const environmentSchema = z
     EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
     RESEND_API_KEY: optionalSecret,
     EMAIL_FROM: z.string().default('Montenegrina <noreply@montenegrina.me>'),
+    EMAIL_VERIFICATION_REQUIRED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+    REGISTRATION_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+    TURNSTILE_SECRET_KEY: optionalSecret,
     STRIPE_SECRET_KEY: optionalSecret,
     STRIPE_WEBHOOK_SECRET: optionalSecret,
     STRIPE_PRICE_PRO: optionalSecret,
@@ -32,6 +44,9 @@ export const environmentSchema = z
     S3_BUCKET: z.string().min(3),
     S3_ACCESS_KEY_ID: optionalSecret,
     S3_SECRET_ACCESS_KEY: optionalSecret,
+    STORAGE_BACKEND: z.enum(['s3', 'azure']).default('s3'),
+    AZURE_STORAGE_ACCOUNT_URL: z.url().optional(),
+    AZURE_STORAGE_CONTAINER: z.string().min(3).default('montenegrina'),
     SESSION_SECRET: z.string().min(16),
     INTERNAL_TOKEN_SECRET: z.string().min(16),
     COOKIE_SECURE: booleanFromString,
@@ -74,10 +89,20 @@ export const environmentSchema = z
     KNOWLEDGE_RETRIEVAL_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
     BILLING_ENABLED: booleanFromString,
     PHONE_INTEGRATIONS_ENABLED: booleanFromString,
-    WEBHOOKS_ENABLED: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
+    RECORDINGS_ENABLED: booleanFromString,
+    WEBHOOKS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
     PUBLIC_DEMO_ENABLED: booleanFromString,
     RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(20),
+    RATE_LIMIT_REGISTRATIONS_PER_HOUR: z.coerce.number().int().min(1).max(100).default(3),
+    RATE_LIMIT_VERIFICATIONS_PER_DAY: z.coerce.number().int().min(1).max(100).default(3),
     RATE_LIMIT_VOICE_SESSIONS_PER_HOUR: z.coerce.number().int().min(1).max(10_000).default(60),
+    BOOTSTRAP_ADMIN_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
   })
   .superRefine((environment, context) => {
     if (environment.NODE_ENV === 'production' && !environment.COOKIE_SECURE) {
@@ -87,12 +112,86 @@ export const environmentSchema = z
         message: 'COOKIE_SECURE must be true in production',
       });
     }
-    if (environment.S3_ENDPOINT && (!environment.S3_ACCESS_KEY_ID || !environment.S3_SECRET_ACCESS_KEY)) {
+    if (
+      environment.S3_ENDPOINT &&
+      (!environment.S3_ACCESS_KEY_ID || !environment.S3_SECRET_ACCESS_KEY)
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['S3_ACCESS_KEY_ID'],
         message: 'Explicit S3 credentials are required for S3-compatible local storage',
       });
+    }
+    if (environment.STORAGE_BACKEND === 'azure' && !environment.AZURE_STORAGE_ACCOUNT_URL) {
+      context.addIssue({
+        code: 'custom',
+        path: ['AZURE_STORAGE_ACCOUNT_URL'],
+        message: 'AZURE_STORAGE_ACCOUNT_URL is required for Azure storage',
+      });
+    }
+    if (environment.NODE_ENV === 'production') {
+      if (environment.EMAIL_PROVIDER !== 'resend' || !environment.RESEND_API_KEY) {
+        context.addIssue({
+          code: 'custom',
+          path: ['RESEND_API_KEY'],
+          message: 'Resend email is required in production',
+        });
+      }
+      if (!environment.EMAIL_VERIFICATION_REQUIRED) {
+        context.addIssue({
+          code: 'custom',
+          path: ['EMAIL_VERIFICATION_REQUIRED'],
+          message: 'Email verification is required in production',
+        });
+      }
+      if (!environment.TURNSTILE_SECRET_KEY) {
+        context.addIssue({
+          code: 'custom',
+          path: ['TURNSTILE_SECRET_KEY'],
+          message: 'Turnstile is required in production',
+        });
+      }
+      if (!environment.GOOGLE_CLIENT_ID) {
+        context.addIssue({
+          code: 'custom',
+          path: ['GOOGLE_CLIENT_ID'],
+          message: 'Google client ID is required in production',
+        });
+      }
+      if (!environment.VOICE_AGENT_SERVICE_SECRET) {
+        context.addIssue({
+          code: 'custom',
+          path: ['VOICE_AGENT_SERVICE_SECRET'],
+          message: 'Voice-agent service authentication is required in production',
+        });
+      }
+      if (environment.BOOTSTRAP_ADMIN_ENABLED) {
+        context.addIssue({
+          code: 'custom',
+          path: ['BOOTSTRAP_ADMIN_ENABLED'],
+          message: 'Local bootstrap administration must be disabled in production',
+        });
+      }
+      if (
+        !environment.PUBLIC_API_URL.startsWith('https://') ||
+        !environment.PUBLIC_WEB_URL.startsWith('https://')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_WEB_URL'],
+          message: 'Production public URLs must use HTTPS',
+        });
+      }
+      if (
+        environment.CORS_ORIGINS.length !== 1 ||
+        environment.CORS_ORIGINS[0] !== environment.PUBLIC_WEB_URL
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['CORS_ORIGINS'],
+          message: 'Production CORS must exactly match PUBLIC_WEB_URL',
+        });
+      }
     }
 
     for (const key of [

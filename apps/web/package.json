@@ -9,9 +9,9 @@
     "start": "next start",
     "lint": "eslint app --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run test/unit",
     "test:unit": "vitest run test/unit",
-    "test:integration": "vitest run --passWithNoTests",
+    "test:integration": "vitest run test/integration --passWithNoTests",
     "e2e": "playwright test"
   },
   "dependencies": {
