@@ -132,7 +132,7 @@ resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
   sku: { name: 'Balanced_B0' }
   properties: { encryption: {}, highAvailability: 'Enabled', minimumTlsVersion: '1.2', publicNetworkAccess: 'Enabled' }
 }
-resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
+resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-07-01' = {
   parent: redis
   name: 'default'
   properties: { accessKeysAuthentication: 'Enabled', clientProtocol: 'Encrypted', clusteringPolicy: 'NoCluster', evictionPolicy: 'NoEviction', modules: [], port: 10000 }
