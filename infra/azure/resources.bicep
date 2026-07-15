@@ -135,7 +135,7 @@ resource redis 'Microsoft.Cache/redisEnterprise@2025-08-01-preview' = {
 resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2025-04-01' = {
   parent: redis
   name: 'default'
-  properties: { accessKeysAuthentication: 'Enabled', clientProtocol: 'Encrypted', clusteringPolicy: 'OSSCluster', evictionPolicy: 'NoEviction', modules: [], port: 10000 }
+  properties: { accessKeysAuthentication: 'Enabled', clientProtocol: 'Encrypted', clusteringPolicy: 'NoCluster', evictionPolicy: 'NoEviction', modules: [], port: 10000 }
 }
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
