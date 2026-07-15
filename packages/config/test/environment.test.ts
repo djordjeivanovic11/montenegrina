@@ -45,12 +45,29 @@ describe('environmentSchema', () => {
       GOOGLE_CLIENT_ID: 'google-client-id',
       STORAGE_BACKEND: 'azure',
       AZURE_STORAGE_ACCOUNT_URL: 'https://store.blob.core.windows.net',
+      AZURE_CLIENT_ID: '10fd6090-5f4e-4e92-9453-c9bdc3fa70ee',
       RECORDINGS_ENABLED: 'false',
     });
 
     expect(production.CORS_ORIGINS).toEqual(['https://voice.mne-mcp.com']);
     expect(production.STORAGE_BACKEND).toBe('azure');
     expect(production.RECORDINGS_ENABLED).toBe(false);
+  });
+
+  it('requires an explicit user-assigned identity for production Azure storage', () => {
+    expect(() =>
+      environmentSchema.parse({
+        ...valid,
+        NODE_ENV: 'production',
+        PUBLIC_API_URL: 'https://api.voice.mne-mcp.com',
+        PUBLIC_WEB_URL: 'https://voice.mne-mcp.com',
+        CORS_ORIGINS: 'https://voice.mne-mcp.com',
+        COOKIE_SECURE: 'true',
+        GOOGLE_CLIENT_ID: 'google-client-id',
+        STORAGE_BACKEND: 'azure',
+        AZURE_STORAGE_ACCOUNT_URL: 'https://store.blob.core.windows.net',
+      }),
+    ).toThrow(/AZURE_CLIENT_ID/);
   });
 
   it('rejects an additional production CORS origin', () => {

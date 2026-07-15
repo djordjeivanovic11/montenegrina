@@ -39,6 +39,7 @@ export const environmentSchema = z
     STORAGE_BACKEND: z.enum(['s3', 'azure']).default('s3'),
     AZURE_STORAGE_ACCOUNT_URL: z.url().optional(),
     AZURE_STORAGE_CONTAINER: z.string().min(3).default('montenegrina'),
+    AZURE_CLIENT_ID: z.uuid().optional(),
     SESSION_SECRET: z.string().min(16),
     INTERNAL_TOKEN_SECRET: z.string().min(16),
     COOKIE_SECURE: booleanFromString,
@@ -111,6 +112,17 @@ export const environmentSchema = z
         code: 'custom',
         path: ['AZURE_STORAGE_ACCOUNT_URL'],
         message: 'AZURE_STORAGE_ACCOUNT_URL is required for Azure storage',
+      });
+    }
+    if (
+      environment.NODE_ENV === 'production' &&
+      environment.STORAGE_BACKEND === 'azure' &&
+      !environment.AZURE_CLIENT_ID
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['AZURE_CLIENT_ID'],
+        message: 'A user-assigned managed identity client ID is required for Azure storage',
       });
     }
     if (environment.NODE_ENV === 'production') {

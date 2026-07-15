@@ -6,7 +6,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { DefaultAzureCredential } from '@azure/identity';
+import { DefaultAzureCredential, ManagedIdentityCredential } from '@azure/identity';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -28,9 +28,13 @@ export class ObjectStorageClient {
 
   constructor(private readonly environment: Environment) {
     if (environment.STORAGE_BACKEND === 'azure') {
+      const credential =
+        environment.NODE_ENV === 'production'
+          ? new ManagedIdentityCredential({ clientId: environment.AZURE_CLIENT_ID as string })
+          : new DefaultAzureCredential();
       this.#blobService = new BlobServiceClient(
         environment.AZURE_STORAGE_ACCOUNT_URL as string,
-        new DefaultAzureCredential(),
+        credential,
       );
       this.#container = this.#blobService.getContainerClient(environment.AZURE_STORAGE_CONTAINER);
       return;

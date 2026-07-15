@@ -12,7 +12,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@azure/identity', () => ({
   DefaultAzureCredential: class DefaultAzureCredential {
     constructor() {
-      mocks.credential();
+      mocks.credential('default');
+    }
+  },
+  ManagedIdentityCredential: class ManagedIdentityCredential {
+    constructor(options: { clientId: string }) {
+      mocks.credential('managed', options);
     }
   },
 }));
@@ -55,14 +60,18 @@ describe('Azure object storage backend', () => {
 
   it('uses managed identity and uploads objects without storage account keys', async () => {
     const storage = new ObjectStorageClient({
+      NODE_ENV: 'production',
       STORAGE_BACKEND: 'azure',
       AZURE_STORAGE_ACCOUNT_URL: 'https://store.blob.core.windows.net',
       AZURE_STORAGE_CONTAINER: 'private',
+      AZURE_CLIENT_ID: '10fd6090-5f4e-4e92-9453-c9bdc3fa70ee',
     } as never);
 
     await storage.put('org/document.txt', 'zdravo', 'text/plain');
 
-    expect(mocks.credential).toHaveBeenCalledOnce();
+    expect(mocks.credential).toHaveBeenCalledWith('managed', {
+      clientId: '10fd6090-5f4e-4e92-9453-c9bdc3fa70ee',
+    });
     expect(mocks.uploadData).toHaveBeenCalledWith(expect.any(Uint8Array), {
       blobHTTPHeaders: { blobContentType: 'text/plain' },
     });
@@ -70,9 +79,11 @@ describe('Azure object storage backend', () => {
 
   it('issues a short-lived HTTPS read-only user-delegation URL', async () => {
     const storage = new ObjectStorageClient({
+      NODE_ENV: 'production',
       STORAGE_BACKEND: 'azure',
       AZURE_STORAGE_ACCOUNT_URL: 'https://store.blob.core.windows.net',
       AZURE_STORAGE_CONTAINER: 'private',
+      AZURE_CLIENT_ID: '10fd6090-5f4e-4e92-9453-c9bdc3fa70ee',
     } as never);
 
     const url = await storage.signedGetUrl('org/document.txt', 300);

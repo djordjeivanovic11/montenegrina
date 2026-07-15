@@ -262,6 +262,7 @@ var backendSecretNames = ['database-url', 'redis-url', 'session-secret', 'intern
 var backendSecretRefs = [for name in backendSecretNames: { name: name, keyVaultUrl: 'https://${vault.name}${environment().suffixes.keyvaultDns}/secrets/${name}', identity: backendIdentity.id }]
 var commonBackendEnv = [
   { name: 'NODE_ENV', value: 'production' }
+  { name: 'AZURE_CLIENT_ID', value: backendIdentity.properties.clientId }
   { name: 'DATABASE_URL', secretRef: 'database-url' }
   { name: 'REDIS_URL', secretRef: 'redis-url' }
   { name: 'S3_BUCKET', value: 'montenegrina' }
@@ -269,6 +270,7 @@ var commonBackendEnv = [
   { name: 'STORAGE_BACKEND', value: 'azure' }
   { name: 'AZURE_STORAGE_ACCOUNT_URL', value: 'https://${storage.name}.blob.${environment().suffixes.storage}' }
   { name: 'AZURE_STORAGE_CONTAINER', value: blobContainer.name }
+  { name: 'AZURE_CLIENT_ID', value: backendIdentity.properties.clientId }
   { name: 'SESSION_SECRET', secretRef: 'session-secret' }
   { name: 'INTERNAL_TOKEN_SECRET', secretRef: 'internal-token-secret' }
   { name: 'LIVEKIT_URL', secretRef: 'livekit-url' }
