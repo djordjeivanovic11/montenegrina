@@ -118,11 +118,16 @@ export class WorkspaceBootstrapService {
         environment: runtimeEnvironment,
         domain: 'BROWSER',
         candidateConfigurationIds: [],
-        allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
+        allowedProviders: ['openai', 'elevenlabs'],
         allowedRegions: ['global'],
         allowFallback: true,
         sttLanguage: 'sr',
-        settings: { pipelineMode: 'controlled' },
+        settings: {
+          pipelineMode: 'controlled',
+          sttProvider: 'openai',
+          sttModel: 'gpt-4o-transcribe',
+          ttsProvider: 'elevenlabs',
+        },
       });
       await transaction.insert(schema.deploymentEnvironments).values({
         id: uuidv7(),
@@ -161,9 +166,12 @@ export class WorkspaceBootstrapService {
           routingPolicy: {
             mode: 'real',
             pipelineMode: 'controlled',
+            sttProvider: 'openai',
             sttLanguage: 'sr',
+            sttModel: 'gpt-4o-transcribe',
+            ttsProvider: 'elevenlabs',
             fallbackAllowed: true,
-            allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
+            allowedProviders: ['openai', 'elevenlabs'],
             allowedRegions: ['global'],
           },
           retention: {

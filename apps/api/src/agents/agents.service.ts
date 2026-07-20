@@ -115,6 +115,9 @@ export class AgentsService {
         sttLanguage: config.routingPolicy.sttLanguage,
         settings: {
           pipelineMode: config.routingPolicy.pipelineMode,
+          sttProvider: config.routingPolicy.sttProvider,
+          sttModel: config.routingPolicy.sttModel,
+          ttsProvider: config.routingPolicy.ttsProvider,
           llmModel: config.routingPolicy.llmModel,
           ttsModel: config.routingPolicy.ttsModel,
           realtimeModel: config.routingPolicy.realtimeModel,
@@ -299,6 +302,8 @@ export class AgentsService {
   private validateConfig(config: AgentConfig, publishing: boolean): void {
     const route = config.routingPolicy;
     if (route.pipelineMode === 'controlled') {
+      const sttProvider = route.sttProvider ?? 'openai';
+      const ttsProvider = route.ttsProvider ?? 'elevenlabs';
       if (route.mode === 'real' && !route.sttLanguage) {
         throw new ApiException({
           code: 'STT_CONFIGURATION_REQUIRED',
@@ -307,12 +312,16 @@ export class AgentsService {
         });
       }
       if (publishing && route.mode === 'real') {
-        const required = ['deepgram', 'openai', 'elevenlabs'];
+        const required = [
+          'openai',
+          ...(sttProvider === 'deepgram' ? ['deepgram'] : []),
+          ...(ttsProvider === 'elevenlabs' ? ['elevenlabs'] : []),
+        ];
         const missing = required.filter((provider) => !route.allowedProviders.includes(provider));
         if (missing.length) {
           throw new ApiException({
             code: 'CONTROLLED_PIPELINE_INCOMPLETE',
-            message: 'The controlled pipeline requires Deepgram, OpenAI, and ElevenLabs.',
+            message: 'The controlled pipeline is missing one or more selected providers.',
             status: 422,
             details: { missing },
           });
@@ -351,4 +360,3 @@ export class AgentsService {
     };
   }
 }
-

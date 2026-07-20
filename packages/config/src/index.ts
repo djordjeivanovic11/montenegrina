@@ -10,6 +10,24 @@ const optionalSecret = z
   .optional()
   .transform((value) => value || undefined);
 
+function isLocalUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return ['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isProductionLikeUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return !isLocalUrl(value) && ['https:', 'wss:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
 export const environmentSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -33,7 +51,7 @@ export const environmentSchema = z
     REDIS_URL: z.url(),
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().min(1).default('us-east-1'),
-    S3_BUCKET: z.string().min(3),
+    S3_BUCKET: z.string().min(3).optional(),
     S3_ACCESS_KEY_ID: optionalSecret,
     S3_SECRET_ACCESS_KEY: optionalSecret,
     STORAGE_BACKEND: z.enum(['s3', 'azure']).default('s3'),
@@ -60,6 +78,9 @@ export const environmentSchema = z
     OPENAI_API_KEY: optionalSecret,
     OPENAI_MODEL: z.string().default('gpt-5.4-mini'),
     OPENAI_REALTIME_MODEL: z.string().default('gpt-realtime-2'),
+    OPENAI_STT_MODEL: z.string().default('gpt-4o-transcribe'),
+    OPENAI_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
+    OPENAI_TTS_VOICE: z.string().default('ash'),
     OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-large'),
     OPENAI_EMBEDDING_DIMENSIONS: z.coerce.number().int().min(256).max(3072).default(1536),
     DEEPGRAM_API_KEY: optionalSecret,
@@ -67,6 +88,8 @@ export const environmentSchema = z
     ELEVENLABS_API_KEY: optionalSecret,
     ELEVENLABS_MODEL: z.string().default('eleven_flash_v2_5'),
     ELEVENLABS_MONTENEGRIN_VOICE_ID: optionalSecret,
+    VOICE_STT_PROVIDER: z.enum(['openai', 'deepgram']).default('openai'),
+    VOICE_TTS_PROVIDER: z.enum(['elevenlabs', 'openai']).default('elevenlabs'),
     OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
     TRANSCRIPT_RETENTION_DAYS: z.coerce.number().int().min(0).default(30),
@@ -94,6 +117,18 @@ export const environmentSchema = z
     RATE_LIMIT_VOICE_SESSIONS_PER_HOUR: z.coerce.number().int().min(1).max(10_000).default(60),
   })
   .superRefine((environment, context) => {
+    const productionLikePublicUrl =
+      isProductionLikeUrl(environment.PUBLIC_API_URL) ||
+      isProductionLikeUrl(environment.PUBLIC_WEB_URL) ||
+      isProductionLikeUrl(environment.PUBLIC_LIVEKIT_URL) ||
+      isProductionLikeUrl(environment.LIVEKIT_URL);
+    if (productionLikePublicUrl && environment.NODE_ENV !== 'production') {
+      context.addIssue({
+        code: 'custom',
+        path: ['NODE_ENV'],
+        message: 'Production-like public URLs require NODE_ENV=production',
+      });
+    }
     if (environment.NODE_ENV === 'production' && !environment.COOKIE_SECURE) {
       context.addIssue({
         code: 'custom',
@@ -103,12 +138,20 @@ export const environmentSchema = z
     }
     if (
       environment.S3_ENDPOINT &&
+      environment.STORAGE_BACKEND === 's3' &&
       (!environment.S3_ACCESS_KEY_ID || !environment.S3_SECRET_ACCESS_KEY)
     ) {
       context.addIssue({
         code: 'custom',
         path: ['S3_ACCESS_KEY_ID'],
         message: 'Explicit S3 credentials are required for S3-compatible local storage',
+      });
+    }
+    if (environment.STORAGE_BACKEND === 's3' && !environment.S3_BUCKET) {
+      context.addIssue({
+        code: 'custom',
+        path: ['S3_BUCKET'],
+        message: 'S3_BUCKET is required when STORAGE_BACKEND=s3',
       });
     }
     if (environment.STORAGE_BACKEND === 'azure' && !environment.AZURE_STORAGE_ACCOUNT_URL) {
@@ -155,6 +198,35 @@ export const environmentSchema = z
         });
       }
       if (
+        isLocalUrl(environment.PUBLIC_API_URL) ||
+        isLocalUrl(environment.PUBLIC_WEB_URL) ||
+        isLocalUrl(environment.PUBLIC_LIVEKIT_URL) ||
+        isLocalUrl(environment.LIVEKIT_URL)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_WEB_URL'],
+          message: 'Production public URLs cannot point at localhost',
+        });
+      }
+      if (
+        !environment.PUBLIC_LIVEKIT_URL.startsWith('wss://') ||
+        !environment.LIVEKIT_URL.startsWith('wss://')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_LIVEKIT_URL'],
+          message: 'Production LiveKit URLs must use secure WebSockets',
+        });
+      }
+      if (environment.PUBLIC_API_URL === environment.PUBLIC_WEB_URL) {
+        context.addIssue({
+          code: 'custom',
+          path: ['PUBLIC_API_URL'],
+          message: 'Production API and web public URLs must be distinct',
+        });
+      }
+      if (
         environment.CORS_ORIGINS.length !== 1 ||
         environment.CORS_ORIGINS[0] !== environment.PUBLIC_WEB_URL
       ) {
@@ -166,18 +238,29 @@ export const environmentSchema = z
       }
     }
 
-    for (const key of [
-      'OPENAI_API_KEY',
-      'DEEPGRAM_API_KEY',
-      'ELEVENLABS_API_KEY',
-      'ELEVENLABS_MONTENEGRIN_VOICE_ID',
-    ] as const) {
-      if (!environment[key]) {
-        context.addIssue({
-          code: 'custom',
-          path: [key],
-          message: `${key} is required; runtime provider doubles are not supported`,
-        });
+    if (!environment.OPENAI_API_KEY) {
+      context.addIssue({
+        code: 'custom',
+        path: ['OPENAI_API_KEY'],
+        message: 'OPENAI_API_KEY is required; runtime provider doubles are not supported',
+      });
+    }
+    if (environment.VOICE_STT_PROVIDER === 'deepgram' && !environment.DEEPGRAM_API_KEY) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DEEPGRAM_API_KEY'],
+        message: 'DEEPGRAM_API_KEY is required when VOICE_STT_PROVIDER=deepgram',
+      });
+    }
+    if (environment.VOICE_TTS_PROVIDER === 'elevenlabs') {
+      for (const key of ['ELEVENLABS_API_KEY', 'ELEVENLABS_MONTENEGRIN_VOICE_ID'] as const) {
+        if (!environment[key]) {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} is required when VOICE_TTS_PROVIDER=elevenlabs`,
+          });
+        }
       }
     }
   });

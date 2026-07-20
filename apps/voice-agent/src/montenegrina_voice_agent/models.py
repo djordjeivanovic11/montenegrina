@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ConversationState = Literal[
     "INITIALIZING", "LISTENING", "TRANSCRIBING", "THINKING", "TOOL_PENDING",
@@ -11,7 +11,10 @@ ConversationState = Literal[
 class RoutingPolicy(BaseModel):
     mode: Literal["real"]
     pipelineMode: Literal["controlled", "direct_realtime"]
+    sttProvider: Literal["openai", "deepgram"] | None = None
     sttLanguage: Literal["sr", "hr", "bs", "multi"] | None = None
+    sttModel: str | None = None
+    ttsProvider: Literal["elevenlabs", "openai"] | None = None
     llmModel: str | None = None
     ttsModel: str | None = None
     realtimeModel: str | None = None
@@ -22,6 +25,20 @@ class TelephonySettings(BaseModel):
     outboundCallerId: str | None = None
 
 
+class LanguageProfile(BaseModel):
+    script: Literal["LATIN", "CYRILLIC"] = "LATIN"
+    ijekavian: bool = True
+    glossaryIds: list[str] = Field(default_factory=list)
+    pronunciationIds: list[str] = Field(default_factory=list)
+
+    @field_validator("script", mode="before")
+    @classmethod
+    def normalize_script(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.upper()
+        return value
+
+
 class RetentionPolicy(BaseModel):
     transcriptDays: int
     recordAudio: bool
@@ -30,6 +47,7 @@ class RetentionPolicy(BaseModel):
 
 class RuntimeConfig(BaseModel):
     systemPrompt: str
+    languageProfile: LanguageProfile = Field(default_factory=LanguageProfile)
     routingPolicy: RoutingPolicy
     retention: RetentionPolicy = Field(
         default_factory=lambda: RetentionPolicy(transcriptDays=30, recordAudio=False, audioDays=7)

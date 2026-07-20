@@ -4,15 +4,29 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+LOCAL_ENV_FILE="${LOCAL_ENV_FILE:-.env.development}"
+LOCAL_ENV_EXAMPLE="${LOCAL_ENV_EXAMPLE:-.env.development.example}"
+
+compose() {
+  if [[ -f "$LOCAL_ENV_FILE" ]]; then
+    docker compose --env-file "$LOCAL_ENV_FILE" "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
 case "${1:-up}" in
   down)
-    exec docker compose down --remove-orphans
+    compose down --remove-orphans
+    exit $?
     ;;
   logs)
-    exec docker compose logs --follow --tail=200 "${@:2}"
+    compose logs --follow --tail=200 "${@:2}"
+    exit $?
     ;;
   status)
-    exec docker compose ps
+    compose ps
+    exit $?
     ;;
   up)
     ;;
@@ -25,22 +39,38 @@ esac
 command -v docker >/dev/null || { echo "Docker is required." >&2; exit 1; }
 docker compose version >/dev/null
 
-if [[ ! -f .env ]]; then
-  cp .env.example .env
-  echo "Created .env from .env.example." >&2
+if [[ ! -f "$LOCAL_ENV_FILE" ]]; then
+  cp "$LOCAL_ENV_EXAMPLE" "$LOCAL_ENV_FILE"
+  echo "Created $LOCAL_ENV_FILE from $LOCAL_ENV_EXAMPLE." >&2
+  if [[ -f .env ]]; then
+    echo "Local env created. Copy real provider keys from .env into $LOCAL_ENV_FILE if needed." >&2
+  fi
 fi
 
-required=(OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID)
+env_value() {
+  local key="$1"
+  sed -n "s/^${key}=//p" "$LOCAL_ENV_FILE" | tail -n 1
+}
+
+stt_provider="$(env_value VOICE_STT_PROVIDER)"
+tts_provider="$(env_value VOICE_TTS_PROVIDER)"
+required=(OPENAI_API_KEY)
+if [[ "${stt_provider:-openai}" == "deepgram" ]]; then
+  required+=(DEEPGRAM_API_KEY)
+fi
+if [[ "${tts_provider:-elevenlabs}" == "elevenlabs" ]]; then
+  required+=(ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID)
+fi
 missing=()
 for key in "${required[@]}"; do
-  if ! grep -Eq "^${key}=.+" .env; then missing+=("$key"); fi
+  if ! grep -Eq "^${key}=.+" "$LOCAL_ENV_FILE"; then missing+=("$key"); fi
 done
 if ((${#missing[@]})); then
-  echo "Set these real-provider values in .env before startup: ${missing[*]}" >&2
+  echo "Set these real-provider values in $LOCAL_ENV_FILE before startup: ${missing[*]}" >&2
   exit 1
 fi
 
-docker compose up --build --remove-orphans --wait
+compose up --build --remove-orphans --wait
 
 echo "Montenegrina is ready:"
 echo "  Web:       http://localhost:3000"

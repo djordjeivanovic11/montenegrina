@@ -69,3 +69,27 @@ describe('ConversationsService.recordingUrl', () => {
     await expect(service.recordingUrl(actor, 'conv-1')).rejects.toBeInstanceOf(ApiException);
   });
 });
+
+describe('ConversationsService runtime event normalization', () => {
+  it('normalizes voice transcript event text to Latin script before persistence', () => {
+    const service = Object.create(ConversationsService.prototype) as {
+      normalizeRuntimeEventText: (
+        event: {
+          type: string;
+          payload: Record<string, unknown>;
+        },
+        config: Record<string, unknown>,
+      ) => { payload: Record<string, unknown> };
+    };
+
+    const normalized = service.normalizeRuntimeEventText(
+      {
+        type: 'user.turn.completed',
+        payload: { text: 'Шта је ово, шта се дешава?' },
+      },
+      { languageProfile: { script: 'LATIN' } },
+    );
+
+    expect(normalized.payload.text).toBe('Šta je ovo, šta se dešava?');
+  });
+});

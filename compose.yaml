@@ -147,7 +147,7 @@ services:
       target: development
     command: ['pnpm', 'db:migrate']
     env_file:
-      - path: .env
+      - path: .env.development
         required: false
     environment:
       NODE_ENV: development
@@ -162,7 +162,7 @@ services:
       target: development
     command: ['pnpm', 'db:seed']
     env_file:
-      - path: .env
+      - path: .env.development
         required: false
     depends_on:
       migrate:
@@ -173,7 +173,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     env_file:
-      - path: .env
+      - path: .env.development
         required: false
     environment:
       NODE_ENV: development
@@ -209,7 +209,7 @@ services:
       context: .
       dockerfile: apps/worker/Dockerfile
     env_file:
-      - path: .env
+      - path: .env.development
         required: false
     environment:
       NODE_ENV: development
@@ -230,7 +230,7 @@ services:
       context: .
       dockerfile: apps/voice-agent/Dockerfile
     env_file:
-      - path: .env
+      - path: .env.development
         required: false
     environment:
       INTERNAL_API_URL: http://api:3001

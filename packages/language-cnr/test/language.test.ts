@@ -7,6 +7,7 @@ import {
   normalizeCriticalValues,
   processMontenegrin,
   protectedSpansPreserved,
+  toLatin,
 } from '../src/index.js';
 
 describe('Montenegrin language processing', () => {
@@ -52,8 +53,20 @@ describe('Montenegrin language processing', () => {
     expect(result.correctedText).toBe('Добар дан из ACME сервиса.');
   });
 
+  it('transliterates Cyrillic to Latin while preserving identifiers and URLs', () => {
+    const text = 'Шта је ово, шта се дешава? Otvorite ACME_ID i https://example.com/путања.';
+    const protectedSpans = identifyProtectedSpans(text);
+
+    expect(toLatin('Шта је ово, шта се дешава?')).toBe('Šta je ovo, šta se dešava?');
+    expect(toLatin(text, protectedSpans)).toBe(
+      'Šta je ovo, šta se dešava? Otvorite ACME_ID i https://example.com/путања.',
+    );
+    expect(processMontenegrin(text, { outputScript: 'LATIN' }).correctedText).toBe(
+      'Šta je ovo, šta se dešava? Otvorite ACME_ID i https://example.com/путања.',
+    );
+  });
+
   it('returns stable warning matches', () => {
     expect(detectLanguageWarnings('lepo vreme').at(0)?.matches).toEqual(['lepo', 'vreme']);
   });
 });
-

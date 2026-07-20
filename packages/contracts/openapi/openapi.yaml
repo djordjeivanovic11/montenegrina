@@ -948,7 +948,10 @@ components:
           properties:
             mode: { type: string, enum: [real] }
             pipelineMode: { type: string, enum: [controlled, direct_realtime] }
+            sttProvider: { type: string, enum: [openai, deepgram], default: openai }
             sttLanguage: { $ref: '#/components/schemas/SttLanguage' }
+            sttModel: { type: string }
+            ttsProvider: { type: string, enum: [elevenlabs, openai], default: elevenlabs }
             llmModel: { type: string }
             ttsModel: { type: string }
             realtimeModel: { type: string }

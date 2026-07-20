@@ -1,12 +1,20 @@
-import json
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
 from livekit import rtc
 
+from .language import normalize_voice_text
 from .models import ConversationState, RealtimeEvent, RuntimeBootstrap
 from .runtime_api import EventBatcher
+
+NORMALIZED_TEXT_EVENTS = {
+    "transcription.partial",
+    "transcription.final",
+    "user.turn.completed",
+    "assistant.text.delta",
+    "assistant.text.completed",
+}
 
 
 class RuntimeEvents:
@@ -29,6 +37,12 @@ class RuntimeEvents:
         turn_id: str | None = None,
     ) -> RealtimeEvent:
         self.sequence += 1
+        text = payload.get("text")
+        if event_type in NORMALIZED_TEXT_EVENTS and isinstance(text, str) and text.strip():
+            payload = {
+                **payload,
+                "text": normalize_voice_text(text, self._bootstrap.config.languageProfile.script),
+            }
         if state is not None:
             payload = {**payload, "state": state}
             self.state = state

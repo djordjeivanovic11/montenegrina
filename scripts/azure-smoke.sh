@@ -12,3 +12,9 @@ curl -fsS "https://$API_FQDN/health/live" >/dev/null
 curl -fsS "https://$API_FQDN/health/ready" >/dev/null
 curl -fsS "https://$WEB_FQDN/" >/dev/null
 echo "Azure default endpoints are live and ready."
+
+if [[ "${VOICE_SMOKE:-0}" == "1" ]]; then
+  command -v pnpm >/dev/null || { echo "pnpm is required for VOICE_SMOKE=1." >&2; exit 1; }
+  E2E_BASE_URL="https://$WEB_FQDN" E2E_API_URL="https://$API_FQDN" \
+    pnpm --filter @montenegrina/web e2e -- --grep "production voice MVP"
+fi

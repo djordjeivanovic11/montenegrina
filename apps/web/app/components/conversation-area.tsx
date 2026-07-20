@@ -19,6 +19,8 @@ interface ConversationAreaProps {
   voiceState: VoiceState;
   agentId: string;
   onStartVoice: () => void;
+  audioBlocked?: boolean;
+  onEnableAudio?: () => void;
   voiceMode?: boolean;
 }
 
@@ -34,6 +36,8 @@ export function ConversationArea({
   voiceState,
   agentId,
   onStartVoice,
+  audioBlocked = false,
+  onEnableAudio,
   voiceMode = false,
 }: ConversationAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -67,6 +71,19 @@ export function ConversationArea({
             : voiceState === 'speaking'
               ? 'Agent govori'
               : 'Glasovna sesija aktivna — slušam'}
+          {audioBlocked && onEnableAudio && (
+            <button
+              type="button"
+              onClick={onEnableAudio}
+              className="ml-2 px-2 py-1 rounded-md text-xs font-medium cursor-pointer"
+              style={{
+                backgroundColor: 'var(--color-accent)',
+                color: 'var(--color-accent-fg)',
+              }}
+            >
+              Omogući zvuk
+            </button>
+          )}
         </div>
       )}
 
@@ -129,6 +146,7 @@ export function ConversationArea({
           {messages.filter((msg) => msg.content.trim() || msg.streaming).map((msg) => (
             <div
               key={msg.id}
+              data-testid={`message-${msg.role}`}
               className={`flex flex-col gap-1 animate-fade-in max-w-[72%] ${
                 msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'
               }`}
@@ -151,6 +169,7 @@ export function ConversationArea({
                 )}
               </div>
               <div
+                data-testid={`message-${msg.role}-content`}
                 className="px-4 py-3 rounded-2xl text-sm leading-relaxed"
                 style={{
                   backgroundColor:

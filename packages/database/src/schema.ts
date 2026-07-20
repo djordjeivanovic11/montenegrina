@@ -568,7 +568,10 @@ export interface AgentConfigurationSnapshot {
   routingPolicy: {
     mode: 'real';
     pipelineMode: 'controlled' | 'direct_realtime';
+    sttProvider?: 'openai' | 'deepgram';
     sttLanguage?: 'sr' | 'hr' | 'bs' | 'multi';
+    sttModel?: string;
+    ttsProvider?: 'elevenlabs' | 'openai';
     llmModel?: string;
     ttsModel?: string;
     realtimeModel?: string;

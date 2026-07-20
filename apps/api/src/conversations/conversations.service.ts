@@ -2,6 +2,7 @@ import { Inject, Injectable, type MessageEvent as NestMessageEvent } from '@nest
 import { canTransition, type RealtimeEvent } from '@montenegrina/contracts';
 import type { Environment } from '@montenegrina/config';
 import { schema } from '@montenegrina/database';
+import { processMontenegrin } from '@montenegrina/language-cnr';
 import { and, asc, eq, gt, isNull } from 'drizzle-orm';
 import type { Redis } from 'ioredis';
 import { Observable, type Subscriber } from 'rxjs';
@@ -33,6 +34,14 @@ const durableEvents = new Set([
   'handoff.completed',
   'session.completed',
   'error',
+]);
+
+const normalizedTextEvents = new Set([
+  'transcription.partial',
+  'transcription.final',
+  'user.turn.completed',
+  'assistant.text.delta',
+  'assistant.text.completed',
 ]);
 
 @Injectable()
@@ -209,7 +218,15 @@ export class ConversationsService {
       ),
     });
     if (!conversation) throw new ApiException({ code: 'RUNTIME_SCOPE_MISMATCH', message: 'Runtime event scope is invalid.', status: 403 });
-    const ordered = [...events].sort((left, right) => left.sequence - right.sequence);
+    const version = await this.database.db.query.agentVersions.findFirst({
+      where: and(
+        eq(schema.agentVersions.organizationId, conversation.organizationId),
+        eq(schema.agentVersions.id, conversation.agentVersionId),
+      ),
+    });
+    const ordered = events
+      .map((event) => this.normalizeRuntimeEventText(event, version?.config))
+      .sort((left, right) => left.sequence - right.sequence);
     if (
       ordered.some(
         (event) =>
@@ -386,6 +403,28 @@ export class ConversationsService {
 
   private emitEvent(subscriber: Subscriber<NestMessageEvent>, event: RealtimeEvent): void {
     subscriber.next({ data: event, id: String(event.sequence), type: event.type });
+  }
+
+  private normalizeRuntimeEventText(
+    event: RealtimeEvent,
+    config?: schema.AgentConfigurationSnapshot,
+  ): RealtimeEvent {
+    const text = typeof event.payload.text === 'string' ? event.payload.text : '';
+    if (!text || !normalizedTextEvents.has(event.type)) return event;
+    const language = processMontenegrin(text, {
+      outputScript: config?.languageProfile.script ?? 'LATIN',
+      preferIjekavian: config?.languageProfile.ijekavian ?? true,
+    });
+    return {
+      ...event,
+      payload: {
+        ...event.payload,
+        text: language.correctedText,
+        ...(language.warnings.length
+          ? { languageWarnings: language.warnings.map((warning) => warning.code) }
+          : {}),
+      },
+    };
   }
 
   private databaseEvent(event: typeof schema.conversationEvents.$inferSelect): RealtimeEvent {

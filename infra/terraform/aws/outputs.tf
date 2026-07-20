@@ -1,6 +1,11 @@
 output "application_url" {
+  value       = var.public_web_url
+  description = "Configured public HTTPS URL for the web app."
+}
+
+output "cloudfront_url" {
   value       = "https://${aws_cloudfront_distribution.app.domain_name}"
-  description = "Public HTTPS URL for web and API."
+  description = "Default CloudFront URL created by this stack."
 }
 
 output "ecr_repositories" {

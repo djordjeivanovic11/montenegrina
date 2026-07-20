@@ -836,7 +836,18 @@ export interface components {
         mode: 'real';
         /** @enum {string} */
         pipelineMode: 'controlled' | 'direct_realtime';
+        /**
+         * @default openai
+         * @enum {string}
+         */
+        sttProvider: 'openai' | 'deepgram';
         sttLanguage?: components['schemas']['SttLanguage'];
+        sttModel?: string;
+        /**
+         * @default elevenlabs
+         * @enum {string}
+         */
+        ttsProvider: 'elevenlabs' | 'openai';
         llmModel?: string;
         ttsModel?: string;
         realtimeModel?: string;

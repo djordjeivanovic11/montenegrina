@@ -18,6 +18,21 @@ param livekitApiKey string
 param livekitApiSecret string
 @secure()
 param openaiApiKey string
+param openaiModel string = 'gpt-5.4-mini'
+param openaiRealtimeModel string = 'gpt-realtime-2'
+param openaiSttModel string = 'gpt-4o-transcribe'
+param openaiTtsModel string = 'gpt-4o-mini-tts'
+param openaiTtsVoice string = 'ash'
+@allowed([
+  'openai'
+  'deepgram'
+])
+param voiceSttProvider string = 'openai'
+@allowed([
+  'elevenlabs'
+  'openai'
+])
+param voiceTtsProvider string = 'elevenlabs'
 @secure()
 param deepgramApiKey string
 @secure()
@@ -265,8 +280,6 @@ var commonBackendEnv = [
   { name: 'AZURE_CLIENT_ID', value: backendIdentity.properties.clientId }
   { name: 'DATABASE_URL', secretRef: 'database-url' }
   { name: 'REDIS_URL', secretRef: 'redis-url' }
-  { name: 'S3_BUCKET', value: 'montenegrina' }
-  { name: 'S3_REGION', value: location }
   { name: 'STORAGE_BACKEND', value: 'azure' }
   { name: 'AZURE_STORAGE_ACCOUNT_URL', value: 'https://${storage.name}.blob.${environment().suffixes.storage}' }
   { name: 'AZURE_STORAGE_CONTAINER', value: blobContainer.name }
@@ -279,6 +292,13 @@ var commonBackendEnv = [
   { name: 'LIVEKIT_API_SECRET', secretRef: 'livekit-api-secret' }
   { name: 'VOICE_AGENT_SERVICE_SECRET', secretRef: 'voice-agent-service-secret' }
   { name: 'OPENAI_API_KEY', secretRef: 'openai-api-key' }
+  { name: 'OPENAI_MODEL', value: openaiModel }
+  { name: 'OPENAI_REALTIME_MODEL', value: openaiRealtimeModel }
+  { name: 'OPENAI_STT_MODEL', value: openaiSttModel }
+  { name: 'OPENAI_TTS_MODEL', value: openaiTtsModel }
+  { name: 'OPENAI_TTS_VOICE', value: openaiTtsVoice }
+  { name: 'VOICE_STT_PROVIDER', value: voiceSttProvider }
+  { name: 'VOICE_TTS_PROVIDER', value: voiceTtsProvider }
   { name: 'DEEPGRAM_API_KEY', secretRef: 'deepgram-api-key' }
   { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }
   { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }
@@ -370,7 +390,7 @@ resource voice 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'voice-agent', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'LIVEKIT_URL', secretRef: 'livekit-url' }, { name: 'LIVEKIT_API_KEY', secretRef: 'livekit-api-key' }, { name: 'LIVEKIT_API_SECRET', secretRef: 'livekit-api-secret' }, { name: 'VOICE_AGENT_SERVICE_SECRET', secretRef: 'voice-agent-service-secret' }, { name: 'OPENAI_API_KEY', secretRef: 'openai-api-key' }, { name: 'DEEPGRAM_API_KEY', secretRef: 'deepgram-api-key' }, { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }, { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
+    template: { containers: [{ name: 'voice-agent', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'LIVEKIT_URL', secretRef: 'livekit-url' }, { name: 'LIVEKIT_API_KEY', secretRef: 'livekit-api-key' }, { name: 'LIVEKIT_API_SECRET', secretRef: 'livekit-api-secret' }, { name: 'VOICE_AGENT_SERVICE_SECRET', secretRef: 'voice-agent-service-secret' }, { name: 'OPENAI_API_KEY', secretRef: 'openai-api-key' }, { name: 'OPENAI_MODEL', value: openaiModel }, { name: 'OPENAI_REALTIME_MODEL', value: openaiRealtimeModel }, { name: 'OPENAI_STT_MODEL', value: openaiSttModel }, { name: 'OPENAI_TTS_MODEL', value: openaiTtsModel }, { name: 'OPENAI_TTS_VOICE', value: openaiTtsVoice }, { name: 'VOICE_STT_PROVIDER', value: voiceSttProvider }, { name: 'VOICE_TTS_PROVIDER', value: voiceTtsProvider }, { name: 'DEEPGRAM_API_KEY', secretRef: 'deepgram-api-key' }, { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }, { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
   }
   dependsOn: [api]
 }

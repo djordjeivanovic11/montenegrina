@@ -329,7 +329,8 @@ export class LiveKitVoiceService {
       this.environment.LIVEKIT_EGRESS_S3_ACCESS_KEY_ID ?? this.environment.S3_ACCESS_KEY_ID;
     const secretKey =
       this.environment.LIVEKIT_EGRESS_S3_SECRET_ACCESS_KEY ?? this.environment.S3_SECRET_ACCESS_KEY;
-    if (!accessKey || !secretKey) return;
+    const bucket = this.environment.S3_BUCKET;
+    if (!accessKey || !secretKey || !bucket) return;
     const recordingKey = `recordings/${organizationId}/${conversationId}.ogg`;
     try {
       const output = new EncodedFileOutput({
@@ -340,7 +341,7 @@ export class LiveKitVoiceService {
           value: new S3Upload({
             accessKey,
             secret: secretKey,
-            bucket: this.environment.S3_BUCKET,
+            bucket,
             region: this.environment.S3_REGION,
             ...(this.environment.S3_ENDPOINT
               ? { endpoint: this.environment.S3_ENDPOINT.replace(/^http:\/\//u, 'https://') }

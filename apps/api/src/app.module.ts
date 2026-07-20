@@ -98,7 +98,7 @@ const environment = loadEnvironment();
       useFactory: (config: Environment) =>
         createProviderRegistry({
           deepgram: {
-            apiKey: config.DEEPGRAM_API_KEY as string,
+            apiKey: config.DEEPGRAM_API_KEY ?? '',
             model: config.DEEPGRAM_MODEL,
             providerLanguage: 'sr',
           },
@@ -110,9 +110,9 @@ const environment = loadEnvironment();
             embeddingDimensions: config.OPENAI_EMBEDDING_DIMENSIONS,
           },
           elevenLabs: {
-            apiKey: config.ELEVENLABS_API_KEY as string,
+            apiKey: config.ELEVENLABS_API_KEY ?? '',
             model: config.ELEVENLABS_MODEL,
-            voiceId: config.ELEVENLABS_MONTENEGRIN_VOICE_ID as string,
+            voiceId: config.ELEVENLABS_MONTENEGRIN_VOICE_ID ?? '',
             outputFormat: { encoding: 'pcm_s16le', sampleRate: 24_000, channels: 1 },
           },
           openaiRealtime: {

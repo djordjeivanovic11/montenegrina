@@ -51,8 +51,13 @@ export class ObjectStorageClient {
               secretAccessKey: environment.S3_SECRET_ACCESS_KEY,
             },
           }
-        : {}),
+          : {}),
     });
+  }
+
+  private s3Bucket(): string {
+    if (!this.environment.S3_BUCKET) throw new Error('S3_BUCKET is required for S3 storage');
+    return this.environment.S3_BUCKET;
   }
 
   async put(key: string, body: Uint8Array | string, contentType: string): Promise<void> {
@@ -65,7 +70,7 @@ export class ObjectStorageClient {
     }
     await this.#s3?.send(
       new PutObjectCommand({
-        Bucket: this.environment.S3_BUCKET,
+        Bucket: this.s3Bucket(),
         Key: key,
         Body: body,
         ContentType: contentType,
@@ -81,7 +86,7 @@ export class ObjectStorageClient {
       return { body, contentType: response.contentType ?? 'application/octet-stream' };
     }
     const response = await this.#s3?.send(
-      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
+      new GetObjectCommand({ Bucket: this.s3Bucket(), Key: key }),
     );
     if (!response?.Body) throw new Error(`Object is empty: ${key}`);
     return {
@@ -95,7 +100,7 @@ export class ObjectStorageClient {
       await this.#container.deleteBlob(key, { deleteSnapshots: 'include' });
       return;
     }
-    await this.#s3?.send(new DeleteObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }));
+    await this.#s3?.send(new DeleteObjectCommand({ Bucket: this.s3Bucket(), Key: key }));
   }
 
   async signedGetUrl(key: string, expiresInSeconds = 900): Promise<string> {
@@ -122,7 +127,7 @@ export class ObjectStorageClient {
     }
     return getSignedUrl(
       this.#s3 as S3Client,
-      new GetObjectCommand({ Bucket: this.environment.S3_BUCKET, Key: key }),
+      new GetObjectCommand({ Bucket: this.s3Bucket(), Key: key }),
       { expiresIn: expiresInSeconds },
     );
   }
@@ -130,7 +135,7 @@ export class ObjectStorageClient {
   async ping(): Promise<'ok' | 'failed'> {
     try {
       if (this.#container) await this.#container.getProperties();
-      else await this.#s3?.send(new HeadBucketCommand({ Bucket: this.environment.S3_BUCKET }));
+      else await this.#s3?.send(new HeadBucketCommand({ Bucket: this.s3Bucket() }));
       return 'ok';
     } catch {
       return 'failed';

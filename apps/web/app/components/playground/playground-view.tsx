@@ -50,12 +50,22 @@ export function PlaygroundView() {
   >([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   const [voiceUiActive, setVoiceUiActive] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
+  const voiceTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const sessionStartedRef = useRef(false);
+  const assistantAudioStartedRef = useRef(false);
   const api = useMemo(() => createApiClient(API_URL), []);
+
+  function clearVoiceTimers(): void {
+    for (const timer of voiceTimersRef.current) clearTimeout(timer);
+    voiceTimersRef.current = [];
+  }
 
   useEffect(
     () => () => {
+      clearVoiceTimers();
       void roomRef.current?.disconnect();
     },
     [],
@@ -148,6 +158,10 @@ export function PlaygroundView() {
     dispatchTranscript({ type: 'session.reset' });
     setVoiceState('connecting');
     setError('');
+    setAudioBlocked(false);
+    sessionStartedRef.current = false;
+    assistantAudioStartedRef.current = false;
+    clearVoiceTimers();
     const response = await api.POST('/v1/agents/{agentId}/realtime-sessions', {
       params: { path: { agentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
       headers: { ...headers(), 'Idempotency-Key': crypto.randomUUID() },
@@ -175,9 +189,13 @@ export function PlaygroundView() {
       if (track.kind === Track.Kind.Audio) {
         const el = track.attach();
         el.setAttribute('autoplay', 'true');
+        el.setAttribute('data-testid', 'remote-audio-track');
         el.style.display = 'none';
         document.body.append(el);
-        void el.play().catch(() => undefined);
+        void el.play().catch(() => {
+          setAudioBlocked(true);
+          setError('Chrome je blokirao reprodukciju zvuka. Kliknite Omogući zvuk.');
+        });
         setVoiceState('speaking');
         track.mediaStreamTrack.addEventListener('ended', () => {
           el.remove();
@@ -194,14 +212,34 @@ export function PlaygroundView() {
         topic: string | undefined,
       ) => {
         if (topic !== 'montenegrina.events') return;
-        const evt = JSON.parse(new TextDecoder().decode(bytes)) as {
-          type: string;
-          payload: Record<string, unknown>;
-        };
+        let evt: { type: string; payload: Record<string, unknown> };
+        try {
+          evt = JSON.parse(new TextDecoder().decode(bytes)) as {
+            type: string;
+            payload: Record<string, unknown>;
+          };
+        } catch {
+          setError('Received an invalid voice event from the agent.');
+          return;
+        }
         setEvents((current) =>
           [`${evt.type}: ${JSON.stringify(evt.payload)}`, ...current].slice(0, 40),
         );
+        if (evt.type === 'session.started') {
+          sessionStartedRef.current = true;
+          if (voiceState !== 'speaking') setVoiceState('listening');
+        } else if (evt.type === 'assistant.audio.started') {
+          assistantAudioStartedRef.current = true;
+          setVoiceState('speaking');
+        } else if (evt.type === 'assistant.audio.completed') {
+          setVoiceState('listening');
+        } else if (evt.type === 'error') {
+          const message = typeof evt.payload.message === 'string' ? evt.payload.message : 'Voice runtime failed.';
+          setError(message);
+          setVoiceState('error');
+        }
         const handled = new Set([
+          'session.started',
           'transcription.partial',
           'transcription.final',
           'user.turn.completed',
@@ -211,17 +249,67 @@ export function PlaygroundView() {
           'assistant.text.completed',
           'assistant.interrupted',
           'assistant.audio.completed',
+          'error',
         ]);
         if (!handled.has(evt.type)) return;
         dispatchTranscript({ type: 'voice.event', event: evt });
       },
     );
-    room.on(RoomEvent.Disconnected, () => setVoiceState('idle'));
-    await room.connect(session.livekitUrl, session.participantToken, { autoSubscribe: true });
-    await room.localParticipant.setMicrophoneEnabled(true);
+    room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+      setAudioBlocked(!room.canPlaybackAudio);
+    });
+    room.on(RoomEvent.TrackSubscriptionFailed, () => {
+      setError('Agent audio track could not be subscribed. Check LiveKit token and room permissions.');
+      setVoiceState('error');
+    });
+    room.on(RoomEvent.MediaDevicesError, () => {
+      setError('Microphone access failed. Check browser microphone permissions.');
+      setVoiceState('error');
+    });
+    room.on(RoomEvent.Disconnected, () => {
+      clearVoiceTimers();
+      setAudioBlocked(false);
+      setVoiceState('idle');
+    });
+    try {
+      await room.connect(session.livekitUrl, session.participantToken, { autoSubscribe: true });
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : 'Voice connection failed.');
+      setVoiceState('error');
+      await room.disconnect();
+      return;
+    }
+    await room.startAudio().then(
+      () => setAudioBlocked(!room.canPlaybackAudio),
+      () => {
+        setAudioBlocked(true);
+        setError('Chrome je blokirao reprodukciju zvuka. Kliknite Omogući zvuk.');
+      },
+    );
+    try {
+      await room.localParticipant.setMicrophoneEnabled(true);
+    } catch (microphoneError) {
+      setError(microphoneError instanceof Error ? microphoneError.message : 'Microphone access failed.');
+      setVoiceState('error');
+      await room.disconnect();
+      return;
+    }
     roomRef.current = room;
     setVoiceUiActive(true);
     setVoiceState('listening');
+    voiceTimersRef.current = [
+      setTimeout(() => {
+        if (!sessionStartedRef.current) {
+          setError('Voice agent did not join the LiveKit room. Check LiveKit URL, API credentials, and agent deployment.');
+          setVoiceState('error');
+        }
+      }, 15_000),
+      setTimeout(() => {
+        if (sessionStartedRef.current && !assistantAudioStartedRef.current) {
+          setError('Voice agent joined but did not start audio. Check OpenAI and TTS provider configuration.');
+        }
+      }, 30_000),
+    ];
   }
 
   async function startPhoneCall(): Promise<void> {
@@ -261,9 +349,24 @@ export function PlaygroundView() {
   }
 
   async function stopVoice(): Promise<void> {
+    clearVoiceTimers();
     await roomRef.current?.disconnect();
     roomRef.current = null;
+    setAudioBlocked(false);
     setVoiceState('idle');
+  }
+
+  async function enableAudio(): Promise<void> {
+    const room = roomRef.current;
+    if (!room) return;
+    try {
+      await room.startAudio();
+      setAudioBlocked(!room.canPlaybackAudio);
+      if (room.canPlaybackAudio) setError('');
+    } catch {
+      setAudioBlocked(true);
+      setError('Browser still blocks audio playback. Click the button again after interacting with the page.');
+    }
   }
 
   return (
@@ -288,7 +391,9 @@ export function PlaygroundView() {
             voiceState={voiceState}
             agentId={agentId}
             voiceMode={voiceUiActive}
+            audioBlocked={audioBlocked}
             onStartVoice={() => void startVoice()}
+            onEnableAudio={() => void enableAudio()}
           />
           <Composer
             input={input}

@@ -17,9 +17,12 @@ export function buildOnboardingAgentConfig(
     routingPolicy: {
       mode: 'real',
       pipelineMode: 'controlled',
+      sttProvider: 'openai',
       sttLanguage: 'sr',
+      sttModel: 'gpt-4o-transcribe',
+      ttsProvider: 'elevenlabs',
       fallbackAllowed: true,
-      allowedProviders: ['deepgram', 'openai', 'elevenlabs'],
+      allowedProviders: ['openai', 'elevenlabs'],
       allowedRegions: ['global'],
     },
     retention: {

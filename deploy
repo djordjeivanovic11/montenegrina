@@ -15,13 +15,50 @@ set -a
 source "$DEPLOY_ENV_FILE"
 set +a
 
-required=(AWS_REGION PROJECT_NAME ENVIRONMENT LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET OPENAI_API_KEY DEEPGRAM_API_KEY ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD)
+: "${OPENAI_STT_MODEL:=gpt-4o-transcribe}"
+: "${OPENAI_TTS_MODEL:=gpt-4o-mini-tts}"
+: "${OPENAI_TTS_VOICE:=ash}"
+: "${VOICE_STT_PROVIDER:=openai}"
+: "${VOICE_TTS_PROVIDER:=elevenlabs}"
+: "${DEEPGRAM_API_KEY:=}"
+: "${ELEVENLABS_API_KEY:=}"
+: "${ELEVENLABS_MONTENEGRIN_VOICE_ID:=}"
+
+required=(
+  AWS_REGION
+  PROJECT_NAME
+  ENVIRONMENT
+  PUBLIC_WEB_URL
+  PUBLIC_API_URL
+  LIVEKIT_URL
+  LIVEKIT_API_KEY
+  LIVEKIT_API_SECRET
+  OPENAI_API_KEY
+  INITIAL_ADMIN_EMAIL
+  INITIAL_ADMIN_PASSWORD
+)
+if [[ "$VOICE_STT_PROVIDER" == "deepgram" ]]; then
+  required+=(DEEPGRAM_API_KEY)
+elif [[ "$VOICE_STT_PROVIDER" != "openai" ]]; then
+  echo "VOICE_STT_PROVIDER must be openai or deepgram." >&2
+  exit 1
+fi
+if [[ "$VOICE_TTS_PROVIDER" == "elevenlabs" ]]; then
+  required+=(ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID)
+elif [[ "$VOICE_TTS_PROVIDER" != "openai" ]]; then
+  echo "VOICE_TTS_PROVIDER must be elevenlabs or openai." >&2
+  exit 1
+fi
 missing=()
 for key in "${required[@]}"; do
   [[ -n "${!key:-}" ]] || missing+=("$key")
 done
 if ((${#missing[@]})); then
   echo "Missing deployment settings: ${missing[*]}" >&2
+  exit 1
+fi
+if [[ "$PUBLIC_WEB_URL" == "$PUBLIC_API_URL" ]]; then
+  echo "PUBLIC_WEB_URL and PUBLIC_API_URL must be distinct production URLs." >&2
   exit 1
 fi
 
@@ -97,7 +134,14 @@ tf apply -auto-approve \
   -var="environment=$ENVIRONMENT" \
   -var="image_tag=$IMAGE_TAG" \
   -var="provider_secret_name=$PROVIDER_SECRET_NAME" \
+  -var="public_web_url=$PUBLIC_WEB_URL" \
+  -var="public_api_url=$PUBLIC_API_URL" \
   -var="livekit_url=$LIVEKIT_URL" \
+  -var="openai_stt_model=$OPENAI_STT_MODEL" \
+  -var="openai_tts_model=$OPENAI_TTS_MODEL" \
+  -var="openai_tts_voice=$OPENAI_TTS_VOICE" \
+  -var="voice_stt_provider=$VOICE_STT_PROVIDER" \
+  -var="voice_tts_provider=$VOICE_TTS_PROVIDER" \
   -var="livekit_sip_outbound_trunk_id=${LIVEKIT_SIP_OUTBOUND_TRUNK_ID:-}" \
   -var="deletion_protection=${TF_VAR_deletion_protection:-true}" \
   -var="single_nat_gateway=${TF_VAR_single_nat_gateway:-true}"
@@ -125,7 +169,7 @@ build_and_push worker apps/worker/Dockerfile
 build_and_push voice-agent apps/voice-agent/Dockerfile
 build_and_push knowledge-parser apps/knowledge-parser/Dockerfile
 build_and_push web apps/web/Dockerfile \
-  "NEXT_PUBLIC_API_URL=${APPLICATION_URL}" \
+  "NEXT_PUBLIC_API_URL=${PUBLIC_API_URL}" \
   "NEXT_PUBLIC_LIVEKIT_URL=${LIVEKIT_URL}" \
   "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${PUBLIC_GOOGLE_CLIENT_ID:-}"
 

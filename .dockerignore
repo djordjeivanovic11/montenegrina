@@ -5,6 +5,9 @@ run_local
 .env
 .env.*
 !.env.example
+!.env.development.example
+!.env.deploy.example
+!.env.azure.example
 **/node_modules
 **/dist
 **/.next

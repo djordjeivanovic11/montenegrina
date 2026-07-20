@@ -7,13 +7,18 @@ class Settings(BaseSettings):
 
     internal_api_url: str = "http://api:3001"
     openai_api_key: str = Field(min_length=1)
-    deepgram_api_key: str = Field(min_length=1)
-    elevenlabs_api_key: str = Field(min_length=1)
-    elevenlabs_montenegrin_voice_id: str = Field(min_length=1)
+    deepgram_api_key: str = ""
+    elevenlabs_api_key: str = ""
+    elevenlabs_montenegrin_voice_id: str = ""
     openai_model: str = "gpt-5.4-mini"
     openai_realtime_model: str = "gpt-realtime-2"
+    openai_stt_model: str = "gpt-4o-transcribe"
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    openai_tts_voice: str = "ash"
     deepgram_model: str = "nova-3"
     elevenlabs_model: str = "eleven_flash_v2_5"
+    voice_stt_provider: str = "openai"
+    voice_tts_provider: str = "elevenlabs"
     provider_operation_timeout_seconds: float = 30.0
     event_batch_size: int = 25
     event_flush_seconds: float = 0.25

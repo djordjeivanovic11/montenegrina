@@ -15,6 +15,19 @@ North Europe virtual network, and public network access is disabled after provis
 
 Before provisioning, configure the existing Google OAuth client for `https://voice.mne-mcp.com` and put its client ID in the ignored `.env.azure` file. Azure production requires the existing LiveKit Cloud `wss://...livekit.cloud` endpoint and matching API credentials; local Docker LiveKit values are rejected. Never commit or paste secret values into command output.
 
+Environment file roles:
+
+- `.env.development`: ignored local Docker env used only by `./run_local`.
+- `.env.azure`: ignored Azure deployment input used by `scripts/azure-*.sh`.
+- `.env.deploy`: ignored AWS/Terraform deployment input used by `./deploy`.
+- `.env`: ignored private production-like scratch/source file; local Docker does not read it.
+- `*.example`: committed templates only; no real secrets.
+
+Azure Blob Storage is provisioned by Bicep and injected into backend runtimes as
+`STORAGE_BACKEND=azure`, `AZURE_STORAGE_ACCOUNT_URL`,
+`AZURE_STORAGE_CONTAINER`, and `AZURE_CLIENT_ID`. Do not put local MinIO/S3
+values in `.env.azure`.
+
 GoDaddy must receive the CNAME and `asuid` TXT records printed by the domain script. Domain binding must not run until those records resolve publicly.
 
 ## Provision and deploy
