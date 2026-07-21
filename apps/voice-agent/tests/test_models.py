@@ -1,12 +1,12 @@
 # ruff: noqa: RUF001
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import Any, cast
 
-from montenegrina_voice_agent.language import (
-    VoiceStreamStitcher,
-    normalize_voice_stream_text,
-    normalize_voice_text,
-)
+import pytest
+from livekit.agents import io
+
+from montenegrina_voice_agent.language import normalize_voice_text
 from montenegrina_voice_agent.models import RuntimeBootstrap
 
 
@@ -80,18 +80,70 @@ def test_voice_text_normalization_keeps_urls_and_ids_protected() -> None:
     )
 
 
-def test_stream_text_normalization_preserves_chunk_boundaries() -> None:
-    assert normalize_voice_stream_text(" je veliki ", script="latin") == " je veliki "
-    assert normalize_voice_stream_text(" Људи\n", script="latin") == " Ljudi\n"
+@pytest.mark.asyncio
+async def test_transcription_stream_preserves_exact_chunk_boundaries(monkeypatch: Any) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test")
+    from montenegrina_voice_agent.agent import MontenegrinAgent
+
+    emitted: list[tuple[str, dict[str, Any]]] = []
+
+    class Events:
+        current_speech_id = "speech-token-fragments"
+
+        def first_assistant_text_latency_payload(self) -> dict[str, int | str]:
+            return {}
+
+        async def emit(self, event_type: str, payload: dict[str, Any]) -> None:
+            emitted.append((event_type, payload))
+
+    timed_chunk = io.TimedString("đe", start_time=0.1, end_time=0.2)
+    chunks: list[str | io.TimedString] = ["kra", timed_chunk, ".", " Ako", " ho", "će", "š"]
+
+    async def source() -> AsyncIterator[str | io.TimedString]:
+        for chunk in chunks:
+            yield chunk
+
+    agent = cast(Any, SimpleNamespace(_events=Events()))
+    stream = MontenegrinAgent.transcription_node(agent, source(), None)
+    forwarded = [chunk async for chunk in stream]
+
+    assert forwarded == chunks
+    assert forwarded[1] is timed_chunk
+    assert "".join(forwarded) == "krađe. Ako hoćeš"
+    assert [payload["text"] for _, payload in emitted] == [str(chunk) for chunk in chunks]
+    assert all(payload["speechId"] == "speech-token-fragments" for _, payload in emitted)
 
 
-def test_stream_stitcher_infers_missing_spaces() -> None:
-    stitcher = VoiceStreamStitcher("latin")
-    chunks = ["LLM", "je", "skraćenica", "za", "Large", "Language", "Model,", "odnosno"]
+@pytest.mark.asyncio
+async def test_runtime_events_preserve_deltas_and_normalize_completed_text() -> None:
+    from montenegrina_voice_agent.telemetry import RuntimeEvents
 
-    assert "".join(stitcher.push(chunk) for chunk in chunks) == (
-        "LLM je skraćenica za Large Language Model, odnosno"
+    published: list[bytes] = []
+    batched: list[Any] = []
+
+    class Participant:
+        async def publish_data(self, packet: bytes, **_kwargs: Any) -> None:
+            published.append(packet)
+
+    class Batcher:
+        def add(self, event: Any) -> None:
+            batched.append(event)
+
+    room = SimpleNamespace(local_participant=Participant())
+    events = RuntimeEvents(
+        RuntimeBootstrap.model_validate(runtime_payload()),
+        cast(Any, room),
+        cast(Any, Batcher()),
     )
+    delta_text = " ho\tće\n"
+
+    delta = await events.emit("assistant.text.delta", {"text": delta_text})
+    completed = await events.emit("assistant.text.completed", {"text": "  Шта   је ово?  "})
+
+    assert delta.payload["text"] == delta_text
+    assert completed.payload["text"] == "Šta je ovo?"
+    assert len(published) == 2
+    assert [event.payload["text"] for event in batched] == [delta_text, "Šta je ovo?"]
 
 
 def test_controlled_openai_session_uses_vad(monkeypatch) -> None:  # type: ignore[no-untyped-def]

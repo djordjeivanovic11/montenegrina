@@ -97,36 +97,62 @@ describe('voiceTranscriptReducer', () => {
     expect(assistantMessage?.streaming).toBe(true);
   });
 
-  it('infers spaces when streamed assistant deltas arrive as bare words', () => {
+  it('preserves provider word and subword boundaries exactly', () => {
     let state = initialVoiceTranscriptState();
-    const speechId = 'speech-bare-words';
+    const speechId = 'speech-token-fragments';
 
     state = reduce(state, 'assistant.audio.started', { speechId });
-    for (const text of ['LLM', 'je', 'skraćenica', 'za', 'Large', 'Language', 'Model,', 'odnosno']) {
+    for (const text of ['kra', 'đe', '.', ' Ako', ' ho', 'će', 'š']) {
       state = reduce(state, 'assistant.text.delta', { speechId, text });
     }
 
     const assistantMessage = state.messages.find((message) => message.role === 'assistant');
-    expect(assistantMessage?.content).toBe(
-      'LLM je skraćenica za Large Language Model, odnosno',
-    );
+    expect(assistantMessage?.content).toBe('krađe. Ako hoćeš');
   });
 
-  it('keeps a better-spaced streamed assistant draft over a glued final event', () => {
+  it('uses the completed assistant text as authoritative and ignores later deltas', () => {
     let state = initialVoiceTranscriptState();
-    const speechId = 'speech-glued-final';
+    const speechId = 'speech-authoritative-final';
 
     state = reduce(state, 'assistant.audio.started', { speechId });
-    for (const text of ['LLM', 'je', 'skraćenica', 'za', 'Large', 'Language', 'Model']) {
+    for (const text of ['izgub', ' io', ' sam', ' paso', ' š']) {
       state = reduce(state, 'assistant.text.delta', { speechId, text });
     }
     state = reduce(state, 'assistant.text.completed', {
       speechId,
-      text: 'LLMjeskraćenicazaLargeLanguageModel',
+      text: 'Izgubio sam pasoš.',
     });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: ' zakašnjelo' });
 
     const assistantMessage = state.messages.find((message) => message.role === 'assistant');
-    expect(assistantMessage?.content).toBe('LLM je skraćenica za Large Language Model');
+    expect(assistantMessage?.content).toBe('Izgubio sam pasoš.');
+    expect(assistantMessage?.streaming).toBe(false);
+  });
+
+  it('preserves Markdown paragraph and list boundaries while streaming', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-markdown';
+
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    for (const text of ['Prvi', ' red.\n\n', '- Druga', ' stavka']) {
+      state = reduce(state, 'assistant.text.delta', { speechId, text });
+    }
+
+    const assistantMessage = state.messages.find((message) => message.role === 'assistant');
+    expect(assistantMessage?.content).toBe('Prvi red.\n\n- Druga stavka');
+  });
+
+  it('keeps the exact streamed text when assistant speech is interrupted', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-interrupted';
+
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: 'paso' });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: 'š' });
+    state = reduce(state, 'assistant.interrupted');
+
+    const assistantMessage = state.messages.find((message) => message.role === 'assistant');
+    expect(assistantMessage?.content).toBe('pasoš');
     expect(assistantMessage?.streaming).toBe(false);
   });
 

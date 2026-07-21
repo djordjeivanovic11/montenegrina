@@ -5,11 +5,11 @@ from typing import Any
 from uuid import uuid4
 
 from livekit import agents
-from livekit.agents import Agent, AgentSession, ChatContext, ChatMessage, function_tool
+from livekit.agents import Agent, AgentSession, ChatContext, ChatMessage, function_tool, io
 from livekit.plugins import deepgram, elevenlabs, openai, silero
 
 from .inbound import provision_inbound, wait_for_sip_numbers
-from .language import VoiceStreamStitcher, normalize_voice_text
+from .language import normalize_voice_text
 from .models import RuntimeBootstrap, RuntimeTool
 from .runtime_api import EventBatcher, RuntimeApi
 from .settings import Settings
@@ -102,16 +102,14 @@ class MontenegrinAgent(Agent):
             )
 
     def transcription_node(
-        self, text: AsyncIterable[str], model_settings: Any
-    ) -> AsyncIterable[str]:
+        self, text: AsyncIterable[str | io.TimedString], model_settings: Any
+    ) -> AsyncIterable[str | io.TimedString]:
         events = self._events
-        stitcher = VoiceStreamStitcher(self._script)
 
-        async def stream() -> AsyncIterable[str]:
+        async def stream() -> AsyncIterable[str | io.TimedString]:
             async for chunk in text:
-                piece = chunk if isinstance(chunk, str) else str(getattr(chunk, "text", chunk))
+                piece = str(chunk)
                 if piece:
-                    piece = stitcher.push(piece)
                     payload: dict[str, Any] = {
                         "text": piece,
                         **events.first_assistant_text_latency_payload(),
@@ -119,18 +117,9 @@ class MontenegrinAgent(Agent):
                     if events.current_speech_id:
                         payload["speechId"] = events.current_speech_id
                     await events.emit("assistant.text.delta", payload)
-                yield piece if isinstance(chunk, str) else chunk
+                yield chunk
 
         return stream()
-
-    def tts_node(self, text: AsyncIterable[str], model_settings: Any) -> Any:
-        stitcher = VoiceStreamStitcher(self._script)
-
-        async def stream() -> AsyncIterable[str]:
-            async for chunk in text:
-                yield stitcher.push(chunk)
-
-        return Agent.default.tts_node(self, stream(), model_settings)
 
 
 def runtime_tools(

@@ -32,48 +32,6 @@ function trimDisplay(committed: string, partial: string): string {
   return [committed.trim(), partial.trim()].filter(Boolean).join(' ');
 }
 
-function isWordBoundaryChar(value: string): boolean {
-  return /[\p{L}\p{N}]/u.test(value);
-}
-
-function needsAssistantSpace(previous: string, current: string): boolean {
-  if (!previous || !current) return false;
-  const last = previous.at(-1) ?? '';
-  const first = current[0] ?? '';
-  if (!last || !first) return false;
-  if (/\s/u.test(last) || /\s/u.test(first)) return false;
-  if (',.;:!?)]}%»”'.includes(first) || '([{«„'.includes(last)) return false;
-  if (last === '-' || first === '-') return false;
-  if (isWordBoundaryChar(last) && (isWordBoundaryChar(first) || '([{«„“"'.includes(first))) {
-    return true;
-  }
-  if ('.!?,;:'.includes(last) && (isWordBoundaryChar(first) || '([{«„“"'.includes(first))) {
-    return true;
-  }
-  return ')]}%»”"'.includes(last) && isWordBoundaryChar(first);
-}
-
-function appendAssistantDelta(previous: string, current: string): string {
-  return `${previous}${needsAssistantSpace(previous, current) ? ' ' : ''}${current}`;
-}
-
-function whitespaceCount(value: string): number {
-  return value.match(/\s/gu)?.length ?? 0;
-}
-
-function bestAssistantFinalText(finalText: string, streamedText: string): string {
-  if (!finalText || !streamedText) return finalText || streamedText;
-  const compactFinal = finalText.replace(/\s+/gu, '');
-  const compactStreamed = streamedText.replace(/\s+/gu, '');
-  if (
-    compactFinal === compactStreamed &&
-    whitespaceCount(streamedText) > whitespaceCount(finalText)
-  ) {
-    return streamedText;
-  }
-  return finalText;
-}
-
 function upsertMessage(
   messages: Message[],
   id: string,
@@ -248,7 +206,7 @@ function applyVoiceEvent(
       const existingId = state.assistantSpeechMessageIds[resolvedSpeechId];
       const id = draft?.id ?? existingId ?? crypto.randomUUID();
       const existingContent = state.messages.find((message) => message.id === id)?.content ?? '';
-      const merged = appendAssistantDelta(draft?.content ?? existingContent, text);
+      const merged = `${draft?.content ?? existingContent}${text}`;
       return {
         ...state,
         assistantDrafts: {
@@ -279,7 +237,7 @@ function applyVoiceEvent(
       const id = draft?.id ?? existingId ?? crypto.randomUUID();
       const existingContent = state.messages.find((message) => message.id === id)?.content ?? '';
       const streamedContent = draft?.content || existingContent || '';
-      const content = bestAssistantFinalText(finalText, streamedContent);
+      const content = finalText || streamedContent;
       if (!content) {
         const restDrafts = { ...state.assistantDrafts };
         delete restDrafts[resolvedSpeechId];

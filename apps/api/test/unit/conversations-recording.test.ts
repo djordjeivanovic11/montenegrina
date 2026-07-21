@@ -71,8 +71,8 @@ describe('ConversationsService.recordingUrl', () => {
 });
 
 describe('ConversationsService runtime event normalization', () => {
-  it('normalizes voice transcript event text to Latin script before persistence', () => {
-    const service = Object.create(ConversationsService.prototype) as {
+  function normalizationService() {
+    return Object.create(ConversationsService.prototype) as {
       normalizeRuntimeEventText: (
         event: {
           type: string;
@@ -81,6 +81,10 @@ describe('ConversationsService runtime event normalization', () => {
         config: Record<string, unknown>,
       ) => { payload: Record<string, unknown> };
     };
+  }
+
+  it('normalizes voice transcript event text to Latin script before persistence', () => {
+    const service = normalizationService();
 
     const normalized = service.normalizeRuntimeEventText(
       {
@@ -91,6 +95,21 @@ describe('ConversationsService runtime event normalization', () => {
     );
 
     expect(normalized.payload.text).toBe('Šta je ovo, šta se dešava?');
+  });
+
+  it('preserves assistant text delta boundaries exactly', () => {
+    const service = normalizationService();
+    const text = ' ho\tće\n';
+
+    const normalized = service.normalizeRuntimeEventText(
+      {
+        type: 'assistant.text.delta',
+        payload: { text },
+      },
+      { languageProfile: { script: 'LATIN' } },
+    );
+
+    expect(normalized.payload.text).toBe(text);
   });
 });
 

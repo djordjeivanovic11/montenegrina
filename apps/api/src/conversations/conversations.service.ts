@@ -40,7 +40,6 @@ const normalizedTextEvents = new Set([
   'transcription.partial',
   'transcription.final',
   'user.turn.completed',
-  'assistant.text.delta',
   'assistant.text.completed',
 ]);
 

@@ -6,7 +6,7 @@ from uuid import uuid4
 from livekit import rtc
 from livekit.rtc.participant import PublishDataError
 
-from .language import normalize_voice_stream_text, normalize_voice_text
+from .language import normalize_voice_text
 from .models import ConversationState, RealtimeEvent, RuntimeBootstrap
 from .runtime_api import EventBatcher
 
@@ -97,14 +97,7 @@ class RuntimeEvents:
     ) -> RealtimeEvent:
         self.sequence += 1
         text = payload.get("text")
-        if event_type == "assistant.text.delta" and isinstance(text, str):
-            payload = {
-                **payload,
-                "text": normalize_voice_stream_text(
-                    text, self._bootstrap.config.languageProfile.script
-                ),
-            }
-        elif event_type in NORMALIZED_FINAL_TEXT_EVENTS and isinstance(text, str) and text.strip():
+        if event_type in NORMALIZED_FINAL_TEXT_EVENTS and isinstance(text, str) and text.strip():
             payload = {
                 **payload,
                 "text": normalize_voice_text(text, self._bootstrap.config.languageProfile.script),

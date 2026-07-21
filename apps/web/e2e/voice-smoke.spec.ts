@@ -86,18 +86,21 @@ test('production voice MVP emits deterministic greeting text and assistant audio
   expect(transcript).not.toMatch(cyrillicPattern);
 
   if (expectUserTurn) {
-    await expect(devPanel).toContainText('user.turn.completed', { timeout: 90_000 });
+    const userMessages = page.getByTestId('message-user-content');
+    const assistantMessages = page.getByTestId('message-assistant-content');
+
     await expect
-      .poll(
-        async () => (await devPanel.textContent())?.match(/assistant\.text\.completed:/g)?.length ?? 0,
-        { timeout: 90_000 },
-      )
-      .toBeGreaterThanOrEqual(2);
+      .poll(async () => userMessages.count(), { timeout: 90_000 })
+      .toBeGreaterThanOrEqual(1);
     await expect
-      .poll(
-        async () => (await devPanel.textContent())?.match(/assistant\.audio\.started:/g)?.length ?? 0,
-        { timeout: 90_000 },
-      )
+      .poll(async () => assistantMessages.count(), { timeout: 90_000 })
       .toBeGreaterThanOrEqual(2);
+
+    await expect
+      .poll(async () => assistantMessages.last().innerText(), { timeout: 90_000 })
+      .toContain('pasoš');
+    const response = await assistantMessages.last().innerText();
+    expect(response).toContain('pasoš');
+    expect(response).not.toMatch(/paso\s+š/u);
   }
 });
