@@ -5,11 +5,15 @@ export type VoiceTranscriptState = {
   userDraftId: string | null;
   userCommitted: string;
   userLivePartial: string;
+  userInputOpen: boolean;
   assistantDrafts: Record<string, { id: string; content: string }>;
+  assistantSpeechMessageIds: Record<string, string>;
+  assistantCompletedSpeechIds: Record<string, true>;
 };
 
 export type VoiceTranscriptAction =
   | { type: 'session.reset' }
+  | { type: 'session.prepare' }
   | { type: 'message.add'; message: Message }
   | { type: 'voice.event'; event: { type: string; payload: Record<string, unknown> } };
 
@@ -18,7 +22,10 @@ export const initialVoiceTranscriptState = (): VoiceTranscriptState => ({
   userDraftId: null,
   userCommitted: '',
   userLivePartial: '',
+  userInputOpen: false,
   assistantDrafts: {},
+  assistantSpeechMessageIds: {},
+  assistantCompletedSpeechIds: {},
 });
 
 function trimDisplay(committed: string, partial: string): string {
@@ -51,49 +58,6 @@ function removeMessage(messages: Message[], id: string): Message[] {
   return messages.filter((message) => message.id !== id);
 }
 
-function userMessagesSinceLastAssistant(messages: Message[]): Message[] {
-  const lastAssistantIndex = messages.map((message) => message.role).lastIndexOf('assistant');
-  return messages.slice(lastAssistantIndex + 1).filter((message) => message.role === 'user');
-}
-
-function mergeUserTurnMessages(
-  messages: Message[],
-  draftId: string,
-  finalText: string,
-  draftTs?: number,
-): Message[] {
-  const priorUsers = userMessagesSinceLastAssistant(messages).filter(
-    (message) => message.id !== draftId,
-  );
-  if (priorUsers.length === 0) {
-    return upsertMessage(messages, draftId, 'user', finalText, false, draftTs);
-  }
-
-  const keepId = priorUsers[0]!.id;
-  const merged = trimDisplay(priorUsers.map((message) => message.content).join(' '), finalText);
-  const removeIds = new Set(
-    [...priorUsers.slice(1).map((message) => message.id), draftId].filter((id) => id !== keepId),
-  );
-  const kept = messages.find((message) => message.id === keepId);
-  const withoutRemoved = messages.filter((message) => !removeIds.has(message.id));
-  return upsertMessage(withoutRemoved, keepId, 'user', merged, false, kept?.ts ?? draftTs);
-}
-
-function resolveUserDraftState(state: VoiceTranscriptState): {
-  userDraftId: string;
-  userCommitted: string;
-} {
-  if (state.userDraftId) {
-    return { userDraftId: state.userDraftId, userCommitted: state.userCommitted };
-  }
-  const priorUsers = userMessagesSinceLastAssistant(state.messages);
-  const lastUser = priorUsers[priorUsers.length - 1];
-  if (lastUser) {
-    return { userDraftId: lastUser.id, userCommitted: lastUser.content };
-  }
-  return { userDraftId: crypto.randomUUID(), userCommitted: '' };
-}
-
 function finalizeAssistantDrafts(state: VoiceTranscriptState): VoiceTranscriptState {
   let messages = state.messages;
   for (const draft of Object.values(state.assistantDrafts)) {
@@ -104,6 +68,23 @@ function finalizeAssistantDrafts(state: VoiceTranscriptState): VoiceTranscriptSt
   return { ...state, messages, assistantDrafts: {} };
 }
 
+function prepareForVoiceSession(state: VoiceTranscriptState): VoiceTranscriptState {
+  const finalized = finalizeAssistantDrafts(state);
+  const messages = state.userDraftId
+    ? finalized.messages.filter((message) => message.id !== state.userDraftId)
+    : finalized.messages;
+  return {
+    ...finalized,
+    messages,
+    userDraftId: null,
+    userCommitted: '',
+    userLivePartial: '',
+    userInputOpen: false,
+    assistantSpeechMessageIds: {},
+    assistantCompletedSpeechIds: {},
+  };
+}
+
 function applyVoiceEvent(
   state: VoiceTranscriptState,
   event: { type: string; payload: Record<string, unknown> },
@@ -112,10 +93,23 @@ function applyVoiceEvent(
   const speechId = typeof event.payload.speechId === 'string' ? event.payload.speechId : null;
 
   switch (event.type) {
+    case 'audio.started': {
+      if (state.userDraftId && state.userInputOpen) return state;
+      return {
+        ...state,
+        userDraftId: crypto.randomUUID(),
+        userCommitted: '',
+        userLivePartial: '',
+        userInputOpen: true,
+      };
+    }
+
     case 'transcription.partial': {
       const segment = text.trim();
       if (!segment) return state;
-      const { userDraftId, userCommitted } = resolveUserDraftState(state);
+      if (!state.userInputOpen || !state.userDraftId) return state;
+      const userDraftId = state.userDraftId;
+      const userCommitted = state.userCommitted;
       const display = trimDisplay(userCommitted, segment);
       return {
         ...state,
@@ -129,13 +123,16 @@ function applyVoiceEvent(
     case 'transcription.final': {
       const segment = text.trim();
       if (!segment) return state;
-      const { userDraftId, userCommitted } = resolveUserDraftState(state);
+      if (!state.userInputOpen || !state.userDraftId) return state;
+      const userDraftId = state.userDraftId;
+      const userCommitted = state.userCommitted;
       const nextCommitted = trimDisplay(userCommitted, segment);
       return {
         ...state,
         userDraftId,
         userCommitted: nextCommitted,
         userLivePartial: '',
+        userInputOpen: true,
         messages: upsertMessage(state.messages, userDraftId, 'user', nextCommitted, true),
       };
     }
@@ -148,6 +145,7 @@ function applyVoiceEvent(
           userDraftId: null,
           userCommitted: '',
           userLivePartial: '',
+          userInputOpen: false,
           messages: state.userDraftId
             ? removeMessage(state.messages, state.userDraftId)
             : state.messages,
@@ -160,12 +158,14 @@ function applyVoiceEvent(
         userDraftId: null,
         userCommitted: '',
         userLivePartial: '',
-        messages: mergeUserTurnMessages(state.messages, userDraftId, finalText, existing?.ts),
+        userInputOpen: false,
+        messages: upsertMessage(state.messages, userDraftId, 'user', finalText, false, existing?.ts),
       };
     }
 
     case 'assistant.audio.started': {
       const resolvedSpeechId = speechId ?? crypto.randomUUID();
+      if (state.assistantSpeechMessageIds[resolvedSpeechId]) return state;
       if (state.assistantDrafts[resolvedSpeechId]) return state;
       const id = crypto.randomUUID();
       return {
@@ -173,6 +173,10 @@ function applyVoiceEvent(
         assistantDrafts: {
           ...state.assistantDrafts,
           [resolvedSpeechId]: { id, content: '' },
+        },
+        assistantSpeechMessageIds: {
+          ...state.assistantSpeechMessageIds,
+          [resolvedSpeechId]: id,
         },
         messages: upsertMessage(state.messages, id, 'assistant', '', true),
       };
@@ -186,18 +190,32 @@ function applyVoiceEvent(
         const newSpeechId = speechId ?? crypto.randomUUID();
         return {
           ...state,
-          assistantDrafts: { [newSpeechId]: { id, content: text } },
+          assistantDrafts: {
+            ...state.assistantDrafts,
+            [newSpeechId]: { id, content: text },
+          },
+          assistantSpeechMessageIds: {
+            ...state.assistantSpeechMessageIds,
+            [newSpeechId]: id,
+          },
           messages: upsertMessage(state.messages, id, 'assistant', text, true),
         };
       }
+      if (state.assistantCompletedSpeechIds[resolvedSpeechId]) return state;
       const draft = state.assistantDrafts[resolvedSpeechId];
-      const id = draft?.id ?? crypto.randomUUID();
-      const merged = `${draft?.content ?? ''}${text}`;
+      const existingId = state.assistantSpeechMessageIds[resolvedSpeechId];
+      const id = draft?.id ?? existingId ?? crypto.randomUUID();
+      const existingContent = state.messages.find((message) => message.id === id)?.content ?? '';
+      const merged = `${draft?.content ?? existingContent}${text}`;
       return {
         ...state,
         assistantDrafts: {
           ...state.assistantDrafts,
           [resolvedSpeechId]: { id, content: merged },
+        },
+        assistantSpeechMessageIds: {
+          ...state.assistantSpeechMessageIds,
+          [resolvedSpeechId]: id,
         },
         messages: upsertMessage(state.messages, id, 'assistant', merged, true),
       };
@@ -215,8 +233,10 @@ function applyVoiceEvent(
         };
       }
       const draft = state.assistantDrafts[resolvedSpeechId];
-      const id = draft?.id ?? crypto.randomUUID();
-      const content = finalText || draft?.content || '';
+      const existingId = state.assistantSpeechMessageIds[resolvedSpeechId];
+      const id = draft?.id ?? existingId ?? crypto.randomUUID();
+      const existingContent = state.messages.find((message) => message.id === id)?.content ?? '';
+      const content = finalText || draft?.content || existingContent || '';
       if (!content) {
         const restDrafts = { ...state.assistantDrafts };
         delete restDrafts[resolvedSpeechId];
@@ -231,6 +251,14 @@ function applyVoiceEvent(
       return {
         ...state,
         assistantDrafts: restDrafts,
+        assistantSpeechMessageIds: {
+          ...state.assistantSpeechMessageIds,
+          [resolvedSpeechId]: id,
+        },
+        assistantCompletedSpeechIds: {
+          ...state.assistantCompletedSpeechIds,
+          [resolvedSpeechId]: true,
+        },
         messages: upsertMessage(state.messages, id, 'assistant', content, false),
       };
     }
@@ -254,6 +282,8 @@ export function voiceTranscriptReducer(
   switch (action.type) {
     case 'session.reset':
       return initialVoiceTranscriptState();
+    case 'session.prepare':
+      return prepareForVoiceSession(state);
     case 'message.add':
       return { ...state, messages: [...state.messages, action.message] };
     case 'voice.event':

@@ -170,7 +170,7 @@ export class OpenAILanguageModelProvider implements LanguageModelProvider {
   readonly #reasoningEffort: NonNullable<OpenAILanguageModelConfig['reasoningEffort']>;
 
   constructor(private readonly config: OpenAILanguageModelConfig) {
-    this.#model = config.model ?? 'gpt-5.4-mini';
+    this.#model = config.model ?? 'gpt-5.4';
     this.#baseUrl = config.baseUrl ?? 'https://api.openai.com/v1';
     this.#reasoningEffort = config.reasoningEffort ?? 'none';
   }

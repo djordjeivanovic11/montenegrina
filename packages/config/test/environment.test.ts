@@ -33,7 +33,7 @@ describe('environmentSchema', () => {
   it('loads the production provider configuration', () => {
     const environment = environmentSchema.parse(valid);
 
-    expect(environment.OPENAI_MODEL).toBe('gpt-5.4-mini');
+    expect(environment.OPENAI_MODEL).toBe('gpt-5.4');
     expect(environment.OPENAI_STT_MODEL).toBe('gpt-4o-transcribe');
     expect(environment.VOICE_STT_PROVIDER).toBe('openai');
     expect(environment.VOICE_TTS_PROVIDER).toBe('elevenlabs');

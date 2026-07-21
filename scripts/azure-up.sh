@@ -10,7 +10,7 @@ azure_assert_login
 if azd env list 2>/dev/null | awk 'NR>1 {print $1}' | grep -qx "$AZURE_ENV_NAME"; then azd env select "$AZURE_ENV_NAME"; else azd env new "$AZURE_ENV_NAME"; fi
 
 : "${OPENAI_STT_MODEL:=gpt-4o-transcribe}"
-: "${OPENAI_MODEL:=gpt-5.4-mini}"
+: "${OPENAI_MODEL:=gpt-5.4}"
 : "${OPENAI_REALTIME_MODEL:=gpt-realtime-2}"
 : "${OPENAI_TTS_MODEL:=gpt-4o-mini-tts}"
 : "${OPENAI_TTS_VOICE:=ash}"

@@ -17,6 +17,7 @@ function reduce(
 describe('voiceTranscriptReducer', () => {
   it('keeps committed finals when a partial arrives', () => {
     let state = initialVoiceTranscriptState();
+    state = reduce(state, 'audio.started');
     state = reduce(state, 'transcription.final', { text: 'Pomaže' });
     state = reduce(state, 'transcription.partial', { text: 'ali želim' });
 
@@ -29,6 +30,7 @@ describe('voiceTranscriptReducer', () => {
 
   it('commits the authoritative user turn text', () => {
     let state = initialVoiceTranscriptState();
+    state = reduce(state, 'audio.started');
     state = reduce(state, 'transcription.final', { text: 'Pomaže,' });
     state = reduce(state, 'transcription.partial', { text: 'ali želim' });
     state = reduce(state, 'transcription.final', { text: 'da rezervišem' });
@@ -43,6 +45,22 @@ describe('voiceTranscriptReducer', () => {
     expect(state.userDraftId).toBeNull();
     expect(state.userCommitted).toBe('');
     expect(state.userLivePartial).toBe('');
+    expect(state.userInputOpen).toBe(false);
+  });
+
+  it('ignores late STT finals after an authoritative user turn completes', () => {
+    let state = initialVoiceTranscriptState();
+    state = reduce(state, 'audio.started');
+    state = reduce(state, 'transcription.final', { text: 'Pomaže,' });
+    state = reduce(state, 'user.turn.completed', {
+      text: 'Pomaže, treba mi rezervacija.',
+    });
+    state = reduce(state, 'transcription.final', { text: 'druga zakašnjela fraza' });
+
+    const userMessages = state.messages.filter((message) => message.role === 'user');
+    expect(userMessages).toHaveLength(1);
+    expect(userMessages[0]?.content).toBe('Pomaže, treba mi rezervacija.');
+    expect(userMessages[0]?.streaming).toBe(false);
   });
 
   it('finalizes assistant speech by speechId without duplicate bubbles', () => {
@@ -67,6 +85,7 @@ describe('voiceTranscriptReducer', () => {
 
   it('ignores turn.started for user finalization', () => {
     let state = initialVoiceTranscriptState();
+    state = reduce(state, 'audio.started');
     state = reduce(state, 'transcription.final', { text: 'Pomaže,' });
     state = reduce(state, 'turn.started');
 
@@ -76,7 +95,7 @@ describe('voiceTranscriptReducer', () => {
     expect(state.userDraftId).not.toBeNull();
   });
 
-  it('merges consecutive user turns before the agent replies', () => {
+  it('keeps consecutive authoritative user turns as separate messages', () => {
     let state = initialVoiceTranscriptState();
     state = reduce(state, 'user.turn.completed', { text: 'Da kucu koga!' });
     state = reduce(state, 'user.turn.completed', {
@@ -84,19 +103,66 @@ describe('voiceTranscriptReducer', () => {
     });
 
     const userMessages = state.messages.filter((message) => message.role === 'user');
-    expect(userMessages).toHaveLength(1);
+    expect(userMessages).toHaveLength(2);
     expect(userMessages[0]?.content).toContain('Da kucu koga!');
-    expect(userMessages[0]?.content).toContain('registrujem drustvo.');
+    expect(userMessages[1]?.content).toContain('registrujem drustvo.');
   });
 
-  it('reopens the last user bubble when STT splits a long utterance', () => {
+  it('does not reopen the last completed user bubble for STT without new speech', () => {
     let state = initialVoiceTranscriptState();
     state = reduce(state, 'user.turn.completed', { text: 'Prvi segment.' });
     state = reduce(state, 'transcription.partial', { text: 'Drugi segment' });
 
     const userMessages = state.messages.filter((message) => message.role === 'user');
     expect(userMessages).toHaveLength(1);
-    expect(userMessages[0]?.content).toBe('Prvi segment. Drugi segment');
-    expect(userMessages[0]?.streaming).toBe(true);
+    expect(userMessages[0]?.content).toBe('Prvi segment.');
+    expect(userMessages[0]?.streaming).toBe(false);
+  });
+
+  it('preserves finalized messages when preparing a new voice session', () => {
+    let state = initialVoiceTranscriptState();
+    state = voiceTranscriptReducer(state, {
+      type: 'message.add',
+      message: {
+        id: 'existing',
+        role: 'assistant',
+        content: 'Ranija poruka',
+        ts: 1,
+      },
+    });
+    state = reduce(state, 'audio.started');
+    state = reduce(state, 'transcription.partial', { text: 'nedovršeno' });
+
+    state = voiceTranscriptReducer(state, { type: 'session.prepare' });
+
+    expect(state.messages).toEqual([
+      {
+        id: 'existing',
+        role: 'assistant',
+        content: 'Ranija poruka',
+        ts: 1,
+      },
+    ]);
+    expect(state.userDraftId).toBeNull();
+  });
+
+  it('does not create a duplicate assistant bubble when text arrives before audio start', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-greeting';
+
+    state = reduce(state, 'assistant.text.completed', {
+      speechId,
+      text: 'Zdravo, kako mogu pomoći?',
+    });
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    state = reduce(state, 'assistant.text.completed', {
+      speechId,
+      text: 'Zdravo, kako mogu pomoći?',
+    });
+
+    const assistantMessages = state.messages.filter((message) => message.role === 'assistant');
+    expect(assistantMessages).toHaveLength(1);
+    expect(assistantMessages[0]?.content).toBe('Zdravo, kako mogu pomoći?');
+    expect(assistantMessages[0]?.streaming).toBe(false);
   });
 });

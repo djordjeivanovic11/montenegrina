@@ -31,7 +31,7 @@ locals {
     { name = "COOKIE_SECURE", value = "true" },
     { name = "CORS_ORIGINS", value = var.public_web_url },
     { name = "LIVEKIT_URL", value = var.livekit_url },
-    { name = "OPENAI_MODEL", value = "gpt-5.4-mini" },
+    { name = "OPENAI_MODEL", value = "gpt-5.4" },
     { name = "OPENAI_REALTIME_MODEL", value = "gpt-realtime-2" },
     { name = "OPENAI_STT_MODEL", value = var.openai_stt_model },
     { name = "OPENAI_TTS_MODEL", value = var.openai_tts_model },

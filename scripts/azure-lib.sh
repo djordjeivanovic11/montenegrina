@@ -20,9 +20,13 @@ azure_need() {
 }
 
 azure_load_azd() {
-  set -a
-  eval "$(azd env get-values)"
-  set +a
+  local line key
+  while IFS= read -r line; do
+    [[ "$line" == *=* ]] || continue
+    key="${line%%=*}"
+    [[ -n "${!key:-}" ]] && continue
+    eval "export $line"
+  done < <(azd env get-values)
 }
 
 azure_assert_login() {

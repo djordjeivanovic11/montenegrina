@@ -18,10 +18,11 @@ function fakeGoogleCredential(email: string): string {
   ].join('.');
 }
 
-test('production voice MVP emits assistant audio and Latin transcript', async ({
+test('production voice MVP emits deterministic greeting text and assistant audio', async ({
   context,
   page,
 }) => {
+  test.setTimeout(120_000);
   test.skip(
     !sessionCookie && !googleCredential && !process.env.VOICE_SMOKE_ALLOW_FAKE_GOOGLE,
     'Set VOICE_SMOKE_SESSION_COOKIE, VOICE_SMOKE_GOOGLE_CREDENTIAL, or VOICE_SMOKE_ALLOW_FAKE_GOOGLE=1.',
@@ -79,5 +80,6 @@ test('production voice MVP emits assistant audio and Latin transcript', async ({
   const transcript = await page.getByTestId('message-assistant-content').first().innerText({
     timeout: 60_000,
   });
+  expect(transcript).toContain('Zdravo, kako mogu pomoći?');
   expect(transcript).not.toMatch(cyrillicPattern);
 });

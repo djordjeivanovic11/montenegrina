@@ -5,7 +5,7 @@ description = "Production LiveKit voice runtime for Montenegrina"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "httpx>=0.28.1,<0.29",
-  "livekit-agents[deepgram,elevenlabs,openai]>=1.5,<1.6",
+  "livekit-agents[deepgram,elevenlabs,openai,silero]>=1.5,<1.6",
   "pydantic>=2.12,<3",
   "pydantic-settings>=2.11,<3",
 ]

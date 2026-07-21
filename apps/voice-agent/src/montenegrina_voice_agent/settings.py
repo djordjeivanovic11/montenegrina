@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     deepgram_api_key: str = ""
     elevenlabs_api_key: str = ""
     elevenlabs_montenegrin_voice_id: str = ""
-    openai_model: str = "gpt-5.4-mini"
+    openai_model: str = "gpt-5.4"
     openai_realtime_model: str = "gpt-realtime-2"
     openai_stt_model: str = "gpt-4o-transcribe"
     openai_tts_model: str = "gpt-4o-mini-tts"

@@ -8,7 +8,7 @@ describe('provider registry', () => {
       deepgram: { apiKey: 'dg', model: 'nova-3', providerLanguage: 'sr' },
       openai: {
         apiKey: 'oa',
-        languageModel: 'gpt-5.4-mini',
+        languageModel: 'gpt-5.4',
         reasoningEffort: 'none',
         embeddingModel: 'text-embedding-3-large',
         embeddingDimensions: 1536,

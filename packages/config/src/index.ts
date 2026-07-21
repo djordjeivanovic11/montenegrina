@@ -76,7 +76,7 @@ export const environmentSchema = z
     LIVEKIT_EGRESS_S3_SECRET_ACCESS_KEY: optionalSecret,
     GOOGLE_CLIENT_ID: z.string().optional(),
     OPENAI_API_KEY: optionalSecret,
-    OPENAI_MODEL: z.string().default('gpt-5.4-mini'),
+    OPENAI_MODEL: z.string().default('gpt-5.4'),
     OPENAI_REALTIME_MODEL: z.string().default('gpt-realtime-2'),
     OPENAI_STT_MODEL: z.string().default('gpt-4o-transcribe'),
     OPENAI_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),

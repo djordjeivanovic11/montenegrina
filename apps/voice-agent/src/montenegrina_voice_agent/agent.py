@@ -1,12 +1,12 @@
 import asyncio
 import json
-from collections.abc import AsyncIterable, Coroutine
+from collections.abc import AsyncIterable, Callable, Coroutine
 from typing import Any
 from uuid import uuid4
 
 from livekit import agents
 from livekit.agents import Agent, AgentSession, ChatContext, ChatMessage, function_tool
-from livekit.plugins import deepgram, elevenlabs, openai
+from livekit.plugins import deepgram, elevenlabs, openai, silero
 
 from .inbound import provision_inbound, wait_for_sip_numbers
 from .language import normalize_voice_text
@@ -189,6 +189,7 @@ def create_session(config: RuntimeBootstrap, settings: Settings) -> AgentSession
         raise ValueError(f"Unsupported TTS provider: {tts_provider}")
 
     return AgentSession(
+        vad=silero.VAD.load(),
         stt=stt,
         llm=openai.responses.LLM(
             api_key=settings.openai_api_key,
@@ -210,13 +211,17 @@ def _speech_payload(events: RuntimeEvents, payload: dict[str, Any]) -> dict[str,
 
 def wire_events(
     session: AgentSession[Any], events: RuntimeEvents, closed: asyncio.Event
-) -> None:
+) -> Callable[[str], None]:
     tasks: set[asyncio.Task[Any]] = set()
+    completed_assistant_speech_ids: set[str] = set()
 
     def schedule(coro: Coroutine[Any, Any, Any]) -> None:
         task = asyncio.create_task(coro)
         tasks.add(task)
         task.add_done_callback(tasks.discard)
+
+    def mark_assistant_text_completed(speech_id: str) -> None:
+        completed_assistant_speech_ids.add(speech_id)
 
     @session.on("speech_created")
     def on_speech_created(event: Any) -> None:
@@ -241,7 +246,11 @@ def wire_events(
     def on_agent_state(event: Any) -> None:
         if event.new_state == "thinking" and events.state in {"TRANSCRIBING", "LISTENING"}:
             schedule(events.emit("turn.started", {}, state="THINKING"))
-        elif event.new_state == "speaking" and events.state in {"THINKING", "TOOL_PENDING"}:
+        elif event.new_state == "speaking" and events.state in {
+            "LISTENING",
+            "THINKING",
+            "TOOL_PENDING",
+        }:
             schedule(
                 events.emit(
                     "assistant.audio.started",
@@ -259,6 +268,11 @@ def wire_events(
         text_value = getattr(item, "text_content", "")
         text = text_value() if callable(text_value) else text_value
         if role == "assistant" and text:
+            speech_id = events.current_speech_id
+            if speech_id and speech_id in completed_assistant_speech_ids:
+                return
+            if speech_id:
+                completed_assistant_speech_ids.add(speech_id)
             schedule(
                 events.emit(
                     "assistant.text.completed",
@@ -270,25 +284,24 @@ def wire_events(
     def on_close(_event: Any) -> None:
         closed.set()
 
+    return mark_assistant_text_completed
+
 
 DEFAULT_RECORDING_NOTICE = (
     "Ovaj poziv se snima u svrhu kvaliteta usluge."
 )
+DEFAULT_GREETING_TEXT = "Zdravo, kako mogu pomoći?"
 
 
-def greeting_instructions(config: RuntimeBootstrap) -> str:
-    base = (
-        "Pozdravi korisnika kratko na crnogorskom i pitaj kako možeš pomoći. "
-        "Odgovori jednom kratkom rečenicom."
-    )
+def initial_greeting_text(config: RuntimeBootstrap) -> str:
     if config.channel != "SIP" or not config.config.retention.recordAudio:
-        return base
+        return DEFAULT_GREETING_TEXT
     notice = (
         config.config.telephony.recordingNotice
         if config.config.telephony and config.config.telephony.recordingNotice
         else DEFAULT_RECORDING_NOTICE
     )
-    return f"Prvo izgovori tačno sljedeće na crnogorskom: \"{notice}\" Zatim {base}"
+    return f"{notice} {DEFAULT_GREETING_TEXT}"
 
 
 async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
@@ -334,7 +347,7 @@ async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
         events=events,
     )
     closed = asyncio.Event()
-    wire_events(session, events, closed)
+    mark_assistant_text_completed = wire_events(session, events, closed)
     try:
         await events.emit(
             "session.started",
@@ -342,7 +355,13 @@ async def run_job(ctx: agents.JobContext, settings: Settings) -> None:
             state="LISTENING",
         )
         await session.start(room=ctx.room, agent=agent)
-        session.generate_reply(instructions=greeting_instructions(config))
+        greeting = initial_greeting_text(config)
+        greeting_speech = session.say(greeting)
+        mark_assistant_text_completed(greeting_speech.id)
+        await events.emit(
+            "assistant.text.completed",
+            {"text": greeting, "speechId": greeting_speech.id},
+        )
         try:
             await asyncio.wait_for(
                 closed.wait(), timeout=config.maximumDurationMinutes * 60

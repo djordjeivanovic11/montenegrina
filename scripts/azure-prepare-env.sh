@@ -30,7 +30,7 @@ umask 077
   printf 'SESSION_SECRET=%s\n' "$(openssl rand -base64 48 | tr -d '\n')"
   printf 'INTERNAL_TOKEN_SECRET=%s\n' "$(openssl rand -base64 48 | tr -d '\n')"
   printf 'VOICE_AGENT_SERVICE_SECRET=%s\n' "$(openssl rand -base64 48 | tr -d '\n')"
-  printf 'OPENAI_MODEL=%s\n' "$(read_or_default OPENAI_MODEL gpt-5.4-mini)"
+  printf 'OPENAI_MODEL=%s\n' "$(read_or_default OPENAI_MODEL gpt-5.4)"
   printf 'OPENAI_REALTIME_MODEL=%s\n' "$(read_or_default OPENAI_REALTIME_MODEL gpt-realtime-2)"
   printf 'OPENAI_STT_MODEL=%s\n' "$(read_or_default OPENAI_STT_MODEL gpt-4o-transcribe)"
   printf 'OPENAI_TTS_MODEL=%s\n' "$(read_or_default OPENAI_TTS_MODEL gpt-4o-mini-tts)"

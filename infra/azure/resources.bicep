@@ -18,7 +18,7 @@ param livekitApiKey string
 param livekitApiSecret string
 @secure()
 param openaiApiKey string
-param openaiModel string = 'gpt-5.4-mini'
+param openaiModel string = 'gpt-5.4'
 param openaiRealtimeModel string = 'gpt-realtime-2'
 param openaiSttModel string = 'gpt-4o-transcribe'
 param openaiTtsModel string = 'gpt-4o-mini-tts'

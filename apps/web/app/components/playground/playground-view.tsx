@@ -155,7 +155,7 @@ export function PlaygroundView() {
   async function startVoice(): Promise<void> {
     if (!agentId) return;
     await roomRef.current?.disconnect();
-    dispatchTranscript({ type: 'session.reset' });
+    dispatchTranscript({ type: 'session.prepare' });
     setVoiceState('connecting');
     setError('');
     setAudioBlocked(false);
@@ -240,6 +240,7 @@ export function PlaygroundView() {
         }
         const handled = new Set([
           'session.started',
+          'audio.started',
           'transcription.partial',
           'transcription.final',
           'user.turn.completed',
@@ -306,7 +307,7 @@ export function PlaygroundView() {
       }, 15_000),
       setTimeout(() => {
         if (sessionStartedRef.current && !assistantAudioStartedRef.current) {
-          setError('Voice agent joined but did not start audio. Check OpenAI and TTS provider configuration.');
+          setError('Voice agent joined but did not start audio. Check voice-agent logs, OpenAI model, STT/VAD, and TTS configuration.');
         }
       }, 30_000),
     ];

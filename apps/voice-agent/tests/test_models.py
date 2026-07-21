@@ -1,10 +1,13 @@
 # ruff: noqa: RUF001
+from types import SimpleNamespace
+from typing import Any, cast
+
 from montenegrina_voice_agent.language import normalize_voice_text
 from montenegrina_voice_agent.models import RuntimeBootstrap
 
 
-def test_bootstrap_rejects_fake_provider_mode() -> None:
-    payload = {
+def runtime_payload() -> dict[str, object]:
+    return {
         "organizationId": "00000000-0000-4000-8000-000000000001",
         "agentId": "00000000-0000-4000-8000-000000000002",
         "agentVersionId": "00000000-0000-4000-8000-000000000003",
@@ -16,13 +19,21 @@ def test_bootstrap_rejects_fake_provider_mode() -> None:
         "tools": [],
         "config": {
             "systemPrompt": "Odgovaraj na crnogorskom.",
+            "languageProfile": {"script": "latin"},
             "routingPolicy": {
                 "mode": "real",
                 "pipelineMode": "controlled",
+                "sttProvider": "openai",
                 "sttLanguage": "sr",
+                "sttModel": "gpt-4o-transcribe",
+                "ttsProvider": "elevenlabs",
             },
         },
     }
+
+
+def test_bootstrap_rejects_fake_provider_mode() -> None:
+    payload = runtime_payload()
     assert RuntimeBootstrap.model_validate(payload).config.routingPolicy.mode == "real"
 
 
@@ -62,4 +73,79 @@ def test_voice_text_normalization_keeps_urls_and_ids_protected() -> None:
 
     assert normalize_voice_text(text, script="latin") == (
         "Šta je ovo, šta se dešava? ACME_ID ostaje, https://example.com/Пут ostaje."
+    )
+
+
+def test_controlled_openai_session_uses_vad(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test")
+    from montenegrina_voice_agent import agent
+
+    vad = object()
+    created: dict[str, object] = {}
+
+    def fake_session(**kwargs: object) -> dict[str, object]:
+        created.update(kwargs)
+        return created
+
+    monkeypatch.setattr(agent.silero.VAD, "load", lambda: vad)
+    monkeypatch.setattr(agent.openai, "STT", lambda **kwargs: {"type": "stt", **kwargs})
+    monkeypatch.setattr(
+        agent.openai.responses,
+        "LLM",
+        lambda **kwargs: {"type": "llm", **kwargs},
+    )
+    monkeypatch.setattr(agent.elevenlabs, "TTS", lambda **kwargs: {"type": "tts", **kwargs})
+    monkeypatch.setattr(agent, "AgentSession", fake_session)
+
+    session = cast(
+        dict[str, Any],
+        agent.create_session(
+            RuntimeBootstrap.model_validate(runtime_payload()),
+            cast(
+                Any,
+                SimpleNamespace(
+                    openai_api_key="openai-test",
+                    openai_model="gpt-5.4",
+                    openai_realtime_model="gpt-realtime-2",
+                    openai_stt_model="gpt-4o-transcribe",
+                    openai_tts_model="gpt-4o-mini-tts",
+                    openai_tts_voice="ash",
+                    deepgram_api_key="",
+                    deepgram_model="nova-3",
+                    elevenlabs_api_key="eleven-test",
+                    elevenlabs_model="eleven_flash_v2_5",
+                    elevenlabs_montenegrin_voice_id="voice-test",
+                    voice_stt_provider="openai",
+                    voice_tts_provider="elevenlabs",
+                ),
+            ),
+        ),
+    )
+
+    assert session["vad"] is vad
+    assert session["llm"]["model"] == "gpt-5.4"
+
+
+def test_browser_initial_greeting_is_deterministic() -> None:
+    from montenegrina_voice_agent.agent import initial_greeting_text
+
+    assert (
+        initial_greeting_text(RuntimeBootstrap.model_validate(runtime_payload()))
+        == "Zdravo, kako mogu pomoći?"
+    )
+
+
+def test_sip_recording_notice_prefixes_initial_greeting() -> None:
+    from montenegrina_voice_agent.agent import initial_greeting_text
+
+    payload = runtime_payload()
+    payload["channel"] = "SIP"
+    config = payload["config"]
+    assert isinstance(config, dict)
+    config["retention"] = {"transcriptDays": 30, "recordAudio": True, "audioDays": 7}
+    config["telephony"] = {"recordingNotice": "Poziv se snima."}
+
+    assert (
+        initial_greeting_text(RuntimeBootstrap.model_validate(payload))
+        == "Poziv se snima. Zdravo, kako mogu pomoći?"
     )

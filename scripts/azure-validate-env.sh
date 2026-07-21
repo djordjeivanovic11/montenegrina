@@ -4,7 +4,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT/scripts/azure-lib.sh"
 azure_load_env
-: "${OPENAI_MODEL:=gpt-5.4-mini}"
+: "${OPENAI_MODEL:=gpt-5.4}"
 : "${OPENAI_REALTIME_MODEL:=gpt-realtime-2}"
 : "${OPENAI_STT_MODEL:=gpt-4o-transcribe}"
 : "${OPENAI_TTS_MODEL:=gpt-4o-mini-tts}"
