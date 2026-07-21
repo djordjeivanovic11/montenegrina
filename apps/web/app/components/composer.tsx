@@ -13,6 +13,10 @@ interface ComposerProps {
   onSend: () => void;
   onStartVoice: () => void;
   onStopVoice: () => void;
+  mneMcpEnabled: boolean;
+  mneMcpAvailable: boolean;
+  mneMcpLocked: boolean;
+  onMneMcpChange: (enabled: boolean) => void;
 }
 
 export function Composer({
@@ -23,6 +27,10 @@ export function Composer({
   onSend,
   onStartVoice,
   onStopVoice,
+  mneMcpEnabled,
+  mneMcpAvailable,
+  mneMcpLocked,
+  onMneMcpChange,
 }: ComposerProps) {
   const canSend = input.trim().length > 0 && agentId !== '';
 
@@ -36,18 +44,41 @@ export function Composer({
   };
 
   return (
-    <div
-      className="shrink-0 px-4 py-3"
-      style={{ borderTop: '1px solid var(--color-border)' }}
-    >
+    <div className="shrink-0 px-4 py-3" style={{ borderTop: '1px solid var(--color-border)' }}>
       <form
-        onSubmit={(e) => { e.preventDefault(); onSend(); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSend();
+        }}
         className="flex items-end gap-3 rounded-2xl px-4 py-3"
         style={{
           backgroundColor: 'var(--color-surface-2)',
           border: '1px solid var(--color-border)',
         }}
       >
+        <button
+          type="button"
+          aria-pressed={mneMcpEnabled}
+          aria-label="Uključi MNE-MCP izvore"
+          title={
+            !mneMcpAvailable
+              ? 'MNE-MCP trenutno nije dostupan'
+              : mneMcpLocked
+                ? 'Izbor je zaključan dok je glasovna sesija aktivna'
+                : 'Uključi šire crnogorske pravne i javne izvore'
+          }
+          disabled={!mneMcpAvailable || mneMcpLocked}
+          onClick={() => onMneMcpChange(!mneMcpEnabled)}
+          className="shrink-0 h-8 rounded-lg px-2.5 text-[11px] font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          style={{
+            backgroundColor: mneMcpEnabled ? 'var(--color-accent)' : 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            color: mneMcpEnabled ? 'var(--color-accent-fg)' : 'var(--color-ink-2)',
+          }}
+        >
+          MNE-MCP
+        </button>
+
         {/* Text input */}
         <textarea
           value={input}

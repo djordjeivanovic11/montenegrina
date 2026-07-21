@@ -20,13 +20,21 @@ class RuntimeApi:
         response.raise_for_status()
         return RuntimeBootstrap.model_validate(response.json())
 
-    async def retrieve(self, query: str, top_k: int = 8) -> list[dict[str, Any]]:
+    async def retrieve(
+        self, query: str, top_k: int = 8, *, mne_mcp_enabled: bool = False
+    ) -> dict[str, Any]:
         response = await self._client.post(
-            "/internal/v1/runtime/retrieve", json={"query": query, "topK": top_k}
+            "/internal/v1/runtime/retrieve",
+            json={"query": query, "topK": top_k, "mneMcpEnabled": mne_mcp_enabled},
         )
         response.raise_for_status()
         payload = response.json()
-        return list(payload if isinstance(payload, list) else payload.get("items", []))
+        if isinstance(payload, list):
+            return {"items": list(payload), "mneMcp": {"status": "disabled"}}
+        return {
+            "items": list(payload.get("items", [])),
+            "mneMcp": dict(payload.get("mneMcp", {})),
+        }
 
     async def invoke_tool(
         self, name: str, arguments: dict[str, object], idempotency_key: str

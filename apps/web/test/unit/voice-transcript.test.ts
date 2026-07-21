@@ -83,6 +83,53 @@ describe('voiceTranscriptReducer', () => {
     expect(state.assistantDrafts).toEqual({});
   });
 
+  it('preserves spaces across streamed assistant deltas', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-spaces';
+
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: 'LLM' });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: ' je' });
+    state = reduce(state, 'assistant.text.delta', { speechId, text: ' veliki' });
+
+    const assistantMessage = state.messages.find((message) => message.role === 'assistant');
+    expect(assistantMessage?.content).toBe('LLM je veliki');
+    expect(assistantMessage?.streaming).toBe(true);
+  });
+
+  it('infers spaces when streamed assistant deltas arrive as bare words', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-bare-words';
+
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    for (const text of ['LLM', 'je', 'skraćenica', 'za', 'Large', 'Language', 'Model,', 'odnosno']) {
+      state = reduce(state, 'assistant.text.delta', { speechId, text });
+    }
+
+    const assistantMessage = state.messages.find((message) => message.role === 'assistant');
+    expect(assistantMessage?.content).toBe(
+      'LLM je skraćenica za Large Language Model, odnosno',
+    );
+  });
+
+  it('keeps a better-spaced streamed assistant draft over a glued final event', () => {
+    let state = initialVoiceTranscriptState();
+    const speechId = 'speech-glued-final';
+
+    state = reduce(state, 'assistant.audio.started', { speechId });
+    for (const text of ['LLM', 'je', 'skraćenica', 'za', 'Large', 'Language', 'Model']) {
+      state = reduce(state, 'assistant.text.delta', { speechId, text });
+    }
+    state = reduce(state, 'assistant.text.completed', {
+      speechId,
+      text: 'LLMjeskraćenicazaLargeLanguageModel',
+    });
+
+    const assistantMessage = state.messages.find((message) => message.role === 'assistant');
+    expect(assistantMessage?.content).toBe('LLM je skraćenica za Large Language Model');
+    expect(assistantMessage?.streaming).toBe(false);
+  });
+
   it('ignores turn.started for user finalization', () => {
     let state = initialVoiceTranscriptState();
     state = reduce(state, 'audio.started');

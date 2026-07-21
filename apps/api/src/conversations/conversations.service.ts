@@ -55,7 +55,11 @@ export class ConversationsService {
     @Inject(ENVIRONMENT) private readonly environment: Environment,
   ) {}
 
-  async create(actor: RequestActor, agentId: string, channel: 'TEXT' | 'BROWSER' | 'SIP' | 'BATCH') {
+  async create(
+    actor: RequestActor,
+    agentId: string,
+    channel: 'TEXT' | 'BROWSER' | 'SIP' | 'BATCH',
+  ) {
     const organizationId = this.organization(actor);
     const { version } = await this.agents.published(actor, agentId);
     const id = uuidv7();
@@ -108,8 +112,15 @@ export class ConversationsService {
     };
   }
 
-  async realtimeSession(actor: RequestActor, agentId: string, participantName?: string) {
-    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'BROWSER');
+  async realtimeSession(
+    actor: RequestActor,
+    agentId: string,
+    participantName?: string,
+    mneMcpEnabled = false,
+  ) {
+    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'BROWSER', {
+      dispatchMetadata: { mneMcpEnabled },
+    });
     const token = await this.livekitVoice.createBrowserParticipantToken(
       session.roomName,
       session.conversationId,
@@ -129,9 +140,16 @@ export class ConversationsService {
   async call(actor: RequestActor, agentId: string, to: string) {
     this.livekitVoice.assertOutboundConfigured();
     const toE164 = parseE164(to);
-    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'SIP', { calledE164: toE164 });
+    const session = await this.livekitVoice.startVoiceSession(actor, agentId, 'SIP', {
+      calledE164: toE164,
+    });
     const fromNumber = session.config.telephony?.outboundCallerId;
-    await this.livekitVoice.dialOutbound(session.roomName, session.conversationId, toE164, fromNumber);
+    await this.livekitVoice.dialOutbound(
+      session.roomName,
+      session.conversationId,
+      toE164,
+      fromNumber,
+    );
     return this.get(actor, session.conversationId);
   }
 
@@ -217,7 +235,12 @@ export class ConversationsService {
         eq(schema.conversations.agentId, first.agentId),
       ),
     });
-    if (!conversation) throw new ApiException({ code: 'RUNTIME_SCOPE_MISMATCH', message: 'Runtime event scope is invalid.', status: 403 });
+    if (!conversation)
+      throw new ApiException({
+        code: 'RUNTIME_SCOPE_MISMATCH',
+        message: 'Runtime event scope is invalid.',
+        status: 403,
+      });
     const version = await this.database.db.query.agentVersions.findFirst({
       where: and(
         eq(schema.agentVersions.organizationId, conversation.organizationId),
@@ -235,7 +258,10 @@ export class ConversationsService {
           event.conversationId !== first.conversationId,
       )
     ) {
-      throw new ApiException({ code: 'RUNTIME_EVENT_BATCH_MIXED_SCOPE', message: 'A runtime batch must have one scope.' });
+      throw new ApiException({
+        code: 'RUNTIME_EVENT_BATCH_MIXED_SCOPE',
+        message: 'A runtime batch must have one scope.',
+      });
     }
     const conversationStartedAtMs = conversation.startedAt.getTime();
     let accepted = 0;
@@ -247,7 +273,11 @@ export class ConversationsService {
         const nextState = typeof event.payload.state === 'string' ? event.payload.state : undefined;
         if (nextState && nextState !== state) {
           if (!canTransition(state, nextState as typeof state)) {
-            throw new ApiException({ code: 'INVALID_CONVERSATION_STATE_TRANSITION', message: `Invalid state transition ${state} -> ${nextState}.`, status: 409 });
+            throw new ApiException({
+              code: 'INVALID_CONVERSATION_STATE_TRANSITION',
+              message: `Invalid state transition ${state} -> ${nextState}.`,
+              status: 409,
+            });
           }
           state = nextState as typeof state;
         }
@@ -268,7 +298,10 @@ export class ConversationsService {
             })
             .onConflictDoNothing();
           const text = typeof event.payload.text === 'string' ? event.payload.text.trim() : '';
-          if (text && (event.type === 'user.turn.completed' || event.type === 'assistant.text.completed')) {
+          if (
+            text &&
+            (event.type === 'user.turn.completed' || event.type === 'assistant.text.completed')
+          ) {
             await transaction.insert(schema.transcriptSegments).values({
               id: uuidv7(),
               organizationId: event.organizationId,
@@ -301,7 +334,11 @@ export class ConversationsService {
     return { accepted };
   }
 
-  stream(actor: RequestActor, conversationId: string, afterSequence = 0): Observable<NestMessageEvent> {
+  stream(
+    actor: RequestActor,
+    conversationId: string,
+    afterSequence = 0,
+  ): Observable<NestMessageEvent> {
     const organizationId = this.organization(actor);
     return new Observable<NestMessageEvent>((subscriber) => {
       const subscription = this.redis.duplicate();
@@ -312,7 +349,12 @@ export class ConversationsService {
             eq(schema.conversations.organizationId, organizationId),
           ),
         });
-        if (!conversation) throw new ApiException({ code: 'CONVERSATION_NOT_FOUND', message: 'Conversation was not found.', status: 404 });
+        if (!conversation)
+          throw new ApiException({
+            code: 'CONVERSATION_NOT_FOUND',
+            message: 'Conversation was not found.',
+            status: 404,
+          });
         const replay = await this.database.db.query.conversationEvents.findMany({
           where: and(
             eq(schema.conversationEvents.conversationId, conversationId),
@@ -328,12 +370,19 @@ export class ConversationsService {
       };
       void start().catch((error: unknown) => subscriber.error(error));
       return () => {
-        void subscription.unsubscribe(this.eventChannel(conversationId)).finally(() => subscription.disconnect());
+        void subscription
+          .unsubscribe(this.eventChannel(conversationId))
+          .finally(() => subscription.disconnect());
       };
     });
   }
 
-  async bootstrap(claims: { organizationId: string; agentId: string; agentVersionId: string; conversationId: string }) {
+  async bootstrap(claims: {
+    organizationId: string;
+    agentId: string;
+    agentVersionId: string;
+    conversationId: string;
+  }) {
     const conversation = await this.database.db.query.conversations.findFirst({
       where: and(
         eq(schema.conversations.organizationId, claims.organizationId),
@@ -348,7 +397,12 @@ export class ConversationsService {
         eq(schema.agentVersions.id, claims.agentVersionId),
       ),
     });
-    if (!conversation || !version) throw new ApiException({ code: 'RUNTIME_SCOPE_MISMATCH', message: 'Runtime scope is invalid.', status: 403 });
+    if (!conversation || !version)
+      throw new ApiException({
+        code: 'RUNTIME_SCOPE_MISMATCH',
+        message: 'Runtime scope is invalid.',
+        status: 403,
+      });
     return {
       organizationId: claims.organizationId,
       agentId: claims.agentId,
@@ -371,12 +425,22 @@ export class ConversationsService {
         isNull(schema.conversations.deletedAt),
       ),
     });
-    if (!item) throw new ApiException({ code: 'CONVERSATION_NOT_FOUND', message: 'Conversation was not found.', status: 404 });
+    if (!item)
+      throw new ApiException({
+        code: 'CONVERSATION_NOT_FOUND',
+        message: 'Conversation was not found.',
+        status: 404,
+      });
     return item;
   }
 
   private organization(actor: RequestActor): string {
-    if (!actor.organizationId) throw new ApiException({ code: 'ORGANIZATION_REQUIRED', message: 'Select an organization.', status: 400 });
+    if (!actor.organizationId)
+      throw new ApiException({
+        code: 'ORGANIZATION_REQUIRED',
+        message: 'Select an organization.',
+        status: 400,
+      });
     return actor.organizationId;
   }
 

@@ -105,6 +105,11 @@ export const environmentSchema = z
     KNOWLEDGE_PARSER_TIMEOUT_SECONDS: z.coerce.number().int().min(30).max(1_800).default(600),
     KNOWLEDGE_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(20).default(3),
     KNOWLEDGE_RETRIEVAL_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3600).default(60),
+    MNE_MCP_ENABLED: booleanFromString,
+    MNE_MCP_API_URL: z.url().default('https://api.mne-mcp.com'),
+    MNE_MCP_API_KEY: optionalSecret,
+    MNE_MCP_TIMEOUT_MS: z.coerce.number().int().min(100).max(5_000).default(1_200),
+    MNE_MCP_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(3_600).default(60),
     BILLING_ENABLED: booleanFromString,
     PHONE_INTEGRATIONS_ENABLED: booleanFromString,
     RECORDINGS_ENABLED: booleanFromString,
@@ -261,6 +266,25 @@ export const environmentSchema = z
             message: `${key} is required when VOICE_TTS_PROVIDER=elevenlabs`,
           });
         }
+      }
+    }
+    if (environment.MNE_MCP_ENABLED) {
+      if (!environment.MNE_MCP_API_KEY) {
+        context.addIssue({
+          code: 'custom',
+          path: ['MNE_MCP_API_KEY'],
+          message: 'MNE_MCP_API_KEY is required when MNE_MCP_ENABLED=true',
+        });
+      }
+      if (
+        environment.NODE_ENV === 'production' &&
+        !environment.MNE_MCP_API_URL.startsWith('https://')
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['MNE_MCP_API_URL'],
+          message: 'MNE_MCP_API_URL must use HTTPS in production',
+        });
       }
     }
   });

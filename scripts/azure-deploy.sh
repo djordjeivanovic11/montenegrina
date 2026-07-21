@@ -11,6 +11,9 @@ azure_need AZURE_RESOURCE_GROUP AZURE_CONTAINER_REGISTRY_NAME AZURE_CONTAINER_RE
 TAG="${IMAGE_TAG:-$(git -C "$ROOT" rev-parse --short=12 HEAD)}"
 ACR="$AZURE_CONTAINER_REGISTRY_NAME"
 LOGIN="$AZURE_CONTAINER_REGISTRY_ENDPOINT"
+RAW_REVISION_SUFFIX="${REVISION_SUFFIX:-r-$TAG}"
+REVISION_SUFFIX_BASE="$(printf '%s' "$RAW_REVISION_SUFFIX" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g; s/^-+//; s/-+$//')"
+[[ -n "$REVISION_SUFFIX_BASE" ]] || REVISION_SUFFIX_BASE="r-$(git -C "$ROOT" rev-parse --short=12 HEAD)"
 
 : "${OPENAI_MODEL:=gpt-5.4}"
 : "${OPENAI_REALTIME_MODEL:=gpt-realtime-2}"
@@ -19,7 +22,17 @@ LOGIN="$AZURE_CONTAINER_REGISTRY_ENDPOINT"
 : "${OPENAI_TTS_VOICE:=ash}"
 : "${VOICE_STT_PROVIDER:=openai}"
 : "${VOICE_TTS_PROVIDER:=elevenlabs}"
+: "${RATE_LIMIT_VOICE_SESSIONS_PER_HOUR:=60}"
+: "${MNE_MCP_ENABLED:=false}"
+: "${MNE_MCP_API_URL:=https://api.mne-mcp.com}"
 : "${ACR_BUILD_CLIENT_TIMEOUT_SECONDS:=1800}"
+if [[ "$MNE_MCP_ENABLED" == 'true' ]]; then
+  azure_need MNE_MCP_API_KEY MNE_MCP_API_URL
+  [[ "$MNE_MCP_API_URL" == https://* ]] || { echo "MNE_MCP_API_URL must use HTTPS." >&2; exit 1; }
+elif [[ "$MNE_MCP_ENABLED" != 'false' ]]; then
+  echo "MNE_MCP_ENABLED must be true or false." >&2
+  exit 1
+fi
 
 runtime_env_args=(
   --set-env-vars
@@ -30,6 +43,15 @@ runtime_env_args=(
   "OPENAI_TTS_VOICE=$OPENAI_TTS_VOICE"
   "VOICE_STT_PROVIDER=$VOICE_STT_PROVIDER"
   "VOICE_TTS_PROVIDER=$VOICE_TTS_PROVIDER"
+  "RATE_LIMIT_VOICE_SESSIONS_PER_HOUR=$RATE_LIMIT_VOICE_SESSIONS_PER_HOUR"
+)
+
+api_runtime_env_args=(
+  "${runtime_env_args[@]}"
+  "MNE_MCP_ENABLED=$MNE_MCP_ENABLED"
+  "MNE_MCP_API_URL=$MNE_MCP_API_URL"
+  "MNE_MCP_TIMEOUT_MS=1200"
+  "MNE_MCP_CACHE_TTL_SECONDS=60"
 )
 
 build() {
@@ -71,6 +93,20 @@ build() {
     sleep $((attempt * 15))
   done
 }
+
+revision_suffix_for() {
+  local app="$1" max suffix
+  max=$((54 - ${#app} - 2))
+  if (( max < 1 )); then
+    echo "Container app name is too long for revisions: $app" >&2
+    exit 1
+  fi
+  suffix="${REVISION_SUFFIX_BASE:0:max}"
+  suffix="${suffix%-}"
+  [[ -n "$suffix" ]] || suffix="r"
+  printf '%s' "$suffix"
+}
+
 build montenegrina-api apps/api/Dockerfile
 build montenegrina-web apps/web/Dockerfile --build-arg "NEXT_PUBLIC_API_URL=https://api.voice.mne-mcp.com" --build-arg "NEXT_PUBLIC_LIVEKIT_URL=$LIVEKIT_URL" --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$PUBLIC_GOOGLE_CLIENT_ID"
 build montenegrina-worker apps/worker/Dockerfile
@@ -84,22 +120,24 @@ azure_wait_job "$SERVICE_MIGRATION_JOB_NAME" "$AZURE_RESOURCE_GROUP"
 azure_wait_job "$SERVICE_SEED_JOB_NAME" "$AZURE_RESOURCE_GROUP"
 
 update_private() {
-  local app="$1" image="$2" revision
+  local app="$1" image="$2" revision revision_suffix
   shift 2
-  revision="$(az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$LOGIN/$image:$TAG" --revision-suffix "$TAG" "$@" --query properties.latestRevisionName -o tsv)"
+  revision_suffix="$(revision_suffix_for "$app")"
+  revision="$(az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$LOGIN/$image:$TAG" --revision-suffix "$revision_suffix" "$@" --query properties.latestRevisionName -o tsv)"
   azure_wait_revision "$app" "$revision" "$AZURE_RESOURCE_GROUP"
 }
 
 update_public() {
-  local app="$1" image="$2" revision
+  local app="$1" image="$2" revision revision_suffix
   shift 2
-  revision="$(az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$LOGIN/$image:$TAG" --revision-suffix "$TAG" "$@" --query properties.latestRevisionName -o tsv)"
+  revision_suffix="$(revision_suffix_for "$app")"
+  revision="$(az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$LOGIN/$image:$TAG" --revision-suffix "$revision_suffix" "$@" --query properties.latestRevisionName -o tsv)"
   azure_wait_revision "$app" "$revision" "$AZURE_RESOURCE_GROUP"
   az containerapp ingress traffic set --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --revision-weight "$revision=100" >/dev/null
 }
 
 update_private "$SERVICE_KNOWLEDGE_PARSER_NAME" montenegrina-parser
-update_public "$SERVICE_API_NAME" montenegrina-api "${runtime_env_args[@]}"
+update_public "$SERVICE_API_NAME" montenegrina-api "${api_runtime_env_args[@]}"
 update_private "$SERVICE_WORKER_NAME" montenegrina-worker "${runtime_env_args[@]}"
 update_private "$SERVICE_VOICE_AGENT_NAME" montenegrina-voice-agent "${runtime_env_args[@]}"
 update_public "$SERVICE_WEB_NAME" montenegrina-web

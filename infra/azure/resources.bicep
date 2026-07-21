@@ -18,6 +18,10 @@ param livekitApiKey string
 param livekitApiSecret string
 @secure()
 param openaiApiKey string
+@secure()
+param mneMcpApiKey string
+param mneMcpEnabled string = 'false'
+param mneMcpApiUrl string = 'https://api.mne-mcp.com'
 param openaiModel string = 'gpt-5.4'
 param openaiRealtimeModel string = 'gpt-realtime-2'
 param openaiSttModel string = 'gpt-4o-transcribe'
@@ -201,7 +205,7 @@ resource backendVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01'
 
 var databaseUrl = 'postgresql://${postgresUser}:${uriComponent(postgresAdminPassword)}@${postgres.properties.fullyQualifiedDomainName}:5432/${postgresDatabase}?sslmode=require'
 var redisUrl = 'rediss://:${uriComponent(redisDb.listKeys().primaryKey)}@${redis.properties.hostName}:10000'
-var staticKeyVaultValues = [
+var staticKeyVaultValues = concat([
   { name: 'session-secret', value: sessionSecret }
   { name: 'internal-token-secret', value: internalTokenSecret }
   { name: 'voice-agent-service-secret', value: voiceAgentServiceSecret }
@@ -213,7 +217,7 @@ var staticKeyVaultValues = [
   { name: 'elevenlabs-api-key', value: elevenlabsApiKey }
   { name: 'elevenlabs-voice-id', value: elevenlabsVoiceId }
   { name: 'google-client-id', value: googleClientId }
-]
+], empty(mneMcpApiKey) ? [] : [{ name: 'mne-mcp-api-key', value: mneMcpApiKey }])
 resource vaultSecrets 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = [for secret in staticKeyVaultValues: {
   parent: vault
   name: secret.name
@@ -273,7 +277,7 @@ var backendIdentityMap = { '${backendIdentity.id}': {} }
 var frontendIdentityMap = { '${frontendIdentity.id}': {} }
 var registryBackend = [{ server: registry.properties.loginServer, identity: backendIdentity.id }]
 var registryFrontend = [{ server: registry.properties.loginServer, identity: frontendIdentity.id }]
-var backendSecretNames = ['database-url', 'redis-url', 'session-secret', 'internal-token-secret', 'voice-agent-service-secret', 'livekit-url', 'livekit-api-key', 'livekit-api-secret', 'openai-api-key', 'deepgram-api-key', 'elevenlabs-api-key', 'elevenlabs-voice-id', 'google-client-id']
+var backendSecretNames = concat(['database-url', 'redis-url', 'session-secret', 'internal-token-secret', 'voice-agent-service-secret', 'livekit-url', 'livekit-api-key', 'livekit-api-secret', 'openai-api-key', 'deepgram-api-key', 'elevenlabs-api-key', 'elevenlabs-voice-id', 'google-client-id'], empty(mneMcpApiKey) ? [] : ['mne-mcp-api-key'])
 var backendSecretRefs = [for name in backendSecretNames: { name: name, keyVaultUrl: 'https://${vault.name}${environment().suffixes.keyvaultDns}/secrets/${name}', identity: backendIdentity.id }]
 var commonBackendEnv = [
   { name: 'NODE_ENV', value: 'production' }
@@ -316,12 +320,22 @@ var commonBackendEnv = [
   { name: 'MAX_CONVERSATION_MINUTES', value: '5' }
   { name: 'MAX_CONCURRENT_SESSIONS', value: '25' }
   { name: 'RATE_LIMIT_AUTH_PER_MINUTE', value: '10' }
-  { name: 'RATE_LIMIT_VOICE_SESSIONS_PER_HOUR', value: '3' }
+  { name: 'RATE_LIMIT_VOICE_SESSIONS_PER_HOUR', value: '60' }
   { name: 'KNOWLEDGE_MAX_BULK_FILES', value: '20' }
   { name: 'KNOWLEDGE_MAX_DOCUMENT_MIB', value: '50' }
   { name: 'KNOWLEDGE_MAX_BULK_MIB', value: '100' }
   { name: 'KNOWLEDGE_PARSER_TIMEOUT_SECONDS', value: '600' }
   { name: 'KNOWLEDGE_WORKER_CONCURRENCY', value: '3' }
+]
+var mneMcpApiEnv = mneMcpEnabled == 'true' ? [
+  { name: 'MNE_MCP_ENABLED', value: 'true' }
+  { name: 'MNE_MCP_API_URL', value: mneMcpApiUrl }
+  { name: 'MNE_MCP_API_KEY', secretRef: 'mne-mcp-api-key' }
+  { name: 'MNE_MCP_TIMEOUT_MS', value: '1200' }
+  { name: 'MNE_MCP_CACHE_TTL_SECONDS', value: '60' }
+] : [
+  { name: 'MNE_MCP_ENABLED', value: 'false' }
+  { name: 'MNE_MCP_API_URL', value: mneMcpApiUrl }
 ]
 
 resource parser 'Microsoft.App/containerApps@2025-01-01' = {
@@ -351,7 +365,7 @@ resource api 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Multiple', maxInactiveRevisions: 5, ingress: { external: true, targetPort: 3001, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, [{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
+    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, concat([{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }], mneMcpApiEnv)), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
   }
   dependsOn: [backendAcrPull, backendBlobAccess, backendVaultAccess, vaultSecrets, databaseUrlSecret, redisUrlSecret, parser, blobDnsGroup, vaultDnsGroup, redisDnsGroup]
 }

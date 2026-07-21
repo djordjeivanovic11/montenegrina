@@ -21,7 +21,6 @@ interface ConversationAreaProps {
   onStartVoice: () => void;
   audioBlocked?: boolean;
   onEnableAudio?: () => void;
-  voiceMode?: boolean;
 }
 
 function formatTime(ts: number): string {
@@ -38,7 +37,6 @@ export function ConversationArea({
   onStartVoice,
   audioBlocked = false,
   onEnableAudio,
-  voiceMode = false,
 }: ConversationAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const isVoiceActive =
@@ -181,7 +179,7 @@ export function ConversationArea({
                   opacity: msg.streaming ? 0.92 : 1,
                 }}
               >
-                {msg.role === 'assistant' && !voiceMode ? (
+                {msg.role === 'assistant' ? (
                   <MarkdownContent content={msg.content} />
                 ) : (
                   <span className="whitespace-pre-wrap">{msg.content}</span>

@@ -9,6 +9,7 @@ import { ConversationsService } from '../conversations/conversations.service.js'
 import { InternalGuard } from '../internal/internal.guard.js';
 import { RetrievalService } from '../knowledge/retrieval.service.js';
 import { ToolsService } from '../tools/tools.service.js';
+import { MneMcpService } from '../integrations/mne-mcp.service.js';
 import type { RealtimeEvent } from '@montenegrina/contracts';
 
 @Public()
@@ -19,6 +20,7 @@ export class InternalController {
     private readonly retrieval: RetrievalService,
     private readonly tools: ToolsService,
     private readonly livekitVoice: LiveKitVoiceService,
+    private readonly mneMcp: MneMcpService,
   ) {}
 
   @UseGuards(InternalGuard)
@@ -66,9 +68,9 @@ export class InternalController {
 
   @UseGuards(InternalGuard)
   @Post('retrieve')
-  retrieve(
+  async retrieve(
     @Req() request: FastifyRequest,
-    @Body() body: { query: string; topK?: number },
+    @Body() body: { query: string; topK?: number; mneMcpEnabled?: boolean },
   ) {
     const claims = request.runtimeClaims as NonNullable<FastifyRequest['runtimeClaims']>;
     const actor: RequestActor = {
@@ -77,10 +79,27 @@ export class InternalController {
       organizationId: claims.organizationId,
       permissions: new Set(['knowledge:read']),
     };
-    return this.retrieval.retrieveForAgent(actor, claims.agentId, body.query, {
-      topK: body.topK ?? 8,
-      conversationId: claims.conversationId,
-    });
+    const [local, mne] = await Promise.all([
+      this.retrieval.retrieveForAgent(actor, claims.agentId, body.query, {
+        topK: Math.min(body.topK ?? 4, 4),
+        conversationId: claims.conversationId,
+      }),
+      this.mneMcp.retrieve(body.query, {
+        requested: body.mneMcpEnabled === true,
+        limit: 4,
+      }),
+    ]);
+    return {
+      items: [...local.slice(0, 4), ...mne.items.slice(0, 4)].slice(0, 8),
+      mneMcp: {
+        enabled: body.mneMcpEnabled === true,
+        status: mne.status,
+        latencyMs: mne.latencyMs,
+        cacheHit: mne.cacheHit,
+        ...(mne.route ? { route: mne.route } : {}),
+        ...(mne.mode ? { mode: mne.mode } : {}),
+      },
+    };
   }
 
   @UseGuards(InternalGuard)

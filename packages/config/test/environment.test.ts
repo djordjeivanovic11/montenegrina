@@ -41,6 +41,8 @@ describe('environmentSchema', () => {
     expect(environment.KNOWLEDGE_MAX_BULK_MIB).toBe(100);
     expect(environment.KNOWLEDGE_PARSER_TIMEOUT_SECONDS).toBe(600);
     expect(environment.KNOWLEDGE_WORKER_CONCURRENCY).toBe(3);
+    expect(environment.MNE_MCP_ENABLED).toBe(false);
+    expect(environment.MNE_MCP_TIMEOUT_MS).toBe(1_200);
   });
 
   it('rejects unsafe knowledge ingestion limits', () => {
@@ -69,6 +71,19 @@ describe('environmentSchema', () => {
         ELEVENLABS_MONTENEGRIN_VOICE_ID: '',
       }),
     ).not.toThrow();
+  });
+
+  it('requires the MNE-MCP key only when the integration is enabled', () => {
+    expect(() =>
+      environmentSchema.parse({ ...valid, MNE_MCP_ENABLED: 'true', MNE_MCP_API_KEY: '' }),
+    ).toThrow(/MNE_MCP_API_KEY/);
+    const environment = environmentSchema.parse({
+      ...valid,
+      MNE_MCP_ENABLED: 'true',
+      MNE_MCP_API_KEY: 'mne-test-key',
+    });
+    expect(environment.MNE_MCP_ENABLED).toBe(true);
+    expect(environment.MNE_MCP_API_URL).toBe('https://api.mne-mcp.com');
   });
 
   it('requires secure cookies in production', () => {

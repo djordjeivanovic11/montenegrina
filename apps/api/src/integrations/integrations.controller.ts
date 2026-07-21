@@ -16,6 +16,7 @@ import type { RequestActor } from '../security/actor.js';
 import { CurrentActor } from '../security/current-actor.decorator.js';
 import { RequirePermissions } from '../security/permissions.decorator.js';
 import { PhoneNumbersService } from './phone-numbers.service.js';
+import { MneMcpService } from './mne-mcp.service.js';
 
 function requestId(request: FastifyRequest): string {
   return (request.headers['x-request-id'] as string | undefined) ?? uuidv7();
@@ -28,6 +29,7 @@ export class IntegrationsController {
     private readonly audit: AuditService,
     private readonly phoneNumbers: PhoneNumbersService,
     @Inject(ENVIRONMENT) private readonly environment: Environment,
+    private readonly mneMcp: MneMcpService,
   ) {}
 
   @Get('channels')
@@ -38,6 +40,7 @@ export class IntegrationsController {
       where: eq(schema.communicationChannels.organizationId, organizationId),
     });
     return {
+      mneMcpAvailable: this.mneMcp.available(),
       items: items.map((item) => ({
         id: item.id,
         type: item.type,
@@ -61,7 +64,13 @@ export class IntegrationsController {
   createPhoneNumber(
     @CurrentActor() actor: RequestActor,
     @Body()
-    body: { e164: string; label?: string; inboundAgentId?: string; enabled?: boolean; callerIdE164?: string },
+    body: {
+      e164: string;
+      label?: string;
+      inboundAgentId?: string;
+      enabled?: boolean;
+      callerIdE164?: string;
+    },
   ) {
     return this.phoneNumbers.create(actor, body);
   }
@@ -72,14 +81,22 @@ export class IntegrationsController {
     @CurrentActor() actor: RequestActor,
     @Param('phoneNumberId') phoneNumberId: string,
     @Body()
-    body: { label?: string; inboundAgentId?: string | null; enabled?: boolean; callerIdE164?: string | null },
+    body: {
+      label?: string;
+      inboundAgentId?: string | null;
+      enabled?: boolean;
+      callerIdE164?: string | null;
+    },
   ) {
     return this.phoneNumbers.update(actor, phoneNumberId, body);
   }
 
   @Delete('phone-numbers/:phoneNumberId')
   @RequirePermissions('agents:update')
-  deletePhoneNumber(@CurrentActor() actor: RequestActor, @Param('phoneNumberId') phoneNumberId: string) {
+  deletePhoneNumber(
+    @CurrentActor() actor: RequestActor,
+    @Param('phoneNumberId') phoneNumberId: string,
+  ) {
     return this.phoneNumbers.remove(actor, phoneNumberId);
   }
 
@@ -112,7 +129,11 @@ export class IntegrationsController {
     @Body() body: { url: string; events: string[] },
   ) {
     if (!this.environment.WEBHOOKS_ENABLED) {
-      throw new ApiException({ code: 'WEBHOOKS_DISABLED', message: 'Webhooks are disabled.', status: 403 });
+      throw new ApiException({
+        code: 'WEBHOOKS_DISABLED',
+        message: 'Webhooks are disabled.',
+        status: 403,
+      });
     }
     const secret = randomBytes(32).toString('base64url');
     const id = uuidv7();

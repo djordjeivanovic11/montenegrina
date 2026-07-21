@@ -2,7 +2,11 @@
 from types import SimpleNamespace
 from typing import Any, cast
 
-from montenegrina_voice_agent.language import normalize_voice_text
+from montenegrina_voice_agent.language import (
+    VoiceStreamStitcher,
+    normalize_voice_stream_text,
+    normalize_voice_text,
+)
 from montenegrina_voice_agent.models import RuntimeBootstrap
 
 
@@ -76,6 +80,20 @@ def test_voice_text_normalization_keeps_urls_and_ids_protected() -> None:
     )
 
 
+def test_stream_text_normalization_preserves_chunk_boundaries() -> None:
+    assert normalize_voice_stream_text(" je veliki ", script="latin") == " je veliki "
+    assert normalize_voice_stream_text(" Људи\n", script="latin") == " Ljudi\n"
+
+
+def test_stream_stitcher_infers_missing_spaces() -> None:
+    stitcher = VoiceStreamStitcher("latin")
+    chunks = ["LLM", "je", "skraćenica", "za", "Large", "Language", "Model,", "odnosno"]
+
+    assert "".join(stitcher.push(chunk) for chunk in chunks) == (
+        "LLM je skraćenica za Large Language Model, odnosno"
+    )
+
+
 def test_controlled_openai_session_uses_vad(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("OPENAI_API_KEY", "openai-test")
     from montenegrina_voice_agent import agent
@@ -89,11 +107,7 @@ def test_controlled_openai_session_uses_vad(monkeypatch) -> None:  # type: ignor
 
     monkeypatch.setattr(agent.silero.VAD, "load", lambda: vad)
     monkeypatch.setattr(agent.openai, "STT", lambda **kwargs: {"type": "stt", **kwargs})
-    monkeypatch.setattr(
-        agent.openai.responses,
-        "LLM",
-        lambda **kwargs: {"type": "llm", **kwargs},
-    )
+    monkeypatch.setattr(agent.openai, "LLM", lambda **kwargs: {"type": "llm", **kwargs})
     monkeypatch.setattr(agent.elevenlabs, "TTS", lambda **kwargs: {"type": "tts", **kwargs})
     monkeypatch.setattr(agent, "AgentSession", fake_session)
 
@@ -124,6 +138,11 @@ def test_controlled_openai_session_uses_vad(monkeypatch) -> None:  # type: ignor
 
     assert session["vad"] is vad
     assert session["llm"]["model"] == "gpt-5.4"
+    assert session["min_endpointing_delay"] == 0.55
+    assert session["max_endpointing_delay"] == 1.2
+    assert session["tts"]["auto_mode"] is False
+    assert session["tts"]["chunk_length_schedule"] == [50, 90, 130, 180]
+    assert session["tts"]["sync_alignment"] is False
 
 
 def test_browser_initial_greeting_is_deterministic() -> None:

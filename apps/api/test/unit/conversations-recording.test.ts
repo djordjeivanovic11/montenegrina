@@ -93,3 +93,36 @@ describe('ConversationsService runtime event normalization', () => {
     expect(normalized.payload.text).toBe('Šta je ovo, šta se dešava?');
   });
 });
+
+describe('ConversationsService.realtimeSession', () => {
+  it('locks the selected MNE-MCP mode into LiveKit dispatch metadata', async () => {
+    const startVoiceSession = vi.fn().mockResolvedValue({
+      roomName: 'room-1',
+      conversationId: 'conversation-1',
+    });
+    const createBrowserParticipantToken = vi.fn().mockResolvedValue({
+      participantToken: 'participant-token',
+      expiresAt: '2026-07-21T12:00:00.000Z',
+    });
+    const service = new ConversationsService(
+      {} as never,
+      {} as never,
+      { startVoiceSession, createBrowserParticipantToken } as never,
+      {} as never,
+      {} as never,
+      { PUBLIC_LIVEKIT_URL: 'wss://livekit.test' } as never,
+    );
+    const actor = {
+      actorType: 'USER' as const,
+      actorId: 'user-1',
+      organizationId: 'org-1',
+      permissions: new Set(['conversations:create']),
+    };
+
+    await service.realtimeSession(actor, 'agent-1', 'Korisnik', true);
+
+    expect(startVoiceSession).toHaveBeenCalledWith(actor, 'agent-1', 'BROWSER', {
+      dispatchMetadata: { mneMcpEnabled: true },
+    });
+  });
+});

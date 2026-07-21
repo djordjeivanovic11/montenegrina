@@ -424,6 +424,7 @@ paths:
               type: object
               properties:
                 participantName: { type: string, maxLength: 100 }
+                mneMcpEnabled: { type: boolean, default: false }
       responses:
         '201':
           description: LiveKit session credentials
@@ -630,8 +631,9 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required: [items, mneMcpAvailable]
                 properties:
+                  mneMcpAvailable: { type: boolean }
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/CommunicationChannel' }
@@ -995,6 +997,7 @@ components:
         conversationId: { type: string, format: uuid }
         input: { type: string, minLength: 1, maxLength: 50000 }
         stream: { type: boolean, default: false }
+        mneMcpEnabled: { type: boolean, description: Defaults to false when omitted. }
     GeneratedResponse:
       type: object
       additionalProperties: false
@@ -1006,6 +1009,16 @@ components:
         warnings: { type: array, items: { type: string } }
         citations: { type: array, items: { $ref: '#/components/schemas/Citation' } }
         provider: { $ref: '#/components/schemas/ProviderSummary' }
+        mneMcp: { $ref: '#/components/schemas/MneMcpStatus' }
+    MneMcpStatus:
+      type: object
+      additionalProperties: false
+      required: [enabled, status, latencyMs, cacheHit]
+      properties:
+        enabled: { type: boolean }
+        status: { type: string, enum: [disabled, unavailable, success, failed] }
+        latencyMs: { type: integer, minimum: 0 }
+        cacheHit: { type: boolean }
     CreateSpeechRequest:
       type: object
       additionalProperties: false

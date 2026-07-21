@@ -54,6 +54,14 @@ env_value() {
 
 stt_provider="$(env_value VOICE_STT_PROVIDER)"
 tts_provider="$(env_value VOICE_TTS_PROVIDER)"
+if [[ -z "${RATE_LIMIT_VOICE_SESSIONS_PER_HOUR:-}" ]]; then
+  configured_voice_limit="$(env_value RATE_LIMIT_VOICE_SESSIONS_PER_HOUR)"
+  if [[ "$configured_voice_limit" =~ ^[0-9]+$ && "$configured_voice_limit" -gt 60 ]]; then
+    export RATE_LIMIT_VOICE_SESSIONS_PER_HOUR="$configured_voice_limit"
+  else
+    export RATE_LIMIT_VOICE_SESSIONS_PER_HOUR=60
+  fi
+fi
 required=(OPENAI_API_KEY)
 if [[ "${stt_provider:-openai}" == "deepgram" ]]; then
   required+=(DEEPGRAM_API_KEY)

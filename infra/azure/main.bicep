@@ -19,6 +19,10 @@ param livekitApiSecret string
 @secure()
 param openaiApiKey string
 @secure()
+param mneMcpApiKey string
+param mneMcpEnabled string = 'false'
+param mneMcpApiUrl string = 'https://api.mne-mcp.com'
+@secure()
 param deepgramApiKey string
 @secure()
 param elevenlabsApiKey string
@@ -53,6 +57,9 @@ module resources 'resources.bicep' = {
     livekitApiKey: livekitApiKey
     livekitApiSecret: livekitApiSecret
     openaiApiKey: openaiApiKey
+    mneMcpApiKey: mneMcpApiKey
+    mneMcpEnabled: mneMcpEnabled
+    mneMcpApiUrl: mneMcpApiUrl
     deepgramApiKey: deepgramApiKey
     elevenlabsApiKey: elevenlabsApiKey
     elevenlabsVoiceId: elevenlabsVoiceId

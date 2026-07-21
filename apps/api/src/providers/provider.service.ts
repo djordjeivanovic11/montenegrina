@@ -15,6 +15,7 @@ import type { RequestActor } from '../security/actor.js';
 import { PROVIDERS } from '../core/tokens.js';
 import { DatabaseService } from '../database/database.service.js';
 import { RetrievalService } from '../knowledge/retrieval.service.js';
+import { MneMcpService } from '../integrations/mne-mcp.service.js';
 
 @Injectable()
 export class ProviderService {
@@ -23,6 +24,7 @@ export class ProviderService {
     private readonly agents: AgentsService,
     private readonly database: DatabaseService,
     private readonly retrieval: RetrievalService,
+    private readonly mneMcp: MneMcpService,
   ) {}
 
   async transcribe(options: {
@@ -53,7 +55,13 @@ export class ProviderService {
       outputScript: version.config.languageProfile.script,
       preferIjekavian: version.config.languageProfile.ijekavian,
     });
-    await this.recordUsage(options.actor, options.agentId, undefined, 'transcription', result.metadata);
+    await this.recordUsage(
+      options.actor,
+      options.agentId,
+      undefined,
+      'transcription',
+      result.metadata,
+    );
     return {
       language: 'cnr' as const,
       originalText: language.originalText,
@@ -69,6 +77,7 @@ export class ProviderService {
     agentId: string;
     input: string;
     conversationId?: string;
+    mneMcpEnabled?: boolean;
   }) {
     const { version } = await this.agents.published(options.actor, options.agentId);
     const convId = options.conversationId ?? uuidv7();
@@ -100,16 +109,22 @@ export class ProviderService {
       orderBy: [asc(schema.transcriptSegments.createdAt)],
       limit: 30,
     });
-    const configuredIds =
-      version.config.knowledgeBaseIds?.length
-        ? version.config.knowledgeBaseIds
-        : (version.config.knowledgeSourceIds ?? []);
-    const sources = configuredIds.length
-      ? await this.retrieval.retrieveForAgent(options.actor, options.agentId, options.input, {
-          topK: 5,
-          conversationId: convId,
-        })
-      : [];
+    const configuredIds = version.config.knowledgeBaseIds?.length
+      ? version.config.knowledgeBaseIds
+      : (version.config.knowledgeSourceIds ?? []);
+    const [localSources, mne] = await Promise.all([
+      configuredIds.length
+        ? this.retrieval.retrieveForAgent(options.actor, options.agentId, options.input, {
+            topK: 4,
+            conversationId: convId,
+          })
+        : Promise.resolve([]),
+      this.mneMcp.retrieve(options.input, {
+        requested: options.mneMcpEnabled === true,
+        limit: 4,
+      }),
+    ]);
+    const sources = [...localSources.slice(0, 4), ...mne.items.slice(0, 4)].slice(0, 8);
     const sourceContext = this.retrieval.buildPromptBlock(sources);
     const messages = [
       ...history.map((s) => ({
@@ -132,19 +147,13 @@ export class ProviderService {
       outputScript: version.config.languageProfile.script,
       preferIjekavian: version.config.languageProfile.ijekavian,
     });
-    await this.recordUsage(
-      options.actor,
-      options.agentId,
-      convId,
-      'response',
-      result.metadata,
-    );
+    await this.recordUsage(options.actor, options.agentId, convId, 'response', result.metadata);
     const conversationStartedAtMs = options.conversationId
-      ? (
+      ? ((
           await this.database.db.query.conversations.findFirst({
             where: eq(schema.conversations.id, convId),
           })
-        )?.startedAt.getTime() ?? Date.now()
+        )?.startedAt.getTime() ?? Date.now())
       : Date.now();
     const offsetMs = Date.now() - conversationStartedAtMs;
     await this.database.db.insert(schema.transcriptSegments).values([
@@ -187,6 +196,12 @@ export class ProviderService {
       toolCalls: result.data.toolCalls,
       provider: this.publicMetadata(result.metadata),
       conversationId: convId,
+      mneMcp: {
+        enabled: options.mneMcpEnabled === true,
+        status: mne.status,
+        latencyMs: mne.latencyMs,
+        cacheHit: mne.cacheHit,
+      },
     };
   }
 
@@ -200,7 +215,7 @@ export class ProviderService {
       limit: 50,
     });
     return {
-      items: items.map(c => ({
+      items: items.map((c) => ({
         id: c.id,
         agentId: c.agentId,
         channel: c.channel,
@@ -222,7 +237,7 @@ export class ProviderService {
       orderBy: [asc(schema.transcriptSegments.createdAt)],
     });
     return {
-      messages: segments.map(s => ({
+      messages: segments.map((s) => ({
         id: s.id,
         role: s.speaker === 'USER' ? 'user' : 'assistant',
         content: s.originalText,

@@ -11,6 +11,8 @@ azure_load_env
 : "${OPENAI_TTS_VOICE:=ash}"
 : "${VOICE_STT_PROVIDER:=openai}"
 : "${VOICE_TTS_PROVIDER:=elevenlabs}"
+: "${MNE_MCP_ENABLED:=false}"
+: "${MNE_MCP_API_URL:=https://api.mne-mcp.com}"
 if [[ -z "${GOOGLE_CLIENT_ID:-}" && -n "${PUBLIC_GOOGLE_CLIENT_ID:-}" ]]; then GOOGLE_CLIENT_ID="$PUBLIC_GOOGLE_CLIENT_ID"; fi
 if [[ -z "${PUBLIC_GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_ID:-}" ]]; then PUBLIC_GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"; fi
 azure_need AZURE_LOCATION AZURE_ENV_NAME POSTGRES_ADMIN_PASSWORD SESSION_SECRET INTERNAL_TOKEN_SECRET VOICE_AGENT_SERVICE_SECRET LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET OPENAI_API_KEY GOOGLE_CLIENT_ID PUBLIC_GOOGLE_CLIENT_ID CUSTOM_WEB_DOMAIN CUSTOM_API_DOMAIN
@@ -22,5 +24,12 @@ azure_need AZURE_LOCATION AZURE_ENV_NAME POSTGRES_ADMIN_PASSWORD SESSION_SECRET 
 [[ "$VOICE_TTS_PROVIDER" == 'elevenlabs' || "$VOICE_TTS_PROVIDER" == 'openai' ]] || { echo "VOICE_TTS_PROVIDER must be elevenlabs or openai." >&2; exit 1; }
 if [[ "$VOICE_STT_PROVIDER" == 'deepgram' ]]; then azure_need DEEPGRAM_API_KEY; fi
 if [[ "$VOICE_TTS_PROVIDER" == 'elevenlabs' ]]; then azure_need ELEVENLABS_API_KEY ELEVENLABS_MONTENEGRIN_VOICE_ID; fi
+if [[ "$MNE_MCP_ENABLED" == 'true' ]]; then
+  azure_need MNE_MCP_API_KEY MNE_MCP_API_URL
+  [[ "$MNE_MCP_API_URL" == https://* ]] || { echo "MNE_MCP_API_URL must use HTTPS in production." >&2; exit 1; }
+elif [[ "$MNE_MCP_ENABLED" != 'false' ]]; then
+  echo "MNE_MCP_ENABLED must be true or false." >&2
+  exit 1
+fi
 [[ ${#POSTGRES_ADMIN_PASSWORD} -ge 16 && ${#SESSION_SECRET} -ge 32 && ${#INTERNAL_TOKEN_SECRET} -ge 32 ]] || { echo "Generated secrets are too short." >&2; exit 1; }
 echo "Production environment is complete (values not printed)."

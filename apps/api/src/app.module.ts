@@ -17,6 +17,7 @@ import { DatabaseService } from './database/database.service.js';
 import { HealthController } from './health/health.controller.js';
 import { IntegrationsController } from './integrations/integrations.controller.js';
 import { IntegrationsService } from './integrations/integrations.service.js';
+import { MneMcpService } from './integrations/mne-mcp.service.js';
 import { PhoneNumbersService } from './integrations/phone-numbers.service.js';
 import { LiveKitSipSyncService } from './livekit/livekit-sip-sync.service.js';
 import { LiveKitVoiceService } from './livekit/livekit-voice.service.js';
@@ -142,6 +143,7 @@ const environment = loadEnvironment();
     RetrievalService,
     KnowledgeParserClient,
     IntegrationsService,
+    MneMcpService,
     PhoneNumbersService,
     LiveKitVoiceService,
     LiveKitSipSyncService,

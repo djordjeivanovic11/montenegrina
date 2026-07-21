@@ -5,6 +5,7 @@ const apiUrl = process.env.E2E_API_URL ?? 'http://localhost:3001';
 const sessionCookie = process.env.VOICE_SMOKE_SESSION_COOKIE;
 const googleCredential = process.env.VOICE_SMOKE_GOOGLE_CREDENTIAL;
 const googleEmail = process.env.VOICE_SMOKE_GOOGLE_EMAIL ?? 'smoke@montenegrina.local';
+const expectUserTurn = process.env.VOICE_SMOKE_EXPECT_USER_TURN === '1';
 const cyrillicPattern = /[\u0400-\u04ff]/;
 
 test.skip(!voiceSmokeEnabled, 'VOICE_SMOKE=1 enables the deployed voice MVP smoke test.');
@@ -23,10 +24,11 @@ test('production voice MVP emits deterministic greeting text and assistant audio
   page,
 }) => {
   test.setTimeout(120_000);
-  test.skip(
-    !sessionCookie && !googleCredential && !process.env.VOICE_SMOKE_ALLOW_FAKE_GOOGLE,
-    'Set VOICE_SMOKE_SESSION_COOKIE, VOICE_SMOKE_GOOGLE_CREDENTIAL, or VOICE_SMOKE_ALLOW_FAKE_GOOGLE=1.',
-  );
+  if (!sessionCookie && !googleCredential && !process.env.VOICE_SMOKE_ALLOW_FAKE_GOOGLE) {
+    throw new Error(
+      'Set VOICE_SMOKE_SESSION_COOKIE, VOICE_SMOKE_GOOGLE_CREDENTIAL, or VOICE_SMOKE_ALLOW_FAKE_GOOGLE=1.',
+    );
+  }
 
   if (sessionCookie) {
     await context.addCookies([
@@ -82,4 +84,20 @@ test('production voice MVP emits deterministic greeting text and assistant audio
   });
   expect(transcript).toContain('Zdravo, kako mogu pomoći?');
   expect(transcript).not.toMatch(cyrillicPattern);
+
+  if (expectUserTurn) {
+    await expect(devPanel).toContainText('user.turn.completed', { timeout: 90_000 });
+    await expect
+      .poll(
+        async () => (await devPanel.textContent())?.match(/assistant\.text\.completed:/g)?.length ?? 0,
+        { timeout: 90_000 },
+      )
+      .toBeGreaterThanOrEqual(2);
+    await expect
+      .poll(
+        async () => (await devPanel.textContent())?.match(/assistant\.audio\.started:/g)?.length ?? 0,
+        { timeout: 90_000 },
+      )
+      .toBeGreaterThanOrEqual(2);
+  }
 });

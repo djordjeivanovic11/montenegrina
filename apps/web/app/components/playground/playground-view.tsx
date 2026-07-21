@@ -49,8 +49,9 @@ export function PlaygroundView() {
     }>
   >([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
-  const [voiceUiActive, setVoiceUiActive] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [mneMcpEnabled, setMneMcpEnabled] = useState(false);
+  const [mneMcpAvailable, setMneMcpAvailable] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const voiceTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
@@ -97,9 +98,11 @@ export function PlaygroundView() {
       });
       if (channelsRes.ok) {
         const channels = (await channelsRes.json()) as {
+          mneMcpAvailable?: boolean;
           items: Array<{ sipConfigured?: boolean }>;
         };
         setSipConfigured(Boolean(channels.items[0]?.sipConfigured));
+        setMneMcpAvailable(Boolean(channels.mneMcpAvailable));
       }
     })();
   }, [csrfToken, organizationId, api]);
@@ -122,12 +125,20 @@ export function PlaygroundView() {
         agentId,
         input: sentInput,
         stream: false,
+        mneMcpEnabled,
         ...(activeConversationId ? { conversationId: activeConversationId } : {}),
       },
     });
     if (response.error) {
       setError(errorMessage(response.error));
       return;
+    }
+    if (
+      mneMcpEnabled &&
+      response.data.mneMcp &&
+      ['failed', 'unavailable'].includes(response.data.mneMcp.status)
+    ) {
+      setError('MNE-MCP trenutno nije dostupan; odgovor koristi lokalnu bazu znanja.');
     }
     dispatchTranscript({
       type: 'message.add',
@@ -165,10 +176,10 @@ export function PlaygroundView() {
     const response = await api.POST('/v1/agents/{agentId}/realtime-sessions', {
       params: { path: { agentId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
       headers: { ...headers(), 'Idempotency-Key': crypto.randomUUID() },
-      body: { participantName: 'Web korisnik' },
+      body: { participantName: 'Web korisnik', mneMcpEnabled },
     });
     if (!response.response.ok || !response.data) {
-      setError('The agent has no published version. Finish onboarding or publish the agent first.');
+      setError(errorMessage(response.error));
       setVoiceState('error');
       return;
     }
@@ -234,7 +245,8 @@ export function PlaygroundView() {
         } else if (evt.type === 'assistant.audio.completed') {
           setVoiceState('listening');
         } else if (evt.type === 'error') {
-          const message = typeof evt.payload.message === 'string' ? evt.payload.message : 'Voice runtime failed.';
+          const message =
+            typeof evt.payload.message === 'string' ? evt.payload.message : 'Voice runtime failed.';
           setError(message);
           setVoiceState('error');
         }
@@ -260,7 +272,9 @@ export function PlaygroundView() {
       setAudioBlocked(!room.canPlaybackAudio);
     });
     room.on(RoomEvent.TrackSubscriptionFailed, () => {
-      setError('Agent audio track could not be subscribed. Check LiveKit token and room permissions.');
+      setError(
+        'Agent audio track could not be subscribed. Check LiveKit token and room permissions.',
+      );
       setVoiceState('error');
     });
     room.on(RoomEvent.MediaDevicesError, () => {
@@ -290,24 +304,29 @@ export function PlaygroundView() {
     try {
       await room.localParticipant.setMicrophoneEnabled(true);
     } catch (microphoneError) {
-      setError(microphoneError instanceof Error ? microphoneError.message : 'Microphone access failed.');
+      setError(
+        microphoneError instanceof Error ? microphoneError.message : 'Microphone access failed.',
+      );
       setVoiceState('error');
       await room.disconnect();
       return;
     }
     roomRef.current = room;
-    setVoiceUiActive(true);
     setVoiceState('listening');
     voiceTimersRef.current = [
       setTimeout(() => {
         if (!sessionStartedRef.current) {
-          setError('Voice agent did not join the LiveKit room. Check LiveKit URL, API credentials, and agent deployment.');
+          setError(
+            'Voice agent did not join the LiveKit room. Check LiveKit URL, API credentials, and agent deployment.',
+          );
           setVoiceState('error');
         }
       }, 15_000),
       setTimeout(() => {
         if (sessionStartedRef.current && !assistantAudioStartedRef.current) {
-          setError('Voice agent joined but did not start audio. Check voice-agent logs, OpenAI model, STT/VAD, and TTS configuration.');
+          setError(
+            'Voice agent joined but did not start audio. Check voice-agent logs, OpenAI model, STT/VAD, and TTS configuration.',
+          );
         }
       }, 30_000),
     ];
@@ -366,7 +385,9 @@ export function PlaygroundView() {
       if (room.canPlaybackAudio) setError('');
     } catch {
       setAudioBlocked(true);
-      setError('Browser still blocks audio playback. Click the button again after interacting with the page.');
+      setError(
+        'Browser still blocks audio playback. Click the button again after interacting with the page.',
+      );
     }
   }
 
@@ -391,7 +412,6 @@ export function PlaygroundView() {
             messages={messages}
             voiceState={voiceState}
             agentId={agentId}
-            voiceMode={voiceUiActive}
             audioBlocked={audioBlocked}
             onStartVoice={() => void startVoice()}
             onEnableAudio={() => void enableAudio()}
@@ -404,6 +424,12 @@ export function PlaygroundView() {
             onSend={() => void sendText()}
             onStartVoice={() => void startVoice()}
             onStopVoice={() => void stopVoice()}
+            mneMcpEnabled={mneMcpEnabled}
+            mneMcpAvailable={mneMcpAvailable}
+            mneMcpLocked={
+              voiceState === 'connecting' || voiceState === 'listening' || voiceState === 'speaking'
+            }
+            onMneMcpChange={setMneMcpEnabled}
           />
           <div className="px-4 pb-4 border-t border-border pt-3">
             <p className="text-xs font-medium text-ink-2 mb-2">Test phone call</p>

@@ -9,15 +9,17 @@ import { RequirePermissions } from '../security/permissions.decorator.js';
 import { ProviderService } from './provider.service.js';
 
 function parseWavFormat(bytes: Uint8Array): AudioFormat | undefined {
-  if (bytes.byteLength < 28 || new TextDecoder().decode(bytes.slice(0, 4)) !== 'RIFF') return undefined;
+  if (bytes.byteLength < 28 || new TextDecoder().decode(bytes.slice(0, 4)) !== 'RIFF')
+    return undefined;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  return { encoding: 'wav', channels: view.getUint16(22, true), sampleRate: view.getUint32(24, true) };
+  return {
+    encoding: 'wav',
+    channels: view.getUint16(22, true),
+    sampleRate: view.getUint32(24, true),
+  };
 }
 
-function fieldValue(
-  fields: Record<string, unknown>,
-  name: string,
-): string | undefined {
+function fieldValue(fields: Record<string, unknown>, name: string): string | undefined {
   const field = fields[name] as { value?: unknown } | undefined;
   return typeof field?.value === 'string' ? field.value : undefined;
 }
@@ -30,11 +32,13 @@ export class ProviderController {
   @RequirePermissions('conversations:create')
   async transcribe(@CurrentActor() actor: RequestActor, @Req() request: FastifyRequest) {
     const file = await request.file({ limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
-    if (!file) throw new ApiException({ code: 'AUDIO_REQUIRED', message: 'An audio file is required.' });
+    if (!file)
+      throw new ApiException({ code: 'AUDIO_REQUIRED', message: 'An audio file is required.' });
     const audio = await file.toBuffer();
     const fields = file.fields as Record<string, unknown>;
     const agentId = fieldValue(fields, 'agentId');
-    if (!agentId) throw new ApiException({ code: 'AGENT_ID_REQUIRED', message: 'agentId is required.' });
+    if (!agentId)
+      throw new ApiException({ code: 'AGENT_ID_REQUIRED', message: 'agentId is required.' });
     const wavFormat = parseWavFormat(audio);
     const requestedEncoding = fieldValue(fields, 'encoding') as AudioEncoding | undefined;
     const sampleRate = Number(fieldValue(fields, 'sampleRate'));
@@ -68,7 +72,8 @@ export class ProviderController {
   respond(
     @CurrentActor() actor: RequestActor,
     @Req() request: FastifyRequest,
-    @Body() body: { agentId: string; conversationId?: string; input: string },
+    @Body()
+    body: { agentId: string; conversationId?: string; input: string; mneMcpEnabled?: boolean },
   ) {
     return this.providers.respond({ actor, requestId: request.requestId, ...body });
   }
@@ -123,4 +128,3 @@ export class ProviderController {
     return this.providers.getConversationMessages(actor, conversationId);
   }
 }
-

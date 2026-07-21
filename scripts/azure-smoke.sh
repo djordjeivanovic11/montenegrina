@@ -44,6 +44,8 @@ fi
 
 if [[ "${VOICE_SMOKE:-0}" == "1" ]]; then
   command -v pnpm >/dev/null || { echo "pnpm is required for VOICE_SMOKE=1." >&2; exit 1; }
-  E2E_BASE_URL="https://$WEB_FQDN" E2E_API_URL="https://$API_FQDN" \
-    pnpm --filter @montenegrina/web e2e -- --grep "production voice MVP"
+  SMOKE_WEB_HOST="${CUSTOM_WEB_DOMAIN:-$WEB_FQDN}"
+  SMOKE_API_HOST="${CUSTOM_API_DOMAIN:-$API_FQDN}"
+  E2E_BASE_URL="https://$SMOKE_WEB_HOST" E2E_API_URL="https://$SMOKE_API_HOST" \
+    pnpm --dir "$ROOT/apps/web" exec playwright test --grep "production voice MVP"
 fi

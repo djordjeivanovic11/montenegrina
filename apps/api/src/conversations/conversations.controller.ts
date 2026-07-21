@@ -67,9 +67,14 @@ export class ConversationsController {
   realtime(
     @CurrentActor() actor: RequestActor,
     @Param('agentId') agentId: string,
-    @Body() body: { participantName?: string },
+    @Body() body: { participantName?: string; mneMcpEnabled?: boolean },
   ) {
-    return this.conversations.realtimeSession(actor, agentId, body.participantName);
+    return this.conversations.realtimeSession(
+      actor,
+      agentId,
+      body.participantName,
+      body.mneMcpEnabled === true,
+    );
   }
 
   @Post('agents/:agentId/calls')
@@ -82,4 +87,3 @@ export class ConversationsController {
     return this.conversations.call(actor, agentId, body.to);
   }
 }
-

@@ -886,6 +886,8 @@ export interface components {
       input: string;
       /** @default false */
       stream: boolean;
+      /** @description Defaults to false when omitted. */
+      mneMcpEnabled?: boolean;
     };
     GeneratedResponse: {
       language: components['schemas']['Language'];
@@ -894,6 +896,14 @@ export interface components {
       warnings: string[];
       citations: components['schemas']['Citation'][];
       provider: components['schemas']['ProviderSummary'];
+      mneMcp?: components['schemas']['MneMcpStatus'];
+    };
+    MneMcpStatus: {
+      enabled: boolean;
+      /** @enum {string} */
+      status: 'disabled' | 'unavailable' | 'success' | 'failed';
+      latencyMs: number;
+      cacheHit: boolean;
     };
     CreateSpeechRequest: {
       /** Format: uuid */
@@ -1947,6 +1957,8 @@ export interface operations {
       content: {
         'application/json': {
           participantName?: string;
+          /** @default false */
+          mneMcpEnabled?: boolean;
         };
       };
     };
@@ -2263,6 +2275,7 @@ export interface operations {
         };
         content: {
           'application/json': {
+            mneMcpAvailable: boolean;
             items: components['schemas']['CommunicationChannel'][];
           };
         };
