@@ -135,7 +135,7 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
     administratorLoginPassword: postgresAdminPassword
     storage: { storageSizeGB: 128, autoGrow: 'Enabled' }
     backup: { backupRetentionDays: 14, geoRedundantBackup: 'Enabled' }
-    highAvailability: { mode: 'ZoneRedundant' }
+    highAvailability: { mode: 'Disabled' }
     network: { delegatedSubnetResourceId: postgresSubnet.id, privateDnsZoneArmResourceId: postgresDns.id }
     authConfig: { activeDirectoryAuth: 'Disabled', passwordAuth: 'Enabled' }
   }
@@ -176,8 +176,8 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: registryName
   location: location
   tags: tags
-  sku: { name: 'Premium' }
-  properties: { adminUserEnabled: false, publicNetworkAccess: 'Enabled', policies: { retentionPolicy: { days: 30, status: 'enabled' } } }
+  sku: { name: 'Basic' }
+  properties: { adminUserEnabled: false, publicNetworkAccess: 'Enabled' }
 }
 
 resource vault 'Microsoft.KeyVault/vaults@2024-11-01' = {
@@ -346,7 +346,7 @@ resource parser 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', ingress: { external: false, targetPort: 8090, transport: 'auto', allowInsecure: false }, registries: registryFrontend }
-    template: { containers: [{ name: 'parser', image: placeholderImage, resources: { cpu: json('2.0'), memory: '4Gi' }, env: [{ name: 'KNOWLEDGE_PARSER_PORT', value: '8090' }, { name: 'KNOWLEDGE_MAX_DOCUMENT_MIB', value: '50' }], probes: [{ type: 'Liveness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 20, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '1' } } }] } }
+    template: { containers: [{ name: 'parser', image: placeholderImage, resources: { cpu: json('2.0'), memory: '4Gi' }, env: [{ name: 'KNOWLEDGE_PARSER_PORT', value: '8090' }, { name: 'KNOWLEDGE_MAX_DOCUMENT_MIB', value: '50' }], probes: [{ type: 'Liveness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 20, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health', port: 8090 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 0, maxReplicas: 2, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '1' } } }] } }
   }
   dependsOn: [frontendAcrPull]
 }
@@ -364,8 +364,8 @@ resource api 'Microsoft.App/containerApps@2025-01-01' = {
   identity: { type: 'UserAssigned', userAssignedIdentities: backendIdentityMap }
   properties: {
     managedEnvironmentId: containerEnvironment.id
-    configuration: { activeRevisionsMode: 'Multiple', maxInactiveRevisions: 5, ingress: { external: true, targetPort: 3001, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, concat([{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }], mneMcpApiEnv)), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
+    configuration: { activeRevisionsMode: 'Single', ingress: { external: true, targetPort: 3001, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryBackend, secrets: backendSecretRefs }
+    template: { containers: [{ name: 'api', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, concat([{ name: 'API_PORT', value: '3001' }, { name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }], mneMcpApiEnv)), probes: [{ type: 'Startup', httpGet: { path: '/health/live', port: 3001 }, initialDelaySeconds: 5, periodSeconds: 5, failureThreshold: 30 }, { type: 'Liveness', httpGet: { path: '/health/live', port: 3001 }, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/health/ready', port: 3001 }, periodSeconds: 10 }] }], scale: { minReplicas: 1, maxReplicas: 3, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '10' } } }] } }
   }
   dependsOn: [backendAcrPull, backendBlobAccess, backendVaultAccess, vaultSecrets, databaseUrlSecret, redisUrlSecret, parser, blobDnsGroup, vaultDnsGroup, redisDnsGroup]
 }
@@ -377,8 +377,8 @@ resource web 'Microsoft.App/containerApps@2025-01-01' = {
   identity: { type: 'UserAssigned', userAssignedIdentities: frontendIdentityMap }
   properties: {
     managedEnvironmentId: containerEnvironment.id
-    configuration: { activeRevisionsMode: 'Multiple', maxInactiveRevisions: 5, ingress: { external: true, targetPort: 3000, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryFrontend }
-    template: { containers: [{ name: 'web', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: [{ name: 'PORT', value: '3000' }, { name: 'HOSTNAME', value: '0.0.0.0' }, { name: 'NEXT_PUBLIC_API_URL', value: publicApiUrl }, { name: 'NEXT_PUBLIC_LIVEKIT_URL', value: livekitUrl }, { name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID', value: googleClientId }], probes: [{ type: 'Liveness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 15, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }] } }
+    configuration: { activeRevisionsMode: 'Single', ingress: { external: true, targetPort: 3000, transport: 'auto', allowInsecure: false, traffic: [{ latestRevision: true, weight: 100 }] }, registries: registryFrontend }
+    template: { containers: [{ name: 'web', image: placeholderImage, resources: { cpu: json('0.5'), memory: '1Gi' }, env: [{ name: 'PORT', value: '3000' }, { name: 'HOSTNAME', value: '0.0.0.0' }, { name: 'NEXT_PUBLIC_API_URL', value: publicApiUrl }, { name: 'NEXT_PUBLIC_LIVEKIT_URL', value: livekitUrl }, { name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID', value: googleClientId }], probes: [{ type: 'Liveness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 15, periodSeconds: 20 }, { type: 'Readiness', httpGet: { path: '/', port: 3000 }, initialDelaySeconds: 10, periodSeconds: 10 }] }], scale: { minReplicas: 0, maxReplicas: 3, rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }] } }
   }
   dependsOn: [frontendAcrPull]
 }
@@ -391,7 +391,7 @@ resource worker 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'worker', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]) }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
+    template: { containers: [{ name: 'worker', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: concat(commonBackendEnv, [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'KNOWLEDGE_PARSER_URL', value: parserUrl }]) }], scale: { minReplicas: 1, maxReplicas: 2, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
   }
   dependsOn: [api]
 }
@@ -404,7 +404,7 @@ resource voice 'Microsoft.App/containerApps@2025-01-01' = {
   properties: {
     managedEnvironmentId: containerEnvironment.id
     configuration: { activeRevisionsMode: 'Single', registries: registryBackend, secrets: backendSecretRefs }
-    template: { containers: [{ name: 'voice-agent', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'LIVEKIT_URL', secretRef: 'livekit-url' }, { name: 'LIVEKIT_API_KEY', secretRef: 'livekit-api-key' }, { name: 'LIVEKIT_API_SECRET', secretRef: 'livekit-api-secret' }, { name: 'VOICE_AGENT_SERVICE_SECRET', secretRef: 'voice-agent-service-secret' }, { name: 'OPENAI_API_KEY', secretRef: 'openai-api-key' }, { name: 'OPENAI_MODEL', value: openaiModel }, { name: 'OPENAI_REALTIME_MODEL', value: openaiRealtimeModel }, { name: 'OPENAI_STT_MODEL', value: openaiSttModel }, { name: 'OPENAI_TTS_MODEL', value: openaiTtsModel }, { name: 'OPENAI_TTS_VOICE', value: openaiTtsVoice }, { name: 'VOICE_STT_PROVIDER', value: voiceSttProvider }, { name: 'VOICE_TTS_PROVIDER', value: voiceTtsProvider }, { name: 'DEEPGRAM_API_KEY', secretRef: 'deepgram-api-key' }, { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }, { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }] }], scale: { minReplicas: 2, maxReplicas: 6, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
+    template: { containers: [{ name: 'voice-agent', image: placeholderImage, resources: { cpu: json('1.0'), memory: '2Gi' }, env: [{ name: 'INTERNAL_API_URL', value: apiInternalUrl }, { name: 'LIVEKIT_URL', secretRef: 'livekit-url' }, { name: 'LIVEKIT_API_KEY', secretRef: 'livekit-api-key' }, { name: 'LIVEKIT_API_SECRET', secretRef: 'livekit-api-secret' }, { name: 'VOICE_AGENT_SERVICE_SECRET', secretRef: 'voice-agent-service-secret' }, { name: 'OPENAI_API_KEY', secretRef: 'openai-api-key' }, { name: 'OPENAI_MODEL', value: openaiModel }, { name: 'OPENAI_REALTIME_MODEL', value: openaiRealtimeModel }, { name: 'OPENAI_STT_MODEL', value: openaiSttModel }, { name: 'OPENAI_TTS_MODEL', value: openaiTtsModel }, { name: 'OPENAI_TTS_VOICE', value: openaiTtsVoice }, { name: 'VOICE_STT_PROVIDER', value: voiceSttProvider }, { name: 'VOICE_TTS_PROVIDER', value: voiceTtsProvider }, { name: 'DEEPGRAM_API_KEY', secretRef: 'deepgram-api-key' }, { name: 'ELEVENLABS_API_KEY', secretRef: 'elevenlabs-api-key' }, { name: 'ELEVENLABS_MONTENEGRIN_VOICE_ID', secretRef: 'elevenlabs-voice-id' }] }], scale: { minReplicas: 1, maxReplicas: 2, rules: [{ name: 'cpu', custom: { type: 'cpu', metadata: { type: 'Utilization', value: '60' } } }] } }
   }
   dependsOn: [api]
 }

@@ -133,7 +133,6 @@ update_public() {
   revision_suffix="$(revision_suffix_for "$app")"
   revision="$(az containerapp update --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --image "$LOGIN/$image:$TAG" --revision-suffix "$revision_suffix" "$@" --query properties.latestRevisionName -o tsv)"
   azure_wait_revision "$app" "$revision" "$AZURE_RESOURCE_GROUP"
-  az containerapp ingress traffic set --name "$app" --resource-group "$AZURE_RESOURCE_GROUP" --revision-weight "$revision=100" >/dev/null
 }
 
 update_private "$SERVICE_KNOWLEDGE_PARSER_NAME" montenegrina-parser
